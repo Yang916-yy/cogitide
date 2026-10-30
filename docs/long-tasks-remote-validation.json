@@ -197,7 +197,7 @@
     "benchmarks/Workbench.Benchmarks/packages.lock.json": "283980d18f8eeae50c025f0a5b45088de8b9ad8d6cdf3366406caa0706ed0c75"
   },
   "featureValidationCommit": "4ea69b3016616982a68b9a867d9fbf3385730732",
-  "sourceHashScope": "sourceSha256Lf and the feature test/package records refer to featureValidationCommit; portability follow-up evidence is recorded separately below",
+  "sourceHashScope": "Top-level sourceSha256Lf and feature test/package records refer to featureValidationCommit; each follow-up has separate evidence and source hashes.",
   "portabilityFollowUp": {
     "firstCiRun": "https://github.com/Yang916-yy/cogitide/actions/runs/41097027475",
     "retainedFindings": [
@@ -228,6 +228,117 @@
       "tests/Workbench.Tests/ManagedWorktreeTests.cs": "7b2065b066f1f447bf77a88b81760e670c0355a51afaad71da7a6e65540f2b1a",
       "tests/Workbench.Tests/RemoteConnectionTests.cs": "819705df08e7f07649e0503ad56c461a3e45e6e89919a7e4f6516d240c2ee416",
       ".github/workflows/build.yml": "786e5563bb9be1316c2f2959f541425241759f02e80660ca7fcee6f57717df66"
-    }
+    },
+    "commit": "b191164a2b801b07d38deaeb21bdc432cf14f4f3"
+  },
+  "shutdownFollowUp": {
+    "firstPortabilityCiRun": "https://github.com/Yang916-yy/cogitide/actions/runs/41099905179",
+    "initialWindowsCi": {
+      "passed": 638,
+      "failed": 1,
+      "skipped": 2,
+      "total": 641,
+      "test": "DisconnectDoesNotReplayAnUnobservedPendingRequest",
+      "observation": "EOF marker remained empty after the fixture-only content wait; the original file-visibility hypothesis was insufficient."
+    },
+    "confirmedCause": "StreamWriter.Close raced an in-flight async request write. Close can close its pipe while throwing InvalidOperationException; the shutdown-race catch then terminated the child before EOF cleanup. Semaphore/lifetime disposal could also race request setup/finally.",
+    "fix": "Reuse the write SemaphoreSlim for stdin close with one shared two-second write-drain/process-exit deadline; recheck closure inside the gate; cache the writer; retain managed gate/lifetime source for late request cleanup; keep protocol readers draining through grace.",
+    "preFixRegression": {
+      "oldProductionCommit": "b191164a2b801b07d38deaeb21bdc432cf14f4f3",
+      "test": "DisconnectWaitsForAnInflightPipeWriteBeforeSendingEof",
+      "expectedFailureConfirmed": true,
+      "trxSha256": "9f20369123dde24862becb6a5d336560cbe84632c2a762d1b370df89ce62e7c7",
+      "testSourceSha256Lf": "f329ad1a76b4837900ce2983d4cf186cf0854da4b9737e3530311f9952449f98"
+    },
+    "strictBuilds": {
+      "debug": {
+        "warnings": 0,
+        "errors": 0
+      },
+      "release": {
+        "warnings": 0,
+        "errors": 0
+      }
+    },
+    "focusedTests": {
+      "passed": 38,
+      "failed": 0,
+      "skipped": 2,
+      "total": 40,
+      "trxSha256": "5c76814bbc70fd47e4791686ad6ed7a4e46da376934bbe9eeb098c96a905cb7c"
+    },
+    "releaseTests": {
+      "passed": 640,
+      "failed": 0,
+      "skipped": 2,
+      "total": 642,
+      "trxSha256": "d222ffb80bf33529be61c054d8fb9d25367fc34a3055351f9faa6d23dd9731c0"
+    },
+    "actualClientAcceptance": {
+      "wsl": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "total": 1,
+        "trxSha256": "074801998991e08210336d167baade3ef558410a52787437a8cc40c064466d91"
+      },
+      "loopbackSsh": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "total": 1,
+        "trxSha256": "ce8f98277ba41eb80c5e4fad12494253c5f94d8dbdaa475378b6bde98a1672ea"
+      },
+      "remotePackageScope": "Updated Desktop client against the feature-validated Linux Host package whose assembly hashes are above. Native CI publishes and checks the current-source Host separately.",
+      "loopbackCleanupVerified": true
+    },
+    "localHostFixtures": [
+      {
+        "fixture": "verify-host",
+        "exitCode": 0,
+        "seconds": 7.68
+      },
+      {
+        "fixture": "verify-lifecycle",
+        "exitCode": 0,
+        "seconds": 15.7
+      },
+      {
+        "fixture": "verify-responses",
+        "exitCode": 0,
+        "seconds": 5.96
+      },
+      {
+        "fixture": "verify-continuity",
+        "exitCode": 0,
+        "seconds": 6.28
+      },
+      {
+        "fixture": "verify-tools-upgrade",
+        "exitCode": 0,
+        "seconds": 11.19
+      },
+      {
+        "fixture": "verify-research",
+        "exitCode": 0,
+        "seconds": 55.91
+      },
+      {
+        "fixture": "verify-integrations",
+        "exitCode": 0,
+        "seconds": 13.63
+      }
+    ],
+    "harnessFinding": "An initial recheck parsed Unicode paths from legacy-encoded Windows console output and failed workspace lookup. It now consumes authoritative UTF-8 result files; the harness also emits ASCII-escaped console JSON. The failed setup result is not counted as product acceptance.",
+    "testedDesktopAssemblySha256": "613d56ff741b5aad359e1c256d1ca6530f2071bd706085dd92c7a95423c36b65",
+    "paidModelCalls": 0,
+    "visibleDesktopOpened": false,
+    "sourceSha256Lf": {
+      "src/Workbench.Desktop/HostClient.cs": "bc03622bdcb6c3efc728097394b1a26067d3685147fd18a2e15b9c79967e3949",
+      "src/Workbench.Desktop/Remote/README.md": "952782109f8422d18138d0f8ed91586b8f7ff1d74cf3f3d14224d9eb96d28575",
+      "tests/Workbench.Tests/RemoteConnectionTests.cs": "f329ad1a76b4837900ce2983d4cf186cf0854da4b9737e3530311f9952449f98",
+      "scripts/verify-remote.py": "3507ea5da98f532e9e9d4cc37b2142c44622d9ce73fc9f59ee282e5aaf3496e7"
+    },
+    "ciScope": "Use the GitHub check associated with the published commit containing these source hashes for final three-platform results."
   }
 }

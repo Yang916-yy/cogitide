@@ -118,18 +118,20 @@ internal sealed class HostClient : IAsyncDisposable
         var id = Interlocked.Increment(ref _nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
         var completion = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_pending.TryAdd(id, completion)) throw new InvalidOperationException(L.Text("DuplicateRequest"));
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
-        timeout.CancelAfter(method == "workspace.command" ? TimeSpan.FromMinutes(12) : TimeSpan.FromSeconds(45));
-        using var registration = timeout.Token.Register(() => completion.TrySetCanceled(timeout.Token));
         try
         {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+            timeout.CancelAfter(method == "workspace.command" ? TimeSpan.FromMinutes(12) : TimeSpan.FromSeconds(45));
+            using var registration = timeout.Token.Register(() => completion.TrySetCanceled(timeout.Token));
             var request = new RpcRequest(id, method, Wire.Element(parameters ?? new { }));
             var json = JsonSerializer.Serialize(request, Wire.Json);
             await _writeLock.WaitAsync(timeout.Token).ConfigureAwait(false);
             try
             {
-                await _process!.StandardInput.WriteLineAsync(json.AsMemory(), timeout.Token).ConfigureAwait(false);
-                await _process.StandardInput.FlushAsync(timeout.Token).ConfigureAwait(false);
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                var input = _process!.StandardInput;
+                await input.WriteLineAsync(json.AsMemory(), timeout.Token).ConfigureAwait(false);
+                await input.FlushAsync(timeout.Token).ConfigureAwait(false);
             }
             finally { _writeLock.Release(); }
             var result = await completion.Task.ConfigureAwait(false);
@@ -251,10 +253,14 @@ internal sealed class HostClient : IAsyncDisposable
         _disposed = true;
         if (_process is { } process)
         {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
             try
             {
-                process.StandardInput.Close();
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                // StreamWriter.Close must not race an asynchronous request write: it
+                // closes the pipe even when its concurrent-I/O check throws.
+                await _writeLock.WaitAsync(timeout.Token).ConfigureAwait(false);
+                try { process.StandardInput.Close(); }
+                finally { _writeLock.Release(); }
                 await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) { ProcessShutdown.Terminate(process); }
@@ -265,7 +271,8 @@ internal sealed class HostClient : IAsyncDisposable
         try { if (_diagnostics is not null) await _diagnostics.ConfigureAwait(false); } catch (OperationCanceledException) { }
         _process?.Dispose();
         _process = null;
-        _lifetime.Dispose();
-        _writeLock.Dispose();
+        // In-flight request setup/finally blocks can still observe this cancellation
+        // source or release the gate after a forced stop. Neither uses a WaitHandle
+        // or timer; leave these managed objects to GC instead of racing their Dispose.
     }
 }

@@ -356,7 +356,8 @@ def main():
         if server:
             if report["passed"] and args.hold_for_client_seconds:
                 # Root may run the separately opted-in HostClient fixture while this bounded server is live.
-                print(json.dumps({"fixtureReady": True, "resultPath": str(result_path), "hostClientTestEnvironment": report["hostClientTestEnvironment"]}, ensure_ascii=False), flush=True)
+                # Escaped JSON survives legacy Windows console encodings; result.json remains UTF-8.
+                print(json.dumps({"fixtureReady": True, "resultPath": str(result_path), "hostClientTestEnvironment": report["hostClientTestEnvironment"]}, ensure_ascii=True), flush=True)
                 time.sleep(args.hold_for_client_seconds)
             server.stop()
             report["loopbackFixtureActive"] = False
@@ -365,7 +366,7 @@ def main():
                 report["passed"] = False
                 report["failure"] = "The isolated loopback fixture could not verify complete shutdown."
             result_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-        print(json.dumps({**report, "resultPath": str(result_path)}, ensure_ascii=False), flush=True)
+        print(json.dumps({**report, "resultPath": str(result_path)}, ensure_ascii=True), flush=True)
     return 0 if report["passed"] else 1
 
 

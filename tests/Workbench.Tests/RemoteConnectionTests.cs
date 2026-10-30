@@ -208,6 +208,21 @@ public sealed class RemoteConnectionTests
         Assert.False(client.Connected);
     }
 
+    [Fact]
+    public async Task DisconnectWaitsForAnInflightPipeWriteBeforeSendingEof()
+    {
+        using var fixture = new FakeTransport("pending-large");
+        await using var client = new HostClient(fixture.StartInfo);
+        await client.StartAsync(Ssh());
+        // The fixture briefly pauses after initialize, then drains without replying.
+        // A payload larger than the OS pipe buffer keeps the write active at disconnect.
+        var pending = client.RequestAsync<JsonElement>("fixture.pending", new { text = new string('x', 4 * 1024 * 1024) });
+        await client.DisposeAsync();
+        await Assert.ThrowsAnyAsync<Exception>(() => pending);
+        Assert.Equal("eof", await fixture.ReadEofMarkerAsync());
+        Assert.False(client.Connected);
+    }
+
     private static HostConnectionProfile Ssh() => new() { Id = "fixture", Kind = HostConnectionKind.Ssh, Destination = "fixture-host", HostPath = "/opt/cogitide/Workbench.Host" };
 
     private sealed class FakeTransport : IDisposable
@@ -282,6 +297,12 @@ public sealed class RemoteConnectionTests
             $capabilities = if ($Mode -eq 'old-capabilities') { @() } else { @('session.view', 'run.continue') }
             $result = if ($Mode -eq 'missing-version') { @{} } else { @{ protocolVersion = $version; capabilities = $capabilities } }
             [Console]::WriteLine((@{ id = '1'; result = $result } | ConvertTo-Json -Compress -Depth 8))
+            if ($Mode -eq 'pending-large') {
+                Start-Sleep -Milliseconds 250
+                $null = [Console]::In.ReadToEnd()
+                [IO.File]::WriteAllText($EofFile, 'eof')
+                exit 0
+            }
             while ($null -ne [Console]::ReadLine()) {
                 if ($Mode -ne 'pending') { [Console]::WriteLine('{"id":"2","result":{"ok":true}}') }
             }
@@ -307,6 +328,12 @@ public sealed class RemoteConnectionTests
               old-capabilities) printf '%s\n' '{"id":"1","result":{"protocolVersion":1,"capabilities":[]}}';;
               *) printf '%s\n' '{"id":"1","result":{"protocolVersion":1,"capabilities":["session.view","run.continue"]}}';;
             esac
+            if [ "$mode" = 'pending-large' ]; then
+              sleep 0.25
+              cat > /dev/null
+              printf '%s' 'eof' > "$eof_file"
+              exit 0
+            fi
             while IFS= read -r line; do
               if [ "$mode" != 'pending' ]; then printf '%s\n' '{"id":"2","result":{"ok":true}}'; fi
             done
