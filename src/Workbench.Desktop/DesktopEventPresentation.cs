@@ -30,6 +30,7 @@ internal static class DesktopEventPresentation
     internal static string SessionStatus(string status) => status switch
     {
         "completed" => L.Text("Completed"),
+        "paused" => L.Text("Paused"),
         "interrupted" => L.Text("Interrupted"),
         "cancelled" => L.Text("Stopped"),
         "failed" => L.Text("ExecutionFailed"),

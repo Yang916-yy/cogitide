@@ -12,7 +12,9 @@ $runtime = $info.runtime
 if ($runtime -notmatch '^(win|linux|osx)-(x64|arm64)$') { throw 'Publish metadata contains an unsupported runtime identifier.' }
 $suffix = if ($runtime.StartsWith('win-')) { '.exe' } else { '' }
 $versions = @()
-foreach ($application in @('Workbench.Desktop', 'Workbench.Host')) {
+$headlessOnly = $info.ContainsKey('headlessOnly') -and [bool]$info.headlessOnly
+$applications = if ($headlessOnly) { @('Workbench.Host') } else { @('Workbench.Desktop', 'Workbench.Host') }
+foreach ($application in $applications) {
     foreach ($file in @(($application + $suffix), ($application + '.dll'), ($application + '.deps.json'), ($application + '.runtimeconfig.json'))) {
         if (-not (Test-Path -LiteralPath (Join-Path $package $file) -PathType Leaf)) { throw "Missing published component: $file" }
     }
@@ -22,12 +24,13 @@ foreach ($application in @('Workbench.Desktop', 'Workbench.Host')) {
     if ($version.Count -ne 1) { throw "Unable to identify the required runtime for $application." }
     $versions += $version[0]
 }
-if ($versions[0] -ne $versions[1]) { throw 'Desktop and Host require different .NET runtime versions.' }
+if (@($versions | Select-Object -Unique).Count -ne 1) { throw 'Published components require different .NET runtime versions.' }
 $info.formatVersion = 1
 $info.displayName = 'Cogitide'
 $info.releaseChannel = 'development-preview'
 $info.runtimeVersion = $versions[0]
-$info.desktopExecutable = 'Workbench.Desktop' + $suffix
+$info.desktopExecutable = if ($headlessOnly) { $null } else { 'Workbench.Desktop' + $suffix }
+$info.packageKind = if ($headlessOnly) { 'host' } else { 'desktop' }
 $info.hostExecutable = 'Workbench.Host' + $suffix
 $info.defaultDataLocation = 'Per-user local application data / Workbench; independent of this package directory.'
 $info.launcher = if ($runtime.StartsWith('win-')) { 'start.cmd' } else { 'start.sh' }
@@ -42,6 +45,9 @@ set "WORKBENCH_HOST_PATH=%~dp0Workbench.Host.exe"
 "%~dp0Workbench.Desktop.exe" %*
 exit /b %errorlevel%
 '@
+    if ($headlessOnly) {
+        $launcher = '@echo off' + "`n" + '"%~dp0Workbench.Host.exe" --stdio %*' + "`n" + 'exit /b %errorlevel%'
+    }
     [IO.File]::WriteAllText((Join-Path $package 'start.cmd'), $launcher.Replace("`r`n", "`n").Replace("`n", "`r`n") + "`r`n", [Text.Encoding]::ASCII)
 }
 else {
@@ -58,13 +64,24 @@ WORKBENCH_HOST_PATH="$app_dir/Workbench.Host"
 export WORKBENCH_HOST_PATH
 exec "$app_dir/Workbench.Desktop" "$@"
 '@
+    if ($headlessOnly) {
+        $launcher = @'
+#!/bin/sh
+set -eu
+app_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ ! -x "$app_dir/Workbench.Host" ]; then chmod u+x "$app_dir/Workbench.Host"; fi
+exec "$app_dir/Workbench.Host" --stdio "$@"
+'@
+    }
     [IO.File]::WriteAllText((Join-Path $package 'start.sh'), $launcher.Replace("`r`n", "`n") + "`n", [Text.UTF8Encoding]::new($false))
     if (-not $IsWindows) {
-        & chmod u+x (Join-Path $package 'start.sh') (Join-Path $package 'Workbench.Desktop') (Join-Path $package 'Workbench.Host')
+        $executables = @((Join-Path $package 'start.sh')) + @($applications | ForEach-Object { Join-Path $package $_ })
+        & chmod u+x @executables
         if ($LASTEXITCODE -ne 0) { throw 'Could not set executable permissions on the package launchers.' }
     }
 }
-Copy-Item -LiteralPath (Join-Path $repository 'docs/release.md') -Destination (Join-Path $package 'README.md')
+$readme = if ($headlessOnly) { 'docs/remote-host-package.md' } else { 'docs/release.md' }
+Copy-Item -LiteralPath (Join-Path $repository $readme) -Destination (Join-Path $package 'README.md')
 foreach ($notice in @('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md')) {
     Copy-Item -LiteralPath (Join-Path $repository $notice) -Destination (Join-Path $package $notice)
 }

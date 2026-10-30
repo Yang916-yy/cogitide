@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("verify_host", ROOT / "scripts" / "verify-host.py")
 stdio = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(stdio)
-TERMINALS = {"run.completed", "run.failed", "run.cancelled"}
+TERMINALS = {"run.completed", "run.failed", "run.cancelled", "run.paused"}
 PATCH = """*** Begin Patch
 *** Update File: src/calculator.py
 @@
@@ -132,10 +132,10 @@ class FixtureHandler(http.server.BaseHTTPRequestHandler):
             mode = next(name for name in ("main", "crash", "cold") if prompt.startswith("TOOLS_UPGRADE_" + name.upper()))
             definitions = {tool["function"]["name"] for tool in body["tools"]}
             if mode == "cold":
-                assert len(definitions) == 13, definitions
-                assert not definitions.intersection({"write_file", "replace_text", "apply_patch", "run_command", "start_command"})
+                assert len(definitions) == 15, definitions
+                assert not definitions.intersection({"write_file", "replace_text", "apply_patch", "run_command", "start_command", "write_command", "create_worktree", "remove_worktree"})
             else:
-                assert len(definitions) == 19, definitions
+                assert len(definitions) == 24, definitions
             self.server.tool_counts[mode] = len(definitions)
             tail = messages[start + 1:]
             calls = {call["id"]: call for message in tail for call in message.get("tool_calls", [])}
@@ -396,7 +396,7 @@ while True: time.sleep(0.2)
     try:
         host = StrictHost(directory / "state", env, workspace, policy, executable)
         init = host.request("initialize", {})
-        assert len(init["tools"]) == 19
+        assert len(init["tools"]) == 24
         session = host.request("session.create", {"workspacePath": str(workspace), "backend": "api"})["info"]["id"]
         policy["sessions"][session] = "main"
         run = start(host, session, "MAIN " + marker, provider)

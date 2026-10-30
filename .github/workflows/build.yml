@@ -65,6 +65,15 @@ jobs:
         run: python scripts/verify-research.py
       - name: MCP, headless browser and Roslyn integration
         run: python scripts/verify-integrations.py
+      - name: Headless remote Host package and native smoke
+        timeout-minutes: 8
+        run: |
+          $platform = if ($IsWindows) { 'win' } elseif ($IsMacOS) { 'osx' } else { 'linux' }
+          $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
+          $runtime = "$platform-$architecture"
+          ./scripts/publish.ps1 -Runtime $runtime -HostOnly -OutputDirectory artifacts/ci-headless-host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/verify-release.py artifacts/ci-headless-host --smoke-host --require-source-locks --require-unified-kernel --require-tool-upgrade --require-research --report artifacts/ci-headless-host-check.json
       - name: Module inventory
         run: python scripts/module-map.py --check
       - name: Upload test evidence

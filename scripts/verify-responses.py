@@ -136,7 +136,7 @@ def digest(path):
 
 def await_run(host, run_id):
     deadline = time.monotonic() + 90
-    terminal = {"run.completed", "run.failed", "run.cancelled"}
+    terminal = {"run.completed", "run.failed", "run.cancelled", "run.paused"}
     while not any(event["runId"] == run_id and event["type"] in terminal for event in host.events):
         assert time.monotonic() < deadline, "Fixture run timed out."
         host.next(min(30, max(0.1, deadline - time.monotonic())))

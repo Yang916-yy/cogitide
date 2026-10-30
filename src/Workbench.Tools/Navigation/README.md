@@ -3,6 +3,7 @@
 | File | Responsibility |
 | --- | --- |
 | [RepositoryInventory.cs](RepositoryInventory.cs) | Bounded file inventory using Git's standard ignore rules, with an explicitly identified fallback outside Git worktrees. |
+| [WorkspaceBrowser.cs](WorkspaceBrowser.cs) | Desktop file-list filtering/pages over the existing bounded inventory with name snapshots; no second index. |
 | [NavigationTools.cs](NavigationTools.cs) | Paged UTF-8 reads, long-line continuation, content snapshots, literal/regex/glob search and surrounding context. |
 | [CSharpSymbols.cs](CSharpSymbols.cs) | Roslyn syntax declarations, signatures, source lines and syntax diagnostics. This outline is syntax-only. |
 | [SemanticNavigation.cs](SemanticNavigation.cs) | Roslyn source-compilation definitions, exact-symbol references and compiler diagnostics, with explicit project boundaries and resource budgets. |

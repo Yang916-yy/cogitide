@@ -252,4 +252,54 @@
   <data name="CompressionGuidanceFeature" xml:space="preserve"><value>压缩时保留关键上下文</value></data>
   <data name="RepositoryMemoryFeature" xml:space="preserve"><value>参考项目历史定位代码</value></data>
   <data name="ReadOnlyPrefetchFeature" xml:space="preserve"><value>预读相关文件（只读）</value></data>
+  <data name="RemoteLocal" xml:space="preserve"><value>本机</value></data>
+  <data name="RemoteConnectionsTitle" xml:space="preserve"><value>主机连接</value></data>
+  <data name="RemoteConnectionsIntro" xml:space="preserve"><value>选择运行 Cogitide 智能体、工具和文件的环境。请先安装匹配版本的 Host。</value></data>
+  <data name="RemoteSavedProfile" xml:space="preserve"><value>已保存的连接</value></data>
+  <data name="RemoteNewSsh" xml:space="preserve"><value>新建 SSH 连接</value></data>
+  <data name="RemoteNewWsl" xml:space="preserve"><value>新建 WSL 连接</value></data>
+  <data name="RemoteProfileName" xml:space="preserve"><value>连接名称（可选）</value></data>
+  <data name="RemoteWslDistribution" xml:space="preserve"><value>WSL 发行版</value></data>
+  <data name="RemoteSshDestination" xml:space="preserve"><value>SSH 主机名或配置别名</value></data>
+  <data name="RemoteDiscoverWsl" xml:space="preserve"><value>查找已安装的发行版</value></data>
+  <data name="RemoteHostPath" xml:space="preserve"><value>Host 可执行文件或 DLL（POSIX 绝对路径）</value></data>
+  <data name="RemoteDotnetPath" xml:space="preserve"><value>dotnet 可执行文件（运行 Host DLL）</value></data>
+  <data name="RemoteDataDirectory" xml:space="preserve"><value>远端数据目录（可选绝对路径）</value></data>
+  <data name="RemoteConnect" xml:space="preserve"><value>保存并连接</value></data>
+  <data name="RemoteCredentialsNotice" xml:space="preserve"><value>凭据和模型请求由选定的 Host 处理。Cogitide 不复制本机密钥或账号。断开连接会停止本次启动的 Host，不支持离线继续。</value></data>
+  <data name="RemoteSshNotice" xml:space="preserve"><value>使用系统 OpenSSH 配置、密钥、代理与 known_hosts。请在 Cogitide 外核验新增或变更的主机密钥。不启用密码提示、代理转发或端口转发。远端账号需使用 POSIX shell。</value></data>
+  <data name="RemoteWslNotice" xml:space="preserve"><value>通过 wsl.exe --exec 直接启动 Host，路径和凭据属于该发行版。</value></data>
+  <data name="RemoteWslDiscovered" xml:space="preserve"><value>可从列表选择发行版，或输入准确名称。</value></data>
+  <data name="RemoteNoWsl" xml:space="preserve"><value>未找到 WSL 发行版。</value></data>
+  <data name="RemoteWslDiscoveryFailed" xml:space="preserve"><value>无法列出 WSL 发行版，请检查 WSL 是否已安装并可用。</value></data>
+  <data name="RemoteOpenProject" xml:space="preserve"><value>打开远程项目</value></data>
+  <data name="RemoteWorkspaceHint" xml:space="preserve"><value>输入所选主机上的项目绝对路径。</value></data>
+  <data name="RemoteTerminalHint" xml:space="preserve"><value>请使用该主机的 SSH 或 WSL 终端。智能体命令工具在已连接的主机上运行。</value></data>
+  <data name="Paused" xml:space="preserve"><value>已到预算，等待续接</value></data>
+  <data name="ContinueRun" xml:space="preserve"><value>继续任务</value></data>
+  <data name="EarlierHistory" xml:space="preserve"><value>更早的消息</value></data>
+  <data name="LatestHistory" xml:space="preserve"><value>返回最新</value></data>
+  <data name="HistoryRange" xml:space="preserve"><value>第 {0}–{1} 条，共 {2} 条消息</value></data>
+  <data name="HistoryUnavailable" xml:space="preserve"><value>此历史页暂不可用。</value></data>
+  <data name="HistoryPayloadOmitted" xml:space="preserve"><value>历史视图省略二进制附件数据及模型私有续接状态，原始记录仍完整保留。</value></data>
+  <data name="PendingInputCount" xml:space="preserve"><value>有 {0} 条追加指令待核对，请在继续任务前检查原始历史。</value></data>
+  <data name="RunBudgetTitle" xml:space="preserve"><value>任务预算</value></data>
+  <data name="RunBudgetSummary" xml:space="preserve"><value>{0} 轮 · {1} 小时</value></data>
+  <data name="RunBudgetHint" xml:space="preserve"><value>预算用于下一次执行或显式续接，到限后任务暂停。若启用已报告 token 上限，用量未知时也会暂停。</value></data>
+  <data name="RunIterations" xml:space="preserve"><value>模型迭代上限</value></data>
+  <data name="RunHours" xml:space="preserve"><value>单轮时长（小时）</value></data>
+  <data name="RunContextCharacters" xml:space="preserve"><value>上下文预算（字符）</value></data>
+  <data name="RunReportedTokens" xml:space="preserve"><value>已报告输入与输出 token 合计上限</value></data>
+  <data name="RunTokensOptional" xml:space="preserve"><value>可选，留空不设 token 数量上限</value></data>
+  <data name="RunAutoCompact" xml:space="preserve"><value>自动压缩上下文</value></data>
+  <data name="FileScopeHint" xml:space="preserve"><value>目录前缀，例如 src/</value></data>
+  <data name="FilePageRange" xml:space="preserve"><value>当前清单第 {0}–{1} 项，共 {2} 项</value></data>
+  <data name="FileInventoryNarrow" xml:space="preserve"><value>部分路径未纳入，请缩小目录前缀</value></data>
+  <data name="FilePreviewPosition" xml:space="preserve"><value>从第 {0} 行、第 {1} 列开始</value></data>
+  <data name="FileBeginning" xml:space="preserve"><value>回到开头</value></data>
+  <data name="FileNextSection" xml:space="preserve"><value>下一段</value></data>
+  <data name="FirstPage" xml:space="preserve"><value>首页</value></data>
+  <data name="NextPage" xml:space="preserve"><value>下一页</value></data>
+  <data name="Save" xml:space="preserve"><value>保存</value></data>
+  <data name="LiveHistoryWindow" xml:space="preserve"><value>仅显示最近 {0} 条时间线记录，完整历史已保存。</value></data>
 </root>

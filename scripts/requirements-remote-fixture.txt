@@ -1,0 +1,6 @@
+# Optional local test server only. Production uses the installed system OpenSSH client.
+asyncssh==2.24.1
+cffi==2.1.1
+cryptography==50.0.2
+pycparser==3.12
+typing_extensions==4.16.0

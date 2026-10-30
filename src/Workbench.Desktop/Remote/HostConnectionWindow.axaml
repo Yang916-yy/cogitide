@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Workbench.Desktop"
+        x:Class="Workbench.Desktop.Remote.HostConnectionWindow"
+        Title="{local:Loc RemoteConnectionsTitle}" Width="620" Height="760" MinWidth="480" MinHeight="500"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
+    <StackPanel Spacing="9">
+      <TextBlock Text="{local:Loc RemoteConnectionsTitle}" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="{local:Loc RemoteConnectionsIntro}" TextWrapping="Wrap" Classes="muted" />
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="12">
+        <TextBlock Text="{local:Loc RemoteSavedProfile}" />
+        <ComboBox x:Name="ProfilePicker" HorizontalAlignment="Stretch" SelectionChanged="ProfileChanged" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button x:Name="NewSshButton" Content="{local:Loc RemoteNewSsh}" Click="NewSshClick" />
+          <Button x:Name="NewWslButton" Content="{local:Loc RemoteNewWsl}" Click="NewWslClick" />
+        </StackPanel>
+        <StackPanel x:Name="RemoteFields" Spacing="10">
+          <TextBlock Text="{local:Loc RemoteProfileName}" />
+          <TextBox x:Name="NameBox" />
+          <TextBlock x:Name="DestinationLabel" />
+          <TextBox x:Name="DestinationBox" />
+          <StackPanel x:Name="WslDiscoveryPanel" Spacing="8">
+            <Button x:Name="DiscoverWslButton" Content="{local:Loc RemoteDiscoverWsl}" Click="DiscoverWslClick" HorizontalAlignment="Left" />
+            <ComboBox x:Name="DistributionPicker" HorizontalAlignment="Stretch" SelectionChanged="DistributionChanged" IsVisible="False" />
+          </StackPanel>
+          <TextBlock Text="{local:Loc RemoteHostPath}" />
+          <TextBox x:Name="HostPathBox" PlaceholderText="/opt/cogitide/Workbench.Host" />
+          <TextBlock Text="{local:Loc RemoteDotnetPath}" />
+          <TextBox x:Name="DotnetPathBox" PlaceholderText="dotnet" />
+          <TextBlock Text="{local:Loc RemoteDataDirectory}" />
+          <TextBox x:Name="DataDirectoryBox" PlaceholderText="/home/user/.local/share/Workbench" />
+          <TextBlock Text="{local:Loc RemoteCredentialsNotice}" TextWrapping="Wrap" Classes="muted" />
+          <TextBlock x:Name="TransportNotice" TextWrapping="Wrap" Classes="muted" />
+        </StackPanel>
+        <TextBlock x:Name="NoticeLabel" TextWrapping="Wrap" Foreground="#E7BC8A" />
+      </StackPanel>
+    </ScrollViewer>
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <Button Grid.Column="1" Content="{local:Loc Cancel}" Click="CancelClick" />
+      <Button x:Name="ConnectButton" Grid.Column="2" Content="{local:Loc RemoteConnect}" Classes="primary" Click="ConnectClick" />
+    </Grid>
+  </Grid>
+</Window>

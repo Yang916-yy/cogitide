@@ -47,6 +47,11 @@ def verify_package(directory, require_source_locks=False, require_unified_kernel
     info = read_json(package / "publish-info.json")
     runtime = info["runtime"]
     assert re.fullmatch(r"(win|linux|osx)-(x64|arm64)", runtime), "Unsupported target runtime"
+    headless_only = info.get("headlessOnly", False)
+    applications = ("Workbench.Host",) if headless_only else ("Workbench.Desktop", "Workbench.Host")
+    if headless_only:
+        assert info.get("packageKind") == "host" and info.get("desktopExecutable") is None, "Invalid headless package metadata"
+        assert not (package / "Workbench.Desktop.dll").exists(), "Headless Host package contains the desktop application"
     entries = {}
     for line in (package / "SHA256SUMS").read_text(encoding="utf-8-sig").splitlines():
         checksum, relative = line.split("  ", 1)
@@ -60,7 +65,7 @@ def verify_package(directory, require_source_locks=False, require_unified_kernel
     assert actual == set(entries), "Checksum manifest omits files or lists unexpected paths"
     versions = []
     suffix = ".exe" if runtime.startswith("win-") else ""
-    for name in ("Workbench.Desktop", "Workbench.Host"):
+    for name in applications:
         assert native_architecture(package / (name + suffix)) == runtime, "Native executable architecture mismatch"
         assert (package / (name + ".dll")).is_file(), "Managed application missing"
         assert read_json(package / (name + ".deps.json"))["runtimeTarget"]["name"].endswith("/" + runtime), "Dependency runtime mismatch"
@@ -72,7 +77,7 @@ def verify_package(directory, require_source_locks=False, require_unified_kernel
         required = [framework["version"] for framework in frameworks if framework["name"] == "Microsoft.NETCore.App"]
         assert len(required) == 1, "Runtime version missing"
         versions += required
-    assert versions[0] == versions[1], "Desktop and Host runtime versions differ"
+    assert len(set(versions)) == 1, "Published component runtime versions differ"
     if info["selfContained"]:
         native_runtime = {"win": ("coreclr.dll", "hostfxr.dll", "hostpolicy.dll"),
                           "linux": ("libcoreclr.so", "libhostfxr.so", "libhostpolicy.so"),
@@ -95,7 +100,7 @@ def verify_package(directory, require_source_locks=False, require_unified_kernel
         assert not any(path.name.startswith("Workbench.Codex") for path in package.rglob("*")), "Legacy delegated runtime is packaged"
         for name in ("Workbench.Auth.dll", "OpenAI.dll", "Microsoft.Identity.Client.Extensions.Msal.dll", "Microsoft.IdentityModel.JsonWebTokens.dll"):
             assert (package / name).is_file(), "Unified runtime dependency missing: " + name
-        for name in ("Workbench.Host.deps.json", "Workbench.Desktop.deps.json"):
+        for name in (application + ".deps.json" for application in applications):
             libraries = read_json(package / name)["libraries"]
             assert not any(key.startswith("Workbench.Codex/") or key.startswith("Avalonia.Headless/") for key in libraries), "Legacy or test runtime is packaged"
         licenses = {"Auth": ROOT / "src" / "Workbench.Auth" / "Licenses",
@@ -118,7 +123,7 @@ def verify_package(directory, require_source_locks=False, require_unified_kernel
         assert info["displayName"] == "Cogitide", "Public product identity missing"
         for name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"):
             assert (package / name).is_file() and digest(package / name) == digest(ROOT / name), "Root license/notice mismatch: " + name
-    return {"directory": str(package), "runtime": runtime, "runtimeVersion": versions[0],
+    return {"directory": str(package), "runtime": runtime, "runtimeVersion": versions[0], "headlessOnly": headless_only,
             "selfContained": info["selfContained"], "verifiedFiles": len(entries), "matchingSourceLocks": locks - len(source_differences),
             "sourceLockDifferences": source_differences,
             "nativeHeadersVerified": True, "unifiedKernelVerified": require_unified_kernel, "toolUpgradeVerified": require_tool_upgrade,

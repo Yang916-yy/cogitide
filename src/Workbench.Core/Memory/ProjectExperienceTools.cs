@@ -104,7 +104,7 @@ public sealed class ProjectExperienceTools
         {
             ct.ThrowIfCancellationRequested();
             if (!SameWorkspace(context.WorkspacePath)) return new("Project memory is scoped to its selected workspace.", true);
-            var session = await _store.LoadAsync(_sessionId, ct) ?? throw new KeyNotFoundException("Session not found.");
+            var session = await _store.ReadViewAsync(_sessionId, 1, ct) ?? throw new KeyNotFoundException("Session not found.");
             if (!SameWorkspace(session.Info.WorkspacePath)) return new("Project memory session no longer matches the selected workspace.", true);
             if (call.ArgumentsJson.Length > 16_000) throw new ArgumentException("Project memory request is too large.");
             using var document = JsonDocument.Parse(call.ArgumentsJson, new JsonDocumentOptions { MaxDepth = 8 });
@@ -139,11 +139,10 @@ public sealed class ProjectExperienceTools
         var values = sequences.EnumerateArray().Select(value => value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number) && number > 0
             ? number : throw new ArgumentException("Evidence sequences must be positive integers.")).Distinct().ToArray();
         if (values.Length != sequences.GetArrayLength()) throw new ArgumentException("Evidence sequences must be unique.");
-        var events = await _store.EventsAsync(_sessionId, cancellationToken: ct);
         var sources = new List<ProjectExperienceSource>();
         foreach (var sequence in values)
         {
-            var source = events.SingleOrDefault(evt => evt.Sequence == sequence);
+            var source = await _store.GetEventAsync(_sessionId, sequence, ct);
             if (source?.Type != "tool.completed" || source.Call is null || source.Result is null || source.SessionId != _sessionId ||
                 source.Call.Name is RememberName or RecallName or SessionEvidenceTool.Name or ProjectSkillTool.Name)
                 throw new ArgumentException("A source must be an original completed workspace tool observation in this session.");
@@ -186,15 +185,14 @@ public sealed class ProjectExperienceTools
         var truncated = sessions.Length > 64;
         foreach (var session in sessions.Take(64))
         {
-            var events = await _store.EventsAsync(session.Id, cancellationToken: ct);
-            foreach (var evt in events.Where(evt => evt.Type == SavedEvent && evt.Text is not null).Reverse())
+            await foreach (var evt in _store.StreamEventsAsync(session.Id, descending: true, eventType: SavedEvent, cancellationToken: ct))
             {
                 ct.ThrowIfCancellationRequested();
                 if (found.Count >= 128) { truncated = true; break; }
                 try
                 {
-                    if (evt.Text!.Length > 32_000) continue;
-                    var candidate = JsonSerializer.Deserialize(evt.Text, ProjectExperienceJsonContext.Default.ProjectExperience);
+                    if (evt.Text is not { Length: <= 32_000 } text) continue;
+                    var candidate = JsonSerializer.Deserialize(text, ProjectExperienceJsonContext.Default.ProjectExperience);
                     if (candidate is null || candidate.Version != 1 || candidate.SourceSessionId != session.Id || candidate.SourceRunId != evt.RunId ||
                         !SameWorkspace(candidate.WorkspacePath) || candidate.Sources is not { Count: > 0 and <= 8 } ||
                         candidate.Title is not { Length: > 0 and <= 120 } || candidate.Preconditions is not { Length: > 0 and <= 1000 } ||
@@ -217,13 +215,12 @@ public sealed class ProjectExperienceTools
 
     private async Task<(string Source, string Artifacts)> ValidateSourcesAsync(ProjectExperience candidate, CancellationToken ct)
     {
-        var session = await _store.LoadAsync(candidate.SourceSessionId, ct);
+        var session = await _store.ReadViewAsync(candidate.SourceSessionId, 1, ct);
         if (session is null || !SameWorkspace(session.Info.WorkspacePath)) return ("Unavailable", "Unknown");
-        var events = await _store.EventsAsync(candidate.SourceSessionId, cancellationToken: ct);
         var artifacts = new List<EvidenceArtifact>();
         foreach (var source in candidate.Sources)
         {
-            var evt = events.SingleOrDefault(evt => evt.Sequence == source.EventSequence);
+            var evt = await _store.GetEventAsync(candidate.SourceSessionId, source.EventSequence, ct);
             if (evt?.Type != "tool.completed" || evt.SessionId != candidate.SourceSessionId || evt.Call is null || evt.Result is null ||
                 evt.Call.Name is RememberName or RecallName or SessionEvidenceTool.Name or ProjectSkillTool.Name ||
                 evt.Call.Name != source.ToolName || EvidenceMemory.EventSha256(evt) != source.EventSha256 ||

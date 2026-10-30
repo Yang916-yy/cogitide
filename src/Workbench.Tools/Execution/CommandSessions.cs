@@ -9,17 +9,22 @@ namespace Workbench.Tools;
 
 internal sealed record CommandRecord(string Id, string SessionId, string RunId, string WorkspacePath,
     string Command, string Status, DateTimeOffset StartedAt, int? ExitCode = null, bool OutputTruncated = false,
-    string? Error = null, DateTimeOffset? FinishedAt = null);
+    string? Error = null, DateTimeOffset? FinishedAt = null, string Lifetime = "run", string InputMode = "closed",
+    DateTimeOffset? ExpiresAt = null);
 internal sealed record CommandLaunch(string Directory, CommandRecord Record, int TimeoutSeconds);
+internal sealed record CommandInput(int Sequence, string Input, bool CloseInput);
+internal sealed record CommandInputReceipt(int Sequence, bool Accepted, string? Error = null);
 
 /// <summary>
-/// Owned, noninteractive command sessions. A small instance of the existing Host runs each command and
+/// Owned command sessions. A small instance of the existing Host runs each command and
 /// watches its parent's stdin pipe: losing the parent cancels the shell and its children.
 /// Session/poll/terminal semantics follow Codex unified exec; .NET Process and streams own execution.
 /// </summary>
 public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifetime
 {
     internal const int MaximumOutputBytes = 4 * 1024 * 1024;
+    private const int MaximumInputBytes = 16384;
+    private const int MaximumTotalInputBytes = 1024 * 1024;
     private readonly string _directory;
     private readonly Func<ProcessStartInfo> _worker;
     private readonly ConcurrentDictionary<string, LiveCommand> _live = new();
@@ -39,15 +44,17 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
     }
 
     public async Task<ToolResult> StartAsync(ToolExecutionContext context, string command, int timeoutSeconds = 600,
-        int yieldMilliseconds = 1000, CancellationToken ct = default)
+        int yieldMilliseconds = 1000, CancellationToken ct = default, bool interactive = false, bool tty = false, string lifetime = "run")
     {
         ValidateOwner(context);
         if (string.IsNullOrWhiteSpace(command) || command.Length > 32768)
             throw new ArgumentException("Command must contain 1 to 32768 characters.");
         if (JsonSerializer.Serialize(command, Wire.Json).Length > 40000)
             throw new ArgumentException("Encoded command exceeds the metadata budget. Put long scripts in a workspace file and execute that file.");
-        if (timeoutSeconds is < 1 or > 3600 || yieldMilliseconds is < 0 or > 10000)
+        if (timeoutSeconds is < 1 or > 604800 || yieldMilliseconds is < 0 or > 10000)
             throw new ArgumentOutOfRangeException(nameof(timeoutSeconds));
+        if (lifetime is not ("run" or "session")) throw new ArgumentException("Command lifetime must be run or session.");
+        if (tty && !interactive) throw new ArgumentException("tty requires interactive=true.");
         var workspace = WorkspaceService.Root(context.WorkspacePath);
         LiveCommand job;
         await _starts.WaitAsync(ct);
@@ -60,7 +67,9 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
             var id = Guid.NewGuid().ToString("N");
             var directory = Path.Combine(_directory, id);
             Directory.CreateDirectory(directory);
-            var record = new CommandRecord(id, context.SessionId!, context.RunId!, workspace, command, "starting", DateTimeOffset.UtcNow);
+            var now = DateTimeOffset.UtcNow;
+            var record = new CommandRecord(id, context.SessionId!, context.RunId!, workspace, command, "starting", now,
+                Lifetime: lifetime, InputMode: tty ? "pty" : interactive ? "pipe" : "closed", ExpiresAt: now.AddSeconds(timeoutSeconds));
             await SaveRecordAsync(directory, record);
             var start = _worker();
             start.WorkingDirectory = workspace;
@@ -166,7 +175,11 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
             output, offset, nextOffset = next, outputBytes = length, hasMore = next < length,
             outputTruncated = record.OutputTruncated, outputLimitBytes = MaximumOutputBytes,
             error = record.Error, startedAt = record.StartedAt, finishedAt = record.FinishedAt,
-            lifetime = "Owned by this agent run; still-running commands stop when the run stops or ends. Logs remain readable in this chat."
+            inputMode = record.InputMode, inputClosed = record.InputMode == "closed" || !running ||
+                (_live.TryGetValue(commandId, out var owned) && owned.InputClosed), expiresAt = record.ExpiresAt,
+            lifetime = record.Lifetime == "session" ?
+                "Explicitly owned by this chat until stopped, expiry, chat cleanup or Host loss. It survives ordinary run completion; running is not successful verification." :
+                "Owned by this agent run; still-running commands stop when the run stops or ends. Logs remain readable in this chat."
         }, Wire.Json);
         var serialized = SerializePage();
         while (serialized.Length > 80000 && output.Length > 2)
@@ -189,9 +202,67 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         return await ReadAsync(context, commandId, offset, ct: ct);
     }
 
+    public async Task<ToolResult> WriteAsync(ToolExecutionContext context, string commandId, string input,
+        bool closeInput = false, CancellationToken ct = default)
+    {
+        var record = await LoadRecordAsync(JobDirectory(commandId), ct);
+        CheckOwner(record, context);
+        if (record.Lifetime == "run" && record.RunId != context.RunId)
+            throw new UnauthorizedAccessException("Input to a run-owned command requires its owning run.");
+        if (record.InputMode == "closed") throw new InvalidOperationException("This command was started without interactive input.");
+        if (record.InputMode == "pty" && closeInput)
+            throw new ArgumentException("PTYs have no portable stdin half-close. Send terminal controls explicitly or stop_command; closeInput is supported only for pipe input.");
+        var bytes = Utf8.GetByteCount(input);
+        if (bytes > MaximumInputBytes || (bytes == 0 && !closeInput))
+            throw new ArgumentException("Input must contain 1 to 16384 UTF-8 bytes, or closeInput must be true.");
+        if (!_live.TryGetValue(commandId, out var job) || job.Completion.IsCompleted)
+            throw new InvalidOperationException("Command worker is no longer owned or running. Input was not sent; commands are never resumed by PID.");
+        await job.InputGate.WaitAsync(ct);
+        try
+        {
+            if (job.InputClosed || job.Completion.IsCompleted || job.IsStopped)
+                throw new InvalidOperationException("Command input is closed or the worker has stopped.");
+            if (job.InputBytes + bytes > MaximumTotalInputBytes)
+                throw new InvalidOperationException("Command input reached its 1 MiB lifetime budget.");
+            var sequence = ++job.InputSequence;
+            var receipt = new TaskCompletionSource<CommandInputReceipt>(TaskCreationOptions.RunContinuationsAsynchronously);
+            job.InputReceipt = receipt;
+            using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            bounded.CancelAfter(TimeSpan.FromSeconds(5));
+            try
+            {
+                await job.Process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new CommandInput(sequence, input, closeInput),
+                    CommandJsonContext.Default.CommandInput).AsMemory(), bounded.Token).WaitAsync(bounded.Token);
+                await job.Process.StandardInput.FlushAsync(bounded.Token).WaitAsync(bounded.Token);
+                var accepted = await receipt.Task.WaitAsync(bounded.Token);
+                if (!accepted.Accepted) throw new InvalidOperationException(accepted.Error ?? "Command input was rejected.");
+                job.InputBytes += bytes;
+                job.InputClosed = closeInput;
+                return new(JsonSerializer.Serialize(new { commandId, accepted = true, inputBytes = bytes,
+                    totalInputBytes = job.InputBytes, inputClosed = job.InputClosed,
+                    notice = "Input was flushed to the owned process stream. Read command output to observe its effect; do not infer command success." }, Wire.Json));
+            }
+            catch (OperationCanceledException) when (bounded.IsCancellationRequested)
+            {
+                // A partial write or lost acknowledgement is unknown, never safely replayable.
+                job.Stop();
+                ct.ThrowIfCancellationRequested();
+                throw new IOException("Command input acknowledgement timed out. The owned worker was stopped; input outcome is unknown. Do not replay input blindly.");
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            {
+                job.Stop();
+                throw new IOException("Command input transport was lost. Input outcome is unknown; inspect output before retrying and never replay blindly.", ex);
+            }
+            finally { job.InputReceipt = null; }
+        }
+        finally { job.InputGate.Release(); }
+    }
+
     public async Task<int> EndRunAsync(string sessionId, string runId)
     {
-        var jobs = _live.Values.Where(x => x.Record.SessionId == sessionId && x.Record.RunId == runId && !x.Completion.IsCompleted).ToArray();
+        var jobs = _live.Values.Where(x => x.Record.SessionId == sessionId && x.Record.RunId == runId &&
+            x.Record.Lifetime == "run" && !x.Completion.IsCompleted).ToArray();
         var unfinished = 0;
         try
         {
@@ -216,10 +287,18 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         return unfinished;
     }
 
+    public async Task<int> EndSessionAsync(string sessionId)
+    {
+        var jobs = _live.Values.Where(x => x.Record.SessionId == sessionId && !x.Completion.IsCompleted).ToArray();
+        foreach (var job in jobs) job.Stop();
+        await Task.WhenAll(jobs.Select(StopAndWaitAsync));
+        return jobs.Length;
+    }
+
     private async Task MonitorAsync(LiveCommand job)
     {
         // Always drain both pipes. They carry only control diagnostics, never retained task output.
-        var stdout = job.Process.StandardOutput.ReadToEndAsync();
+        var stdout = ReadReceiptsAsync(job);
         var stderr = job.Process.StandardError.ReadToEndAsync();
         try
         {
@@ -234,10 +313,27 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         }
         finally
         {
+            job.InputReceipt?.TrySetException(new IOException("Command worker exited before acknowledging input. Input outcome is unknown; do not replay blindly."));
             job.Registration.Dispose();
             _live.TryRemove(job.Record.Id, out _);
             job.Process.Dispose();
         }
+    }
+
+    private static async Task ReadReceiptsAsync(LiveCommand job)
+    {
+        try
+        {
+            string? line;
+            while ((line = await ReadControlLineAsync(job.Process.StandardOutput, 4096, CancellationToken.None)) is not null)
+            {
+                var receipt = JsonSerializer.Deserialize(line, CommandJsonContext.Default.CommandInputReceipt)
+                    ?? throw new InvalidDataException("Invalid command worker acknowledgement.");
+                if (receipt.Sequence != job.InputSequence) throw new InvalidDataException("Unexpected command input acknowledgement.");
+                job.InputReceipt?.TrySetResult(receipt);
+            }
+        }
+        catch { job.Stop(); throw; }
     }
 
     private static async Task StopAndWaitAsync(LiveCommand job)
@@ -280,7 +376,8 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         var record = JsonSerializer.Deserialize(bytes, CommandJsonContext.Default.CommandRecord) ?? throw new InvalidDataException("Invalid command record.");
         if (record.Id != Path.GetFileName(directory) || string.IsNullOrWhiteSpace(record.SessionId) ||
             string.IsNullOrWhiteSpace(record.RunId) || string.IsNullOrWhiteSpace(record.WorkspacePath) ||
-            string.IsNullOrWhiteSpace(record.Command) || record.StartedAt == default)
+            string.IsNullOrWhiteSpace(record.Command) || record.StartedAt == default ||
+            record.Lifetime is not ("run" or "session") || record.InputMode is not ("closed" or "pipe" or "pty"))
             throw new InvalidDataException("Incomplete command record.");
         var coherent = record.Status switch
         {
@@ -350,17 +447,30 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         var stage = "read_launch";
         try
         {
-            var line = await Console.In.ReadLineAsync();
+            var line = await ReadControlLineAsync(Console.In, 128 * 1024, CancellationToken.None);
             stage = "parse_launch";
             if (line is null || line.Length > 128 * 1024) throw new InvalidDataException("Invalid command worker request.");
             var launch = JsonSerializer.Deserialize(line, CommandJsonContext.Default.CommandLaunch) ?? throw new InvalidDataException("Invalid command launch.");
-            if (launch.TimeoutSeconds is < 1 or > 3600 || launch.Record.Command.Length is < 1 or > 32768)
+            if (launch.TimeoutSeconds is < 1 or > 604800 || launch.Record.Command.Length is < 1 or > 32768 ||
+                launch.Record.Lifetime is not ("run" or "session") || launch.Record.InputMode is not ("closed" or "pipe" or "pty"))
                 throw new InvalidDataException("Invalid command limits.");
             stage = "validate_workspace";
             WorkspaceService.Root(launch.Record.WorkspacePath);
             using var disconnected = new CancellationTokenSource();
+            using var expiry = new CancellationTokenSource();
+            if (launch.Record.ExpiresAt is { } expiresAt)
+            {
+                var remaining = expiresAt - DateTimeOffset.UtcNow;
+                expiry.CancelAfter(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
+            }
+            using var execution = CancellationTokenSource.CreateLinkedTokenSource(disconnected.Token, expiry.Token);
+            var inputReady = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var inputOperation = new SemaphoreSlim(1, 1);
             // Parent EOF is an ownership loss, not permission to continue detached work.
-            var watch = Task.Run(async () => { try { await Console.In.ReadLineAsync(); } finally { disconnected.Cancel(); } });
+            // JSON input messages share the existing ownership pipe; the shell never sees Host stdin.
+            // Console.In is a synchronized reader whose async methods may block synchronously.
+            // Keep the ownership read off the execution path, as the original EOF watcher did.
+            var watch = Task.Run(() => WatchInputAsync(launch.Record.InputMode, inputReady.Task, inputOperation, disconnected));
             var record = launch.Record with { Status = "running" };
             stage = "persist_running";
             await SaveRecordAsync(launch.Directory, record);
@@ -372,8 +482,7 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
             try
             {
                 stage = "execute";
-                var result = await WorkspaceService.RunSessionCommandAsync(record.WorkspacePath, record.Command, launch.TimeoutSeconds,
-                    async (chunk, _) =>
+                async ValueTask RetainOutputAsync(string chunk, CancellationToken _)
                     {
                         var encoded = Utf8.GetBytes(chunk);
                         if (encoded.Length > MaximumOutputBytes - bytes)
@@ -387,13 +496,24 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
                         await log.WriteAsync(encoded);
                         await log.FlushAsync();
                         bytes += encoded.Length;
-                    }, disconnected.Token);
+                    }
+                var result = record.InputMode == "closed"
+                    ? await WorkspaceService.RunSessionCommandAsync(record.WorkspacePath, record.Command, launch.TimeoutSeconds,
+                        RetainOutputAsync, execution.Token)
+                    : await WorkspaceService.RunInputCommandAsync(record.WorkspacePath, record.Command, launch.TimeoutSeconds,
+                        record.InputMode == "pty", stream => inputReady.TrySetResult(stream), RetainOutputAsync, execution.Token);
                 record = record with { Status = result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "completed" : "failed", ExitCode = result.TimedOut ? null : result.ExitCode };
             }
             catch (OperationCanceledException) when (disconnected.IsCancellationRequested) { record = record with { Status = "cancelled" }; }
+            catch (OperationCanceledException) when (expiry.IsCancellationRequested) { record = record with { Status = "timed_out" }; }
             catch (Exception) { record = record with { Status = "failed", Error = "The command could not finish. Inspect output and current files before retrying." }; }
             finally
             {
+                inputReady.TrySetCanceled();
+                // Closing pipe stdin may let the child exit before its write acknowledgement is
+                // flushed. Finish that one in-flight control operation before this worker exits.
+                await inputOperation.WaitAsync();
+                inputOperation.Release();
                 stage = "flush_output";
                 await log.FlushAsync();
                 stage = "persist_terminal";
@@ -408,6 +528,62 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
             ex.Data["CommandWorkerStage"] = stage;
             throw;
         }
+    }
+
+    private static async Task WatchInputAsync(string inputMode, Task<Stream> inputReady, SemaphoreSlim inputOperation,
+        CancellationTokenSource disconnected)
+    {
+        var sequence = 0;
+        var inputBytes = 0;
+        var closed = inputMode == "closed";
+        try
+        {
+            string? line;
+            while ((line = await ReadControlLineAsync(Console.In, 128 * 1024, disconnected.Token)) is not null)
+            {
+                await inputOperation.WaitAsync(disconnected.Token);
+                try
+                {
+                var request = JsonSerializer.Deserialize(line, CommandJsonContext.Default.CommandInput)
+                    ?? throw new InvalidDataException("Invalid command input request.");
+                if (request.Sequence != ++sequence) throw new InvalidDataException("Invalid command input sequence.");
+                var bytes = Utf8.GetByteCount(request.Input);
+                var error = closed ? "Command input is closed." :
+                    inputMode == "pty" && request.CloseInput ? "PTY input has no portable half-close." :
+                    bytes > MaximumInputBytes || (bytes == 0 && !request.CloseInput) || inputBytes + bytes > MaximumTotalInputBytes ? "Command input budget exceeded." : null;
+                if (error is null)
+                {
+                    using var deadline = CancellationTokenSource.CreateLinkedTokenSource(disconnected.Token);
+                    deadline.CancelAfter(TimeSpan.FromSeconds(4));
+                    var stream = await inputReady.WaitAsync(deadline.Token);
+                    if (bytes > 0) await stream.WriteAsync(Utf8.GetBytes(request.Input), deadline.Token).AsTask().WaitAsync(deadline.Token);
+                    await stream.FlushAsync(deadline.Token).WaitAsync(deadline.Token);
+                    if (request.CloseInput) { stream.Dispose(); closed = true; }
+                    inputBytes += bytes;
+                }
+                await Console.Out.WriteLineAsync(JsonSerializer.Serialize(new CommandInputReceipt(request.Sequence, error is null, error),
+                    CommandJsonContext.Default.CommandInputReceipt));
+                await Console.Out.FlushAsync();
+                }
+                finally { inputOperation.Release(); }
+            }
+        }
+        catch (Exception) { /* Failure invalidates worker ownership; never retry a partial input. */ }
+        finally { await disconnected.CancelAsync(); }
+    }
+
+    private static async Task<string?> ReadControlLineAsync(TextReader reader, int maximumCharacters, CancellationToken ct)
+    {
+        var line = new StringBuilder(Math.Min(maximumCharacters, 4096));
+        var character = new char[1];
+        while (await reader.ReadAsync(character.AsMemory(), ct) != 0)
+        {
+            if (character[0] == '\n') return line.ToString().TrimEnd('\r');
+            if (line.Length >= maximumCharacters) throw new InvalidDataException("Command control message exceeded its budget.");
+            line.Append(character[0]);
+        }
+        if (line.Length != 0) throw new InvalidDataException("Incomplete command control message; ownership was lost.");
+        return null;
     }
 
     public async ValueTask DisposeAsync()
@@ -426,11 +602,19 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         internal string Directory { get; } = directory;
         internal Task Completion { get; set; } = Task.CompletedTask;
         internal CancellationTokenRegistration Registration;
+        internal SemaphoreSlim InputGate { get; } = new(1, 1);
+        internal TaskCompletionSource<CommandInputReceipt>? InputReceipt;
+        internal int InputSequence;
+        internal int InputBytes;
+        internal bool InputClosed;
         private int _stopped;
+        internal bool IsStopped => Volatile.Read(ref _stopped) != 0;
         internal void Stop()
         {
             if (Interlocked.Exchange(ref _stopped, 1) != 0) return;
-            try { Process.StandardInput.Close(); } catch (Exception ex) when (ex is IOException or InvalidOperationException or ObjectDisposedException) { }
+            // Dispose the ownership transport without flushing buffered/partial input. A concurrent
+            // blocked writer must not delay parent-loss notification or send another partial frame.
+            try { Process.StandardInput.BaseStream.Close(); } catch (Exception ex) when (ex is IOException or InvalidOperationException or ObjectDisposedException) { }
         }
     }
 }
@@ -438,4 +622,6 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(CommandRecord))]
 [JsonSerializable(typeof(CommandLaunch))]
+[JsonSerializable(typeof(CommandInput))]
+[JsonSerializable(typeof(CommandInputReceipt))]
 internal partial class CommandJsonContext : JsonSerializerContext;

@@ -8,7 +8,8 @@ param(
     [Alias('RuntimeIdentifier')][string] $Runtime = 'win-x64',
     [ValidateSet('Debug', 'Release')][string] $Configuration = 'Release',
     [string] $OutputDirectory,
-    [switch] $FrameworkDependent
+    [switch] $FrameworkDependent,
+    [switch] $HostOnly
 )
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent $PSScriptRoot
@@ -26,7 +27,7 @@ $targets = Join-Path $publishWork 'publish.targets'
 # Separate per-project RID locks keep source locks unchanged. MSBuild evaluates the project name here.
 '<Project><PropertyGroup><NuGetLockFilePath>$(MSBuildThisFileDirectory)locks/$(MSBuildProjectName).packages.lock.json</NuGetLockFilePath></PropertyGroup></Project>' | Set-Content -LiteralPath $targets -Encoding utf8
 $lockOption = '-p:CustomBeforeMicrosoftCommonTargets=' + $targets
-$projects = @('Workbench.Desktop', 'Workbench.Host')
+$projects = if ($HostOnly) { @('Workbench.Host') } else { @('Workbench.Desktop', 'Workbench.Host') }
 $sourceProjects = Get-ChildItem -LiteralPath (Join-Path $repository 'src') -Filter '*.csproj' -Recurse | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
 foreach ($project in $sourceProjects) {
     $sourceLock = Join-Path $project.DirectoryName 'packages.lock.json'
@@ -68,6 +69,7 @@ try {
         runtime = $Runtime
         selfContained = -not $FrameworkDependent
         configuration = $Configuration
+        headlessOnly = [bool]$HostOnly
         guiVerification = 'Not performed by the publish script; verify on the target operating system.'
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'publish-info.json') -Encoding utf8
     & (Join-Path $PSScriptRoot 'write-release-metadata.ps1') -PublishDirectory $output

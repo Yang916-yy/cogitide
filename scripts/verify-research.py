@@ -321,7 +321,7 @@ def verify_runtime(helper, root, provider, server):
                 "executionMode": "ReadOnly", "research": {"repositoryMemory": True, "repositoryBaseCommit": base,
                     "compressionGuidance": True, "readOnlyPrefetch": True, "maxPrefetches": 4}}})
         deadline = time.monotonic() + 100
-        while not any(e["type"] in ("run.completed", "run.failed", "run.cancelled") for e in host.events):
+        while not any(e["type"] in ("run.completed", "run.failed", "run.cancelled", "run.paused") for e in host.events):
             host.next(max(0.1, deadline - time.monotonic()))
         terminal = next(e for e in reversed(host.events) if e["type"].startswith("run."))
         check(terminal["type"] == "run.completed" and terminal["runId"] == accepted["runId"], "Research runtime failed")

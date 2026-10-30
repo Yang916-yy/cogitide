@@ -209,7 +209,7 @@ public sealed partial class WorkspaceService
     }
 
     private static async Task<ProcessResult> ExecuteAsync(string fileName, string[] arguments, string cwd, int timeout, Func<string, CancellationToken, ValueTask>? onOutput, CancellationToken ct,
-        IReadOnlyList<string>? excludedEnvironmentVariables = null)
+        IReadOnlyList<string>? excludedEnvironmentVariables = null, Action<Stream>? bindInput = null)
     {
         var start = new ProcessStartInfo(fileName) { WorkingDirectory = cwd, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
@@ -227,8 +227,10 @@ public sealed partial class WorkspaceService
         Exception? outputError = null;
         linked.Token.ThrowIfCancellationRequested();
         if (!process.Start()) throw new IOException("Process did not start.");
-        // Commands must not inherit the Host's JSON-RPC stdin pipe. Interactive input belongs to the PTY UI.
-        process.StandardInput.Close();
+        // Commands never inherit Host JSON-RPC stdin. Owned command workers may explicitly bind
+        // this redirected stream to their separate, bounded input protocol.
+        if (bindInput is null) process.StandardInput.Close();
+        else bindInput(process.StandardInput.BaseStream);
         async Task DrainCoreAsync(StreamReader reader)
         {
             var buffer = new char[2048];

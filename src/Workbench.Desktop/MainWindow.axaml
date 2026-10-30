@@ -26,7 +26,10 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <Button Grid.Row="4" x:Name="ConnectionsButton" Classes="nav" Click="ConnectionsClick" Margin="0,16,0,14" AutomationProperties.Name="{local:Loc Connections}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="settings" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Connections}" VerticalAlignment="Center" /></StackPanel></Button>
+        <StackPanel Grid.Row="4" Margin="0,10,0,14" Spacing="3">
+          <Button x:Name="HostConnectionsButton" Classes="nav" Click="HostConnectionsClick" AutomationProperties.Name="{local:Loc RemoteConnectionsTitle}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="terminal" VerticalAlignment="Center" /><TextBlock x:Name="HostLocationLabel" Text="{local:Loc RemoteLocal}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="145" /></StackPanel></Button>
+        <Button x:Name="ConnectionsButton" Classes="nav" Click="ConnectionsClick" Margin="0,16,0,14" AutomationProperties.Name="{local:Loc Connections}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="settings" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Connections}" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
       </Grid>
     </Border>
     <Grid Grid.Column="1" RowDefinitions="64,*">
@@ -45,13 +48,20 @@
         </StackPanel>
       </Grid>
       <Grid Grid.Row="1" RowDefinitions="*,Auto,Auto">
-        <Grid>
-          <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="14" Margin="30,0,30,48">
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Orientation="Horizontal" Spacing="10" Margin="30,0">
+            <Button x:Name="EarlierHistoryButton" IsVisible="False" Classes="toolbar" Content="{local:Loc EarlierHistory}" Click="EarlierHistoryClick" />
+            <Button x:Name="LatestHistoryButton" IsVisible="False" Classes="toolbar" Content="{local:Loc LatestHistory}" Click="LatestHistoryClick" />
+            <TextBlock x:Name="HistoryRangeLabel" IsVisible="False" FontSize="10" VerticalAlignment="Center" Foreground="#777D86" />
+            <Button x:Name="ContinueRunButton" IsVisible="False" Classes="quiet" Content="{local:Loc ContinueRun}" Click="ContinueRunClick" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="14" Margin="30,0,30,48">
             <TextBlock Text="{local:Loc EmptyTitle}" FontSize="28" FontWeight="Medium" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
             <TextBlock Text="{local:Loc EmptyDescription}" FontSize="14" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="480" LineHeight="23" />
             <TextBlock Text="{x:Static local:ProductIdentity.Tagline}" FontSize="12" FontStyle="Italic" Foreground="#5E6269" HorizontalAlignment="Center" Margin="0,13,0,0" />
           </StackPanel>
-          <ListBox x:Name="Timeline" Classes="conversation" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="26,2,26,0">
+          <ListBox Grid.Row="1" x:Name="Timeline" Classes="conversation" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="26,2,26,0">
+            <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <StackPanel MaxWidth="830" HorizontalAlignment="Stretch" Margin="0,6,0,12">
@@ -127,6 +137,7 @@
                   <Button x:Name="ReasoningButton" Classes="toolbar" Click="ReasoningClick" Padding="8,6" ToolTip.Tip="{local:Loc ReasoningEffort}" AutomationProperties.Name="{local:Loc ReasoningEffort}">
                     <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock x:Name="ReasoningLabel" VerticalAlignment="Center" /><local:UiGlyph Symbol="chevron" Width="10" Height="10" VerticalAlignment="Center" /></StackPanel>
                   </Button>
+                  <Button x:Name="RunBudgetButton" Classes="toolbar" Click="RunBudgetClick" ToolTip.Tip="{local:Loc RunBudgetTitle}" AutomationProperties.Name="{local:Loc RunBudgetTitle}" Padding="8,6"><TextBlock x:Name="RunBudgetLabel" /></Button>
                 </WrapPanel>
                 <Button Grid.Column="1" x:Name="SendButton" Classes="send" Click="SendClick" Margin="5,0,0,0" VerticalAlignment="Bottom" ToolTip.Tip="{local:Loc SendTooltip}" AutomationProperties.Name="{local:Loc SendTooltip}"><local:UiGlyph x:Name="SendGlyph" Symbol="send" Width="19" Height="19" /></Button>
               </Grid>
@@ -150,12 +161,24 @@
         <TabControl Grid.Row="1" x:Name="InspectorTabs" Margin="10,0" SelectionChanged="InspectorSelectionChanged">
           <TabItem>
             <TabItem.Header><TextBlock Text="{local:Loc Files}" /></TabItem.Header>
-            <Grid RowDefinitions="Auto,170,5,Auto,*" Margin="4,10,4,10">
-              <TextBox x:Name="FileFilter" PlaceholderText="{local:Loc FilterFiles}" TextChanged="FileFilterChanged" Margin="0,0,0,9" />
-              <ListBox Grid.Row="1" x:Name="FileList" Classes="files" Background="Transparent" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="11" SelectionChanged="FileSelectionChanged" />
-              <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="#32353B" HorizontalAlignment="Stretch" />
-              <TextBlock Grid.Row="3" x:Name="PreviewPath" Text="{local:Loc SelectFile}" Foreground="#8F949E" FontSize="10" Margin="3,10" TextTrimming="CharacterEllipsis" />
-              <editor:TextEditor Grid.Row="4" x:Name="FilePreview" IsReadOnly="True" ShowLineNumbers="True" WordWrap="False" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" Background="Transparent" Foreground="#D5D8DE" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+            <Grid RowDefinitions="Auto,Auto,170,Auto,5,Auto,*,Auto" Margin="4,10,4,10">
+              <StackPanel Spacing="6" Margin="0,0,0,6">
+                <TextBox x:Name="FileScope" PlaceholderText="{local:Loc FileScopeHint}" TextChanged="FileFilterChanged" />
+                <TextBox x:Name="FileFilter" PlaceholderText="{local:Loc FilterFiles}" TextChanged="FileFilterChanged" />
+              </StackPanel>
+              <TextBlock Grid.Row="1" x:Name="FilePageStatus" FontSize="10" Foreground="#8F949E" TextWrapping="Wrap" Margin="3,3" />
+              <ListBox Grid.Row="2" x:Name="FileList" Classes="files" Background="Transparent" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="11" SelectionChanged="FileSelectionChanged" />
+              <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+                <Button x:Name="FilesStartButton" IsVisible="False" Classes="toolbar" Content="{local:Loc FirstPage}" Click="FilesStartClick" />
+                <Button x:Name="MoreFilesButton" IsVisible="False" Classes="toolbar" Content="{local:Loc NextPage}" Click="MoreFilesClick" />
+              </StackPanel>
+              <GridSplitter Grid.Row="4" ResizeDirection="Rows" Background="#32353B" HorizontalAlignment="Stretch" />
+              <TextBlock Grid.Row="5" x:Name="PreviewPath" Text="{local:Loc SelectFile}" Foreground="#8F949E" FontSize="10" Margin="3,10" TextTrimming="CharacterEllipsis" />
+              <editor:TextEditor Grid.Row="6" x:Name="FilePreview" IsReadOnly="True" ShowLineNumbers="True" WordWrap="False" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" Background="Transparent" Foreground="#D5D8DE" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+              <StackPanel Grid.Row="7" Orientation="Horizontal" Spacing="8">
+                <Button x:Name="PreviewStartButton" IsVisible="False" Classes="toolbar" Content="{local:Loc FileBeginning}" Click="PreviewStartClick" />
+                <Button x:Name="MorePreviewButton" IsVisible="False" Classes="toolbar" Content="{local:Loc FileNextSection}" Click="MorePreviewClick" />
+              </StackPanel>
             </Grid>
           </TabItem>
           <TabItem>

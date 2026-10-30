@@ -596,6 +596,7 @@
           "Microsoft.Extensions.FileSystemGlobbing": "[10.0.14, )",
           "Microsoft.Playwright": "[1.64.1, )",
           "ModelContextProtocol.Core": "[2.3.0, )",
+          "Porta.Pty": "[2.2.3, )",
           "Workbench.Protocol": "[1.0.0, )"
         }
       }

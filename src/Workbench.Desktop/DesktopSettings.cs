@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Workbench.Desktop.Remote;
 using Workbench.Protocol;
 
 namespace Workbench.Desktop;
@@ -17,6 +19,11 @@ internal sealed record DesktopSettings
     public string? Language { get; init; }
     public bool ReducedMotion { get; init; }
     public ResearchOptions Research { get; init; } = new();
+    public RunOptions Run { get; init; } = new();
+    public IReadOnlyList<HostConnectionProfile> ConnectionProfiles { get; init; } = [];
+    public string ActiveConnectionId { get; init; } = "local";
+    [JsonIgnore] public HostConnectionProfile ActiveConnection =>
+        (ConnectionProfiles ?? []).FirstOrDefault(profile => profile.Id == ActiveConnectionId) ?? HostConnectionProfile.Local;
 
     public DesktopSettings RememberProvider(ProviderSettings provider) => this with
     {
@@ -25,7 +32,33 @@ internal sealed record DesktopSettings
             .DistinctBy(item => (item.Endpoint.TrimEnd('/'), item.Model, ComposerChoices.ResolveProvider(item))).Take(8).ToArray()
     };
 
-    public DesktopSettings NormalizeBackend() => this with { Backend = ComposerChoices.NormalizeBackend(Backend), Research = Research ?? new() };
+    public DesktopSettings RememberConnection(HostConnectionProfile connection)
+    {
+        connection.Validate();
+        return this with
+        {
+            ActiveConnectionId = connection.Id,
+            ConnectionProfiles = connection.IsRemote
+                ? new[] { connection }.Concat(ConnectionProfiles ?? []).DistinctBy(profile => profile.Id).Take(32).ToArray()
+                : ConnectionProfiles ?? []
+        };
+    }
+
+    public DesktopSettings NormalizeBackend()
+    {
+        var profiles = (ConnectionProfiles ?? []).Where(profile =>
+        {
+            if (profile is null || !profile.IsRemote) return false;
+            try { profile.Validate(); return true; }
+            catch (ArgumentException) { return false; }
+        }).DistinctBy(profile => profile.Id).Take(32).ToArray();
+        return this with
+        {
+            Backend = ComposerChoices.NormalizeBackend(Backend), Research = Research ?? new(), Run = Run ?? new(),
+            ConnectionProfiles = profiles,
+            ActiveConnectionId = profiles.Any(profile => profile.Id == ActiveConnectionId) ? ActiveConnectionId : "local"
+        };
+    }
 
     private static string SettingsPath => Path.Combine(Program.DataDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Workbench"), "desktop-settings.json");
 

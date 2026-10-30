@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using Workbench.Desktop.Remote;
 using Workbench.Protocol;
 
 namespace Workbench.Desktop;
@@ -13,6 +14,9 @@ internal sealed class HostClient : IAsyncDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonElement>> _pending = new();
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly Func<HostConnectionProfile, ProcessStartInfo>? _startFactory;
+    private readonly object _diagnosticLock = new();
+    private readonly HashSet<string> _diagnosticHints = [];
     private Process? _process;
     private Task? _reader;
     private Task? _diagnostics;
@@ -21,12 +25,68 @@ internal sealed class HostClient : IAsyncDisposable
 
     public event Action<string, JsonElement>? Notification;
     public event Action<string>? Disconnected;
-    public bool Connected => _process is { HasExited: false };
+    public bool Connected => !_disposed && _process is { HasExited: false };
+    public HostConnectionProfile Connection { get; private set; } = HostConnectionProfile.Local;
+    public bool IsRemote => Connection.IsRemote;
+    public string DisplayLabel => Connection.DisplayLabel;
+    public IReadOnlyList<string> SecretEnvironmentVariables { get; set; } = [];
 
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    internal HostClient(Func<HostConnectionProfile, ProcessStartInfo>? startFactory = null) => _startFactory = startFactory;
+
+    public Task StartAsync(CancellationToken cancellationToken = default) => StartAsync(HostConnectionProfile.Local, cancellationToken);
+
+    public async Task StartAsync(HostConnectionProfile connection, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (Connected) return;
+        connection.Validate();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (Connected)
+        {
+            if (Connection == connection) return;
+            throw new InvalidOperationException("Create a new Host client to switch connections.");
+        }
+        if (_process is not null) throw new InvalidOperationException("Create a new Host client to reconnect after a disconnect.");
+        if (_startFactory is null && connection.Kind == HostConnectionKind.Wsl && !OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("WSL connections are available on Windows only.");
+        Connection = connection;
+        try
+        {
+            var start = _startFactory?.Invoke(connection) ?? (connection.IsRemote ? RemoteHostLaunch.CreateStartInfo(connection) : CreateLocalStartInfo());
+            if (connection.IsRemote) RemoteHostLaunch.SanitizeEnvironment(start, SecretEnvironmentVariables);
+            _process = Process.Start(start) ?? throw new InvalidOperationException(L.Text("HostStartFailed"));
+            _diagnostics = DrainDiagnosticsAsync(_process.StandardError, _lifetime.Token);
+            _reader = ReadLoopAsync(_process.StandardOutput, _lifetime.Token);
+            using var startup = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            startup.CancelAfter(TimeSpan.FromSeconds(20));
+            var initialized = await RequestAsync<JsonElement>("initialize", new { protocolVersion = Wire.Version }, startup.Token).ConfigureAwait(false);
+            if (initialized.ValueKind != JsonValueKind.Object || !initialized.TryGetProperty("protocolVersion", out var version) ||
+                version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var protocolVersion) || protocolVersion != Wire.Version)
+                throw new InvalidDataException($"The Host protocol does not match desktop version {Wire.Version}. Install the matching Cogitide Host on this endpoint.");
+            if (connection.IsRemote && (!initialized.TryGetProperty("capabilities", out var capabilities) || capabilities.ValueKind != JsonValueKind.Array ||
+                !RequiredRemoteCapabilities.All(required => capabilities.EnumerateArray().Any(capability => capability.ValueKind == JsonValueKind.String && capability.GetString() == required))))
+                throw new InvalidDataException("The remote Host is missing required capabilities (session.view, run.continue). Install the matching Cogitide Host on this endpoint.");
+        }
+        catch (Exception exception)
+        {
+            await DisposeAsync().ConfigureAwait(false);
+            if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
+            if (!connection.IsRemote) throw;
+            var reason = exception switch
+            {
+                InvalidDataException => exception.Message,
+                JsonException => "The remote process did not return a valid Host protocol response.",
+                OperationCanceledException => "The remote Host did not initialize within 20 seconds.",
+                System.ComponentModel.Win32Exception => "The system SSH or WSL executable could not be started. Verify that it is installed.",
+                _ => "The remote Host stopped before initialization completed. Verify the preinstalled Host path and its runtime."
+            };
+            string[] hints;
+            lock (_diagnosticLock) hints = _diagnosticHints.ToArray();
+            throw new IOException($"Cannot connect to {connection.DisplayLabel}. {reason}" + (hints.Length == 0 ? "" : " " + string.Join(' ', hints)), exception);
+        }
+    }
+
+    private static ProcessStartInfo CreateLocalStartInfo()
+    {
         var (hostPath, dotnetPath) = LocateHost();
         var start = new ProcessStartInfo
         {
@@ -49,10 +109,7 @@ internal sealed class HostClient : IAsyncDisposable
             start.ArgumentList.Add(dataDirectory);
         }
         if (Path.IsPathFullyQualified(dotnetPath)) start.Environment["DOTNET_ROOT"] = Path.GetDirectoryName(dotnetPath)!;
-        _process = Process.Start(start) ?? throw new InvalidOperationException(L.Text("HostStartFailed"));
-        _reader = ReadLoopAsync(_process.StandardOutput, _lifetime.Token);
-        _diagnostics = DrainDiagnosticsAsync(_process.StandardError, _lifetime.Token);
-        await RequestAsync<JsonElement>("initialize", new { protocolVersion = Wire.Version }, cancellationToken).ConfigureAwait(false);
+        return start;
     }
 
     public async Task<T> RequestAsync<T>(string method, object? parameters = null, CancellationToken cancellationToken = default)
@@ -120,14 +177,44 @@ internal sealed class HostClient : IAsyncDisposable
         }
     }
 
-    private static async Task DrainDiagnosticsAsync(StreamReader diagnostics, CancellationToken cancellationToken)
+    private async Task DrainDiagnosticsAsync(StreamReader diagnostics, CancellationToken cancellationToken)
     {
-        // Always drain stderr so child diagnostics cannot block the JSON protocol.
-        // These diagnostics are deliberately not displayed or persisted: a backend may include sensitive data.
-        try { while (await diagnostics.ReadLineAsync(cancellationToken).ConfigureAwait(false) is not null) { } }
+        // Keep draining even after the bounded classification window. Only fixed, redacted categories
+        // are retained: arbitrary stderr can contain credentials and is never shown or persisted.
+        var buffer = new char[1024];
+        var tail = "";
+        var remaining = 16_384;
+        try
+        {
+            while (await diagnostics.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false) is var count && count > 0)
+            {
+                if (remaining <= 0) continue;
+                var sample = tail + new string(buffer, 0, Math.Min(count, remaining));
+                remaining -= count;
+                foreach (var (pattern, hint) in DiagnosticCategories)
+                    if (sample.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                        lock (_diagnosticLock) _diagnosticHints.Add(hint);
+                tail = sample.Length > 128 ? sample[^128..] : sample;
+            }
+        }
         catch (OperationCanceledException) { }
         catch (IOException) { }
     }
+
+    private static readonly (string Pattern, string Hint)[] DiagnosticCategories =
+    [
+        ("Permission denied", "SSH authentication failed; configure a key or agent for this destination. Interactive password prompts are disabled."),
+        ("Host key verification failed", "SSH host-key verification failed. Verify the fingerprint through a trusted channel and configure known_hosts outside Cogitide."),
+        ("REMOTE HOST IDENTIFICATION HAS CHANGED", "The SSH host key changed. Verify it through a trusted channel before changing known_hosts."),
+        ("Could not resolve hostname", "SSH could not resolve the hostname or configuration alias."),
+        ("Connection refused", "The SSH endpoint refused the connection."),
+        ("Connection timed out", "The SSH endpoint timed out."),
+        ("not found", "The remote Host, dotnet runtime or WSL distribution was not found; deployment is manual."),
+        ("No such file", "The remote Host or runtime path does not exist; deployment is manual."),
+        ("WSL_E_DISTRO_NOT_FOUND", "The selected WSL distribution is not installed.")
+    ];
+
+    private static readonly string[] RequiredRemoteCapabilities = ["session.view", "run.continue"];
 
     private static (string HostPath, string DotnetPath) LocateHost()
     {
@@ -177,6 +264,7 @@ internal sealed class HostClient : IAsyncDisposable
         try { if (_reader is not null) await _reader.ConfigureAwait(false); } catch (OperationCanceledException) { }
         try { if (_diagnostics is not null) await _diagnostics.ConfigureAwait(false); } catch (OperationCanceledException) { }
         _process?.Dispose();
+        _process = null;
         _lifetime.Dispose();
         _writeLock.Dispose();
     }

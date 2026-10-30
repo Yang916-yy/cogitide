@@ -127,6 +127,11 @@
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
         }
       },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "Transitive",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
       "ModelContextProtocol.Core": {
         "type": "Transitive",
         "resolved": "2.3.0",
@@ -141,6 +146,14 @@
         "contentHash": "CR1QmWg4XYBd1Pb7WseP+sDmV8nGPwvmowKynExTqr3OuckIGVMhvmN4LC5PGzfXqDlR295+hz/T7syA1CxEqA==",
         "dependencies": {
           "Pragmastat": "3.2.4"
+        }
+      },
+      "Porta.Pty": {
+        "type": "Transitive",
+        "resolved": "2.2.3",
+        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
         }
       },
       "Pragmastat": {
@@ -171,6 +184,7 @@
           "Microsoft.Extensions.FileSystemGlobbing": "[10.0.14, )",
           "Microsoft.Playwright": "[1.64.1, )",
           "ModelContextProtocol.Core": "[2.3.0, )",
+          "Porta.Pty": "[2.2.3, )",
           "Workbench.Protocol": "[1.0.0, )"
         }
       }

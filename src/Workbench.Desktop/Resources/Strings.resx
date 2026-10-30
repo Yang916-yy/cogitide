@@ -252,4 +252,54 @@ The run ended without a processing confirmation. This instruction will not be re
   <data name="CompressionGuidanceFeature" xml:space="preserve"><value>Preserve key context during compression</value></data>
   <data name="RepositoryMemoryFeature" xml:space="preserve"><value>Use repository history for code localization</value></data>
   <data name="ReadOnlyPrefetchFeature" xml:space="preserve"><value>Prefetch related files (read only)</value></data>
+  <data name="RemoteLocal" xml:space="preserve"><value>Local</value></data>
+  <data name="RemoteConnectionsTitle" xml:space="preserve"><value>Host connections</value></data>
+  <data name="RemoteConnectionsIntro" xml:space="preserve"><value>Choose where Cogitide runs the agent, tools and files. The matching Host must already be installed.</value></data>
+  <data name="RemoteSavedProfile" xml:space="preserve"><value>Saved connection</value></data>
+  <data name="RemoteNewSsh" xml:space="preserve"><value>New SSH connection</value></data>
+  <data name="RemoteNewWsl" xml:space="preserve"><value>New WSL connection</value></data>
+  <data name="RemoteProfileName" xml:space="preserve"><value>Profile name (optional)</value></data>
+  <data name="RemoteWslDistribution" xml:space="preserve"><value>WSL distribution</value></data>
+  <data name="RemoteSshDestination" xml:space="preserve"><value>SSH hostname or configuration alias</value></data>
+  <data name="RemoteDiscoverWsl" xml:space="preserve"><value>Find installed distributions</value></data>
+  <data name="RemoteHostPath" xml:space="preserve"><value>Host executable or DLL (absolute POSIX path)</value></data>
+  <data name="RemoteDotnetPath" xml:space="preserve"><value>dotnet executable (for a Host DLL)</value></data>
+  <data name="RemoteDataDirectory" xml:space="preserve"><value>Remote data directory (optional absolute path)</value></data>
+  <data name="RemoteConnect" xml:space="preserve"><value>Save and connect</value></data>
+  <data name="RemoteCredentialsNotice" xml:space="preserve"><value>Credentials and model requests stay on the selected Host. Cogitide does not copy local keys or accounts. Disconnecting stops this owned Host; offline continuation is not supported.</value></data>
+  <data name="RemoteSshNotice" xml:space="preserve"><value>Uses system OpenSSH configuration, keys, agent and known_hosts. Verify new or changed host keys outside Cogitide. No password prompts, agent or port forwarding. The remote account needs a POSIX shell.</value></data>
+  <data name="RemoteWslNotice" xml:space="preserve"><value>Starts Host directly with wsl.exe --exec. Paths and credentials belong to that distribution.</value></data>
+  <data name="RemoteWslDiscovered" xml:space="preserve"><value>Choose a distribution from the list or enter its exact name.</value></data>
+  <data name="RemoteNoWsl" xml:space="preserve"><value>No WSL distributions were found.</value></data>
+  <data name="RemoteWslDiscoveryFailed" xml:space="preserve"><value>Could not list WSL distributions. Check that WSL is installed and available.</value></data>
+  <data name="RemoteOpenProject" xml:space="preserve"><value>Open remote project</value></data>
+  <data name="RemoteWorkspaceHint" xml:space="preserve"><value>Enter the absolute project path on the selected Host.</value></data>
+  <data name="RemoteTerminalHint" xml:space="preserve"><value>Use an SSH or WSL terminal for this Host. Agent command tools run on the connected Host.</value></data>
+  <data name="Paused" xml:space="preserve"><value>Paused at budget</value></data>
+  <data name="ContinueRun" xml:space="preserve"><value>Continue task</value></data>
+  <data name="EarlierHistory" xml:space="preserve"><value>Earlier messages</value></data>
+  <data name="LatestHistory" xml:space="preserve"><value>Back to latest</value></data>
+  <data name="HistoryRange" xml:space="preserve"><value>Messages {0}–{1} of {2}</value></data>
+  <data name="HistoryUnavailable" xml:space="preserve"><value>This history page is unavailable.</value></data>
+  <data name="HistoryPayloadOmitted" xml:space="preserve"><value>History view omits binary attachment data and private model continuation. Original records are retained.</value></data>
+  <data name="PendingInputCount" xml:space="preserve"><value>{0} queued instructions need review. Inspect source history before continuing.</value></data>
+  <data name="RunBudgetTitle" xml:space="preserve"><value>Task budget</value></data>
+  <data name="RunBudgetSummary" xml:space="preserve"><value>{0} steps · {1}h</value></data>
+  <data name="RunBudgetHint" xml:space="preserve"><value>Limits apply to the next run or explicit continuation. Reaching a limit pauses the task. A reported-token cap also pauses if usage is unavailable.</value></data>
+  <data name="RunIterations" xml:space="preserve"><value>Maximum model iterations</value></data>
+  <data name="RunHours" xml:space="preserve"><value>Run duration (hours)</value></data>
+  <data name="RunContextCharacters" xml:space="preserve"><value>Context budget (characters)</value></data>
+  <data name="RunReportedTokens" xml:space="preserve"><value>Reported input + output token cap</value></data>
+  <data name="RunTokensOptional" xml:space="preserve"><value>Optional; blank leaves token count uncapped</value></data>
+  <data name="RunAutoCompact" xml:space="preserve"><value>Compact context automatically</value></data>
+  <data name="FileScopeHint" xml:space="preserve"><value>Directory prefix, e.g. src/</value></data>
+  <data name="FilePageRange" xml:space="preserve"><value>Files {0}–{1} of {2} in this inventory</value></data>
+  <data name="FileInventoryNarrow" xml:space="preserve"><value>Some entries are omitted; narrow the directory prefix</value></data>
+  <data name="FilePreviewPosition" xml:space="preserve"><value>starts at line {0}, column {1}</value></data>
+  <data name="FileBeginning" xml:space="preserve"><value>Beginning</value></data>
+  <data name="FileNextSection" xml:space="preserve"><value>Next section</value></data>
+  <data name="FirstPage" xml:space="preserve"><value>First page</value></data>
+  <data name="NextPage" xml:space="preserve"><value>Next page</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="LiveHistoryWindow" xml:space="preserve"><value>Showing the latest {0} timeline entries; complete history is saved.</value></data>
 </root>

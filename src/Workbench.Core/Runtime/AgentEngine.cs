@@ -45,37 +45,76 @@ public sealed class AgentEngine
                 throw new ArgumentException("Steering input exceeds the pending input budget.");
             cancellationToken.ThrowIfCancellationRequested();
             // The event is the durable queue record. Conversation history is updated only at a safe boundary.
-            await state.RecordQueuedAsync(message);
-            state.Pending.Enqueue(message);
+            var sequence = await state.RecordQueuedAsync(message);
+            state.Pending.Enqueue(new(sequence, "", message));
             state.PendingCharacters += message.Length;
         }
         finally { state.Gate.Release(); }
     }
 
-    public async Task RunAsync(string sessionId, string prompt, IAgentModel model, RunOptions options,
+    public Task RunAsync(string sessionId, string prompt, IAgentModel model, RunOptions options,
         Func<AgentEvent, CancellationToken, ValueTask> emit,
         Func<ApprovalRequest, CancellationToken, Task<bool>> approve,
-        CancellationToken cancellationToken = default, IReadOnlyList<ImageAttachment>? images = null)
+        CancellationToken cancellationToken = default, IReadOnlyList<ImageAttachment>? images = null) =>
+        RunCoreAsync(sessionId, prompt, model, options, emit, approve, cancellationToken, images, false);
+
+    /// <summary>Explicitly continue a durable task with a fresh bounded run. Stored actions are context, never an execution queue.</summary>
+    public Task ContinueAsync(string sessionId, IAgentModel model, RunOptions options,
+        Func<AgentEvent, CancellationToken, ValueTask> emit,
+        Func<ApprovalRequest, CancellationToken, Task<bool>> approve,
+        CancellationToken cancellationToken = default, string? prompt = null) =>
+        RunCoreAsync(sessionId, prompt, model, options, emit, approve, cancellationToken, null, true);
+
+    private async Task RunCoreAsync(string sessionId, string? prompt, IAgentModel model, RunOptions options,
+        Func<AgentEvent, CancellationToken, ValueTask> emit,
+        Func<ApprovalRequest, CancellationToken, Task<bool>> approve,
+        CancellationToken cancellationToken, IReadOnlyList<ImageAttachment>? images, bool continuing)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        if (!continuing) ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         ImageInputs.Validate(images);
-        if (!Enum.IsDefined(options.ExecutionMode)) throw new ArgumentException("Unknown execution mode.");
-        if (options.MaxIterations is < 1 or > 100 || options.TimeoutSeconds is < 1 or > 3600 || options.MaxContextCharacters is < 4000 or > 1_000_000)
-            throw new ArgumentException("Run limits are outside supported bounds.");
-        if (prompt.Length > options.MaxContextCharacters / 2) throw new ArgumentException("Prompt exceeds the context budget.");
+        RunLimits.Validate(options);
+        if (prompt?.Length > options.MaxContextCharacters / 2) throw new ArgumentException("Prompt exceeds the context budget.");
         var research = options.Research ?? new();
-        if (research.MaxPrefetches is < 0 or > 8 || research.RepositoryBaseCommit?.Length > 128 || research.CompressionGuidancePath?.Length > 4096)
-            throw new ArgumentException("Research settings exceed supported bounds.");
         var gate = _sessions.GetOrAdd(sessionId, _ => new SemaphoreSlim(1, 1));
         if (!await gate.WaitAsync(0, cancellationToken)) throw new InvalidOperationException("This session already has an active run.");
         SteeringState? steering = null;
+        CancellationToken runToken = default;
+        string? acceptedRunId = null;
         try
         {
             var session = await _store.LoadAsync(sessionId, cancellationToken) ?? throw new KeyNotFoundException("Session not found.");
+            if (continuing) RunLimits.ValidateContinuation(session);
+            var pendingInputs = await _store.PendingInputsAsync(sessionId, 128, cancellationToken);
+            if (pendingInputs.LegacyRecovery && pendingInputs.TotalPending > 0)
+                throw new InvalidOperationException("Legacy pending instructions have no atomic applied-event checkpoint and may already exist in this conversation. Review the recovered instructions and start a new chat with the confirmed task; the original history and source events were preserved.");
+            if (!pendingInputs.Available || pendingInputs.HasMore)
+                throw new InvalidOperationException("Pending user instructions could not be completely recovered within the bounded recovery page. Review their source events before continuing.");
             var runId = options.RunId ?? Guid.NewGuid().ToString("N");
+            var messages = RepairInterruptedToolCalls(session.Messages);
+            var checkpoint = session.Compaction;
+            var invalidCheckpoint = checkpoint is not null && !ConversationCompaction.IsValid(checkpoint, messages);
+            if (invalidCheckpoint) checkpoint = null;
+            var activeStart = continuing
+                ? RepairInterruptedToolCalls(session.Messages.Take(session.RunCheckpoint!.ActiveStartMessageIndex).ToArray()).Count
+                : messages.Count;
+            foreach (var input in pendingInputs.Items) messages.Add(new("user", input.Text));
+            if (!string.IsNullOrWhiteSpace(prompt)) messages.Add(new ChatMessage("user", prompt, Images: images?.ToArray()));
+            var explicitSkills = ProjectRules.ExplicitSkills(prompt ?? "").ToHashSet(StringComparer.Ordinal);
+            foreach (var message in messages.Skip(activeStart).Where(message => message.Role == "user"))
+                explicitSkills.UnionWith(ProjectRules.ExplicitSkills(message.Content));
+            var runCheckpoint = new RunCheckpoint(1, runId, activeStart, options, 0, DateTimeOffset.UtcNow,
+                Usage: new(), ParentRunId: continuing ? session.RunCheckpoint!.RunId : null,
+                LastAppliedInputSequence: Math.Max(session.RunCheckpoint?.LastAppliedInputSequence ?? 0,
+                    pendingInputs.Items.Count > 0 ? pendingInputs.Items.Max(input => input.Sequence) : 0));
+            var info = session.Info with { Status = "running", UpdatedAt = DateTimeOffset.UtcNow };
+            // Accepted instructions are durable before any external factory or model can block or fail.
+            await _store.SaveAsync(new AgentSession(info, messages.ToArray(), checkpoint, runCheckpoint), CancellationToken.None);
+            await SendAsync("run.accepted", "The task instructions and continuation checkpoint are saved.");
+            acceptedRunId = runId;
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
             var token = timeout.Token;
+            runToken = token;
             await using var additional = new ToolSetLease(options.ExecutionMode != ExecutionMode.ReadOnly && _additionalToolsFactory is not null
                 ? await _additionalToolsFactory(session.Info.WorkspacePath, options.SecretEnvironmentVariables, token) : null);
             var tools = _tools.Where(pair => options.ExecutionMode != ExecutionMode.ReadOnly || !pair.Value.Definition.RequiresApproval)
@@ -95,7 +134,6 @@ public sealed class AgentEngine
                 tools.Values.Where(tool => tool.Definition.RequiresApproval).Select(tool => tool.Definition.Name).ToHashSet(StringComparer.Ordinal)));
             ProjectRules? project = _pathResolver is null ? null : new(session.Info.WorkspacePath, _pathResolver);
             ProjectExperienceTools? experience = null;
-            var explicitSkills = ProjectRules.ExplicitSkills(prompt).ToHashSet(StringComparer.Ordinal);
             if (project is not null)
             {
                 tools.Add(ProjectSkillTool.Name, new ProjectSkillTool(project, explicitSkills));
@@ -103,12 +141,6 @@ public sealed class AgentEngine
                 foreach (var tool in experience.CreateTools()) tools.Add(tool.Definition.Name, tool);
             }
             var definitions = tools.Values.Select(tool => tool.Definition).ToArray();
-            var messages = RepairInterruptedToolCalls(session.Messages);
-            var checkpoint = session.Compaction;
-            var invalidCheckpoint = checkpoint is not null && !ConversationCompaction.IsValid(checkpoint, messages);
-            if (invalidCheckpoint) checkpoint = null;
-            var activeStart = messages.Count;
-            messages.Add(new ChatMessage("user", prompt, Images: images?.ToArray()));
             var guidance = research.CompressionGuidance ? CompressionGuidance.Default : null;
             if (guidance is not null && research.CompressionGuidancePath is { Length: > 0 } guidancePath)
             {
@@ -117,8 +149,7 @@ public sealed class AgentEngine
             }
             await using var prefetch = research.ReadOnlyPrefetch && _pathResolver is not null
                 ? new ReadOnlyPrefetch(session.Info.WorkspacePath, _pathResolver, research.MaxPrefetches) : null;
-            var info = session.Info with { Status = "running", UpdatedAt = DateTimeOffset.UtcNow };
-            RunOutcome outcome = new Failed("The iteration limit was reached. Review the recorded changes before continuing.");
+            RunOutcome outcome = new Paused("iteration_limit", "The iteration limit was reached. The task checkpoint is saved; review recorded changes and explicitly continue with a fresh run budget.");
             var compactionFailed = false;
             var pathComparison = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
             Dictionary<string, bool> knownPaths = new(pathComparison);
@@ -127,7 +158,7 @@ public sealed class AgentEngine
             async Task SaveAsync(string? status = null)
             {
                 info = info with { Status = status ?? info.Status, UpdatedAt = DateTimeOffset.UtcNow };
-                await _store.SaveAsync(new AgentSession(info, messages.ToArray(), checkpoint), CancellationToken.None);
+                await _store.SaveAsync(new AgentSession(info, messages.ToArray(), checkpoint, runCheckpoint), CancellationToken.None);
             }
             async ValueTask SendAsync(string type, string? text = null, ToolCall? call = null, ToolResult? result = null, string? approvalId = null)
             {
@@ -137,7 +168,19 @@ public sealed class AgentEngine
                 catch (Exception) { }
             }
 
-            steering = new SteeringState(Math.Min(32_768, options.MaxContextCharacters / 2), text => SendAsync("input.queued", text));
+            var meteredModel = new RunUsageMeter(model, options.MaxReportedTokens, async usage =>
+            {
+                runCheckpoint = runCheckpoint with { Usage = usage };
+                await SaveAsync();
+                await SendAsync("run.usage", JsonSerializer.Serialize(usage, Wire.Json));
+            });
+
+            steering = new SteeringState(Math.Min(32_768, options.MaxContextCharacters / 2), async text =>
+            {
+                var evt = await _store.AppendEventAsync(new AgentEvent(sessionId, runId, "input.queued", text), CancellationToken.None);
+                try { await emit(evt, CancellationToken.None); } catch (Exception) { }
+                return evt.Sequence;
+            });
             async Task<bool> HasQueuedAsync()
             {
                 await steering.Gate.WaitAsync();
@@ -146,7 +189,7 @@ public sealed class AgentEngine
             }
             async Task<bool> ApplyQueuedAsync(bool closeIfEmpty = false, bool closeAlways = false)
             {
-                string[] pending;
+                PendingRunInput[] pending;
                 await steering.Gate.WaitAsync();
                 try
                 {
@@ -159,13 +202,14 @@ public sealed class AgentEngine
                 finally { steering.Gate.Release(); }
                 if (pending.Length == 0) return false;
                 if (prefetch is not null) await prefetch.InvalidateAsync();
-                foreach (var text in pending)
+                foreach (var input in pending)
                 {
-                    messages.Add(new ChatMessage("user", text));
-                    explicitSkills.UnionWith(ProjectRules.ExplicitSkills(text));
+                    messages.Add(new ChatMessage("user", input.Text));
+                    explicitSkills.UnionWith(ProjectRules.ExplicitSkills(input.Text));
                 }
+                runCheckpoint = runCheckpoint with { LastAppliedInputSequence = pending.Max(input => input.Sequence) };
                 await SaveAsync();
-                foreach (var text in pending) await SendAsync("input.steered", text);
+                foreach (var input in pending) await SendAsync("input.steered", input.Text);
                 return true;
             }
 
@@ -230,6 +274,8 @@ public sealed class AgentEngine
             try
             {
                 await SendAsync("run.started", "正在分析任务与工作区。");
+                if (continuing) await SendAsync("run.continued", "Continuing the saved task with a fresh run budget. Earlier actions are evidence only; inspect unknown outcomes before planning another action.");
+                foreach (var input in pendingInputs.Items) await SendAsync("input.steered", input.Text);
                 if (options.Research is not null) await SendAsync("research.configured", JsonSerializer.Serialize(research, Wire.Json));
                 if (invalidCheckpoint) await SendAsync("context.checkpoint_invalidated", "保存的摘要与原始历史不一致，已保留原始记录并重新构建上下文。");
                 for (var iteration = 0; iteration < options.MaxIterations; iteration++)
@@ -246,7 +292,7 @@ public sealed class AgentEngine
                             if (plan is not null)
                             {
                                 await SendAsync("context.compacting", "正在整理较早的工作记录，保留原始要求和最近完整工具轮次。");
-                                var compacted = await ConversationCompaction.GenerateAsync(plan, model, token);
+                                var compacted = await ConversationCompaction.GenerateAsync(plan, meteredModel, token);
                                 token.ThrowIfCancellationRequested();
                                 if (!ConversationCompaction.IsValid(compacted.Checkpoint, messages)) throw new InvalidDataException("Conversation changed while creating its checkpoint.");
                                 var previousCheckpoint = checkpoint;
@@ -267,6 +313,7 @@ public sealed class AgentEngine
                         }
                         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
                         catch (CompactionBudgetException) { throw; }
+                        catch (ReportedTokenLimitException) { throw; }
                         catch (Exception ex)
                         {
                             compactionFailed = true;
@@ -297,7 +344,7 @@ public sealed class AgentEngine
                     List<ToolCall> calls = [];
                     long? inputTokens = null, outputTokens = null, cachedInputTokens = null, cacheWriteTokens = null, reasoningTokens = null;
                     ModelContinuationState? continuation = null;
-                    await foreach (var update in model.StreamAsync(context.Messages, definitions, token))
+                    await foreach (var update in meteredModel.StreamAsync(context.Messages, definitions, token))
                     {
                         token.ThrowIfCancellationRequested();
                         if (update.TextDelta is { Length: > 0 } text)
@@ -315,6 +362,7 @@ public sealed class AgentEngine
                         if (update.Continuation is { } state) continuation = state;
                     }
                     token.ThrowIfCancellationRequested();
+                    runCheckpoint = runCheckpoint with { IterationsCompleted = iteration + 1 };
                     if (calls.Select(c => c.Id).Distinct(StringComparer.Ordinal).Count() != calls.Count)
                         throw new InvalidDataException("Duplicate tool call IDs in model response.");
                     messages.Add(new ChatMessage("assistant", response.ToString(), calls.Count > 0 ? calls.ToArray() : null, Continuation: continuation));
@@ -401,8 +449,11 @@ public sealed class AgentEngine
             }
             catch (OperationCanceledException) when (timeout.IsCancellationRequested)
             {
-                outcome = new Cancelled(cancellationToken.IsCancellationRequested ? "任务已停止；已执行的操作保留，未确认的结果需核对。" : "任务达到时间限制；已执行的操作保留。");
+                outcome = cancellationToken.IsCancellationRequested
+                    ? new Cancelled("任务已停止；已执行的操作保留，未确认的结果需核对。")
+                    : new Paused("time_limit", "The run time limit was reached. The task checkpoint is saved; verify unknown outcomes and explicitly continue with a fresh run budget.");
             }
+            catch (ReportedTokenLimitException ex) { outcome = new Paused(ex.Code, ex.Message); }
             catch (Exception ex) { outcome = new Failed($"{ex.GetType().Name}: {ex.Message}"); }
 
             if (prefetch is not null)
@@ -443,10 +494,31 @@ public sealed class AgentEngine
             {
                 Completed => ("completed", "run.completed", "本轮执行结束。请结合 diff 与检查结果审阅。"),
                 Cancelled stopped => ("cancelled", "run.cancelled", stopped.Reason),
+                Paused paused => ("paused", "run.paused", paused.Reason),
                 Failed failed => ("failed", "run.failed", failed.Reason)
             };
+            runCheckpoint = runCheckpoint with { StopReason = outcome switch
+            {
+                Paused paused => paused.Code,
+                Cancelled => "cancelled",
+                Failed => "failed",
+                _ => null
+            } };
             await SaveAsync(status);
             await SendAsync(eventName, description);
+        }
+        catch (OperationCanceledException) when (runToken.IsCancellationRequested && acceptedRunId is not null)
+        {
+            // Setup can block before the main loop exists. Its deadline has the same durable semantics as inference.
+            var current = await _store.LoadAsync(sessionId, CancellationToken.None) ?? throw new InvalidDataException("Accepted task checkpoint is unavailable.");
+            var cancelled = cancellationToken.IsCancellationRequested;
+            var reason = cancelled ? "cancelled" : "time_limit";
+            await _store.SaveAsync(current with { Info = current.Info with { Status = cancelled ? "cancelled" : "paused", UpdatedAt = DateTimeOffset.UtcNow },
+                RunCheckpoint = current.RunCheckpoint is { } saved ? saved with { StopReason = reason } : null }, CancellationToken.None);
+            var evt = await _store.AppendEventAsync(new(sessionId, acceptedRunId, cancelled ? "run.cancelled" : "run.paused",
+                cancelled ? "Stopped during task initialization. The saved task can be explicitly continued."
+                    : "The run time limit was reached during initialization. The task checkpoint is saved and can be explicitly continued."), CancellationToken.None);
+            try { await emit(evt, CancellationToken.None); } catch (Exception) { }
         }
         finally
         {
@@ -473,14 +545,14 @@ public sealed class AgentEngine
 
     private static ToolResult SkippedForSteering() => new("Not executed: new user instructions superseded this pending action. Follow the new instructions before planning another action.", true);
 
-    private sealed class SteeringState(int maxCharacters, Func<string, ValueTask> recordQueuedAsync)
+    private sealed class SteeringState(int maxCharacters, Func<string, Task<long>> recordQueuedAsync)
     {
         public SemaphoreSlim Gate { get; } = new(1, 1);
-        public Queue<string> Pending { get; } = new();
+        public Queue<PendingRunInput> Pending { get; } = new();
         public bool Accepting { get; set; } = true;
         public int PendingCharacters { get; set; }
         public int MaxCharacters { get; } = maxCharacters;
-        public Func<string, ValueTask> RecordQueuedAsync { get; } = recordQueuedAsync;
+        public Func<string, Task<long>> RecordQueuedAsync { get; } = recordQueuedAsync;
     }
 
     private static async Task<string> BuildSystemPromptAsync(string workspacePath, CancellationToken token, bool includeRootRules = true)
@@ -549,6 +621,7 @@ public sealed class AgentEngine
     private closed record RunOutcome;
     private sealed record Completed : RunOutcome;
     private sealed record Cancelled(string Reason) : RunOutcome;
+    private sealed record Paused(string Code, string Reason) : RunOutcome;
     private sealed record Failed(string Reason) : RunOutcome;
 }
 

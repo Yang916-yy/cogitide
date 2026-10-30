@@ -10,6 +10,8 @@ Project procedures, [Git history localization](../../Workbench.Tools/RepositoryM
 
 The implementation reuses the [SQLite event store](../Persistence/README.md), BCL SHA-256, async cancellation, generated JSON metadata, immutable records and bounded keyword matching. No vector/graph service or second storage layer is added. Save validates that a complete single recall package fits its retrieval budget.
 
+Evidence ledgers rebuild through indexed event streaming with a fixed source high watermark, retaining the existing bounded ledger and unchanged source hashes. Exact evidence and procedure-source validation read only the requested source event; project candidate scans filter saved-procedure events in SQLite and read newest first. Display-only session metadata validation avoids deserializing the original conversation or provider state. Streaming releases its database reader and store gate before yielding to consumers, allowing nested source reads without deadlock. This bounds retained managed event collections, not the cost of scanning a long source journal or the size of one indivisible original event.
+
 **Do not reinvent infrastructure.** Reuse event storage and hashing. A new semantic/index layer needs a measured retrieval gap, mature alternatives and migration/comparison evidence; it cannot discard failures, grant permissions or replace frozen validation with the producing model's own judgment.
 
 This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.

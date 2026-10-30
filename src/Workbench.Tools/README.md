@@ -2,7 +2,7 @@
 
 # Tools: C# adapters for mature contracts
 
-`WorkspaceTools.cs` assembles definitions. [Workspace](Workspace/README.md) owns checked paths and BCL file/process operations; [Navigation](Navigation/README.md) reuses Git, Roslyn, regular expressions and official globbing; [Editing](Editing/README.md) adapts OpenCode's Codex style patch format; [Execution](Execution/README.md) implements Codex inspired command lifetimes with .NET processes. New optional integrations are described separately in [MCP](Mcp/README.md) and [headless browser acceptance](Browser/README.md).
+`WorkspaceTools.cs` assembles definitions. [Workspace](Workspace/README.md) owns checked paths and BCL file/process operations; [Navigation](Navigation/README.md) reuses Git, Roslyn, regular expressions and official globbing; [Editing](Editing/README.md) adapts OpenCode's Codex style patch format; [Execution](Execution/README.md) implements Codex inspired command lifetimes with .NET processes and optional Porta.Pty terminals. [Worktrees](Worktrees/README.md) adds managed isolated checkouts through Git CLI. New optional integrations are described separately in [MCP](Mcp/README.md) and [headless browser acceptance](Browser/README.md).
 
 [RepositoryMemory](RepositoryMemory/README.md) is an explicit research option: frozen revision Git history search with source evidence, inspired by RepoMem/DCI. Historical evidence never replaces reading current source.
 

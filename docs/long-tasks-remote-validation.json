@@ -1,0 +1,199 @@
+{
+  "date": "2026-10-31",
+  "baselineCommit": "70783ba8d66d226a7464e1f804e141fee4d1465a",
+  "sdk": "11.0.100-rc.3.26522.148",
+  "builds": {
+    "debug": "strict warning-as-error passed; final focused suite below",
+    "release": "locked restore, strict warning-as-error build and full suite passed"
+  },
+  "releaseTests": {
+    "passed": 639,
+    "failed": 0,
+    "total": 640,
+    "trxSha256": "34d9e88025ce95ec54ae6cca56359bffebf842dde707587d01e624d1447e0468",
+    "skipped": 1
+  },
+  "finalDebugFocusedTests": {
+    "passed": 67,
+    "failed": 0,
+    "total": 68,
+    "trxSha256": "ac19ca74dd16e7068e7bfb7cad3108ed7c5b29eb13d2a86566cbfc7ef66af602",
+    "skipped": 1
+  },
+  "actualClientAcceptance": {
+    "wsl": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1,
+      "trxSha256": "3a12c7c2cb81cd5aa05640bbf1eae32fe81b2c266e2480f2296ca4692d60015e",
+      "skipped": 0
+    },
+    "loopbackSsh": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1,
+      "trxSha256": "b1eb3db4383d525e32fa14831d78f90c1d37e5477e1a448b323449145ec21458",
+      "skipped": 0
+    }
+  },
+  "localHostFixtures": [
+    {
+      "fixture": "verify-host",
+      "exitCode": 0
+    },
+    {
+      "fixture": "verify-lifecycle",
+      "exitCode": 0
+    },
+    {
+      "fixture": "verify-responses",
+      "exitCode": 0
+    },
+    {
+      "fixture": "verify-continuity",
+      "exitCode": 0
+    },
+    {
+      "fixture": "verify-tools-upgrade",
+      "exitCode": 0
+    },
+    {
+      "fixture": "verify-research",
+      "exitCode": 0
+    },
+    {
+      "fixture": "verify-integrations",
+      "exitCode": 0
+    }
+  ],
+  "remote": {
+    "wsl": {
+      "transport": "wsl",
+      "checks": [
+        "real Linux Host initialization and required capabilities",
+        "POSIX paths with spaces/apostrophes/Unicode, inventory pages and full-file read hashes",
+        "explicit generated command output without a model call",
+        "stdin EOF stops the owned child before its delayed write",
+        "isolated session persistence and reconnect without command replay"
+      ],
+      "modelCalls": 0,
+      "passed": true,
+      "cleanupVerified": null,
+      "recordSha256": "b58f31826f63f071a18e0fef5370ec4f3abca4480372558028c3fda3f7d36ea9"
+    },
+    "ssh": {
+      "transport": "loopback-system-ssh-to-wsl",
+      "checks": [
+        "real Linux Host initialization and required capabilities",
+        "POSIX paths with spaces/apostrophes/Unicode, inventory pages and full-file read hashes",
+        "explicit generated command output without a model call",
+        "stdin EOF stops the owned child before its delayed write",
+        "isolated session persistence and reconnect without command replay",
+        "actual OpenSSH rejects a mismatched generated host pin",
+        "actual OpenSSH rejects a wrong generated client key"
+      ],
+      "modelCalls": 0,
+      "passed": true,
+      "cleanupVerified": true,
+      "recordSha256": "f9deb65f4f4ae7aeb774c9a16b0111fa8a5978a92ff8e65242f27637dbe58364"
+    }
+  },
+  "headlessPackage": {
+    "runtime": "linux-x64",
+    "runtimeVersion": "11.0.0-rc.3.26522.148",
+    "selfContained": true,
+    "verifiedFiles": 426,
+    "matchingSourceLocks": 6,
+    "nativeHeadersVerified": true,
+    "unifiedKernelVerified": true,
+    "toolUpgradeVerified": true,
+    "researchReleaseNoticesVerified": true,
+    "headlessOnly": true
+  },
+  "testedRemoteAssembliesSha256": {
+    "Workbench.Host.dll": "aadf1e95106f97f363e7384c835b8cd4db2f3da64f117268ad89d51bbcd1ad65",
+    "Workbench.Core.dll": "ef37e5055416a08ed539b27c552a97c80c4ab73824236ec78c43477cd933b2c5",
+    "Workbench.Protocol.dll": "5822fbe202edf39a13542d66ae1fd52e35da853b55f179b417f62d31c5454cd1",
+    "Workbench.Tools.dll": "46c2327fdcfb08d5a01cdff36520d9417f68a65331870feb612536264e53c7e5"
+  },
+  "runtimeLimits": {
+    "defaultIterations": 256,
+    "maximumIterations": 10000,
+    "defaultTimeoutSeconds": 21600,
+    "maximumTimeoutSeconds": 604800,
+    "liveTimelineEntries": 1000,
+    "defaultHistoryMessages": 100,
+    "maximumPageCharacters": 1000000,
+    "tokenBudget": "reported input+output across normal and compaction calls; boundary checks; missing/incomplete usage explicit; not a billing hard limit"
+  },
+  "currentHostTools": {
+    "allBaseAndKnowledge": 24,
+    "readOnly": 15
+  },
+  "paidModelCalls": 0,
+  "personalRemoteEndpointsUsed": false,
+  "visibleDesktopOpened": false,
+  "evidenceLimits": [
+    "Functional/task-safety fixtures are not real-model coding-success benchmarks.",
+    "WSL and isolated native OpenSSH-to-AsyncSSH-to-WSL exercised; no public/personal SSH server compatibility certification.",
+    "Native GUI acceptance remains separate.",
+    "Whole model snapshots still retain full Load/save behavior; no global constant-memory claim."
+  ],
+  "developmentFindingsPreserved": [
+    "Obsolete tool-count assertions replaced or updated; read-only policy fixture now asserts completed outcome so swallowed callback assertions cannot pass.",
+    "One stalled-stream fixture timed out waiting to enter the stream during a loaded full run; isolated recheck and subsequent complete suites passed.",
+    "Initial WSL fixture inherited the parent repository artifacts ignore; nested generated Git fixture fixed without altering product ignore behavior.",
+    "Initial loopback SSH rejected temporary key OWNER RIGHTS ACL; narrowed ACL fixes apply only to generated keys.",
+    "AsyncSSH redirected-process cleanup now awaits wait_closed; final probe emitted no RuntimeWarning."
+  ],
+  "sourceSha256Lf": {
+    "src/Workbench.Core/Memory/ProjectExperienceTools.cs": "18d4cb28dd0a6cdc5a8eb0d9254e9515cb2f422f89472276094ba3dd55c44d7d",
+    "src/Workbench.Core/Memory/SessionEvidenceTool.cs": "508e244c9e65fd0b0cd8611471ab8195598606d0f82f903bd2e35941fb3065d5",
+    "src/Workbench.Core/Persistence/SqliteSessionStore.cs": "9581c0c878832b483cb1f4833d63f4da8107d7f3f421842b12e51cbcbe76af3b",
+    "src/Workbench.Core/Runtime/AgentEngine.cs": "17174cd31997b3ff3a9b6d88ed2c9a55b65cf71757027c0f15f954e1e53c40a5",
+    "src/Workbench.Core/Runtime/RunUsageMeter.cs": "f4776e5ba1b19e721a05a59373eaefc85c8a25f385e62e7accef716818805334",
+    "src/Workbench.Desktop/DesktopEventPresentation.cs": "a40a787d860fa58e178f6d05918d6b0e08c0b7d443fe83d7935014ed329a34ae",
+    "src/Workbench.Desktop/DesktopSettings.cs": "11582596260e6f011a789f9fa7321d82c4178ea2b38364590cdf0734c9e6b324",
+    "src/Workbench.Desktop/HostClient.cs": "0b3307f824ee92ff62b2991246e260f910a27d7a607c81f22ce9cdbe3f017bad",
+    "src/Workbench.Desktop/MainWindow.Browser.cs": "e0f9bd0a9332a12508fbe2b280d7485c057adfec6487c0db68ac79035cbfd9df",
+    "src/Workbench.Desktop/MainWindow.History.cs": "105073a28d133e531ab60bfa68b60301cbab7e7cc10bcb2fa34903db8f92eb7c",
+    "src/Workbench.Desktop/MainWindow.Remote.cs": "e31f1b7dc4f7e1fef9c0bb6dccd23ededbb3d8419bb3e8892966c5719bf66df7",
+    "src/Workbench.Desktop/MainWindow.axaml": "ef2b750e1549d9485b96acf069c2b4cdb2097db2cbca306ae0f0c3e67521b175",
+    "src/Workbench.Desktop/MainWindow.axaml.cs": "7876ed6401cb63237f2d1c86ce72febf474681cb160700068a84264d596e424b",
+    "src/Workbench.Desktop/Remote/HostConnectionProfile.cs": "836a674896fabfb25bf0f413acaf3153c22791ef0403b7974ac15cabe1971200",
+    "src/Workbench.Desktop/Remote/HostConnectionWindow.axaml": "b3e986965ac321fd0ba5a06f25e2f9c621f27c3880b3a7b4d51ffd69ff934e6e",
+    "src/Workbench.Desktop/Remote/HostConnectionWindow.axaml.cs": "7fd3032886ee21275a5fed00b25ebfc17825f81d10d3f129591522930743f756",
+    "src/Workbench.Desktop/Remote/RemoteHostLaunch.cs": "6f52d029d979bbd7c940505317d839d8816b20a7a289ee2dab74c10a01827c16",
+    "src/Workbench.Desktop/Remote/WslDistributions.cs": "2ebd559341935b7867aaf9e0beb39e0d73249f48fa9bdaab30dd31f3ade1c60b",
+    "src/Workbench.Desktop/RunBudgetWindow.cs": "7239c0ba1388e628ef780fa073ec2ddf0a72d44d50bb7835910335b8879649a7",
+    "src/Workbench.Host/Program.cs": "f18988309ee4c5383cf11def75a58a25c439e9a846f1464130d025b926dd513a",
+    "src/Workbench.Protocol/Contracts.cs": "aa2ea812b78b81bd2c1c2aa68357ea3445e7ccd9e949e8225ed9896b51ddf730",
+    "src/Workbench.Protocol/WireJsonContext.cs": "da40d447a44b6666fafc796ff05674a71fe8643c9ee596baf91116771a0216cd",
+    "src/Workbench.Tools/Execution/CommandSessions.cs": "aba7ee14e013b4631ec9bdb3bd9469eb05e151276116be86b0db2d50fdcd4ac3",
+    "src/Workbench.Tools/Execution/InteractiveCommands.cs": "043303737ee5cd0ce628207b7ad925aa2910202057349cbb7aec8e764cff697b",
+    "src/Workbench.Tools/Navigation/WorkspaceBrowser.cs": "795675510a175ed3c4ddbb96d5c256bdb76cea6f6ee793a12a478e31b0ccb1fb",
+    "src/Workbench.Tools/Workspace/WorkspaceService.cs": "3ae0ddc80626c9ed3c63e0b441ef690c0d3231c063a04d1748415242b4a73ab0",
+    "src/Workbench.Tools/WorkspaceTools.cs": "5f565cc93133a2206e3b70c2e1715c36a668d6289c7d8c8c88549f5d3b19ae52",
+    "src/Workbench.Tools/Worktrees/ManagedWorktrees.cs": "b744f79d48ab22c1b3f74aac28ae8423cb48b266cb418a76c432e1541f72a592",
+    "tests/Workbench.Tests/CommandInputTests.cs": "2062d460704566622db13e1ff4045b6ebe78dfd7c37024b533c8961b4a31003c",
+    "tests/Workbench.Tests/CoreEngineTests.cs": "12dab506849ec7ef21f465dd2f9d6eebede5c4ac5b57ad4fd3ec7454e2d6efcc",
+    "tests/Workbench.Tests/DesktopDurabilityTests.cs": "93b64228c6544696cd28469c55bb1724774440084fbfd7e79df5d666f698b878",
+    "tests/Workbench.Tests/DurableHostTests.cs": "accaea590d2358679927fbfb27d4ee7395175a45ca7e7b5dde2e4cd820015fd4",
+    "tests/Workbench.Tests/DurableRunHistoryTests.cs": "c4ef503b38de581276f937979b698d3173f09a841668782f99077300fa7c3aeb",
+    "tests/Workbench.Tests/ManagedWorktreeTests.cs": "e019e205b49bcfa4543a2e3b5cbe3d85f3138d1f6f30d4757e42840274fb2057",
+    "tests/Workbench.Tests/RealRemoteConnectionTests.cs": "f493baeecc85f6b8ec7f8a8a24c63b0fb45a7e5763fea34381c12d71432b582e",
+    "tests/Workbench.Tests/RemoteConnectionTests.cs": "93a7986c1ac2171986740856fe4703ab720a76aaaec4e997a0a6c93b743a5d7e",
+    "tests/Workbench.Tests/ToolUpgradeEngineTests.cs": "ff24d3e7cc36f31fb95aac358662e419c8710838da02b94c95e56bf03b6eae5b",
+    "tests/Workbench.Tests/WorkspaceBrowserTests.cs": "729a1d0bcc3588b8fa354d519fa90194cb8a820a083ebb7bae461c22b2079fc8"
+  },
+  "dependencyLockSha256": {
+    "src/Workbench.Auth/packages.lock.json": "b4b66df19e5d91d9f0d407c3151754401d0bc7c18221116fa53c1a9221423d9b",
+    "src/Workbench.Core/packages.lock.json": "545ae44f9d8904358b67795651d0e8384fa3ba4d7aac9037f6d112798a8f5305",
+    "src/Workbench.Desktop/packages.lock.json": "e927d45296a046ab5da1bb736e0b95e56da2f46658816d7196d1039ade2e8c8e",
+    "src/Workbench.Host/packages.lock.json": "f9ed594558b8cc384ec59795e1dedf46bbc4f83435f018c2a275a757eabe3e4e",
+    "src/Workbench.Protocol/packages.lock.json": "b3c5e4a8ca8e8e9b867124355fd997226d6a45ef7924fb06460bf389050392c5",
+    "src/Workbench.Tools/packages.lock.json": "7bcc442307956730b1ede9e9ff290fb1fb2223fb06913054e3090ea109e39a3d",
+    "tests/Workbench.Tests/packages.lock.json": "3f9ac0518830570d320baefa972f12f964f85a302c7eb994987a82760dee3936",
+    "benchmarks/Workbench.Benchmarks/packages.lock.json": "283980d18f8eeae50c025f0a5b45088de8b9ad8d6cdf3366406caa0706ed0c75"
+  }
+}

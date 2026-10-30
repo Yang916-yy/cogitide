@@ -15,3 +15,9 @@ This English page summarizes the preserved source. [The full Chinese record](REA
 ## Preserved source references
 
 - [Original reference 1](Program.cs)
+
+## Durable runs and bounded desktop retrieval
+
+`run.start`/`run.continue` return acceptance only after `run.accepted` identifies durable instructions/checkpoint state. The kernel owns time/iteration/reported-token limits and emits `run.paused` for a budget stop; the Host preserves workspace ownership until cleanup completes. Continuation inherits omitted top-level options, validates stopped checkpoints before mutation, rejects unsupported attachments, rechecks authentication and never replays stored tools.
+
+`session.view`, `session.messages.page`, `session.events.page` and `session.pending_inputs` expose bounded SQLite projections; legacy whole-session/event RPCs remain for compatibility. `workspace.files.page`, `workspace.read.page` and `workspace.validate` keep file operations on the connected endpoint. Initialize advertises supported capabilities/platform. SSH and WSL reuse this same stdio Host, not another server/kernel. [Current workflow and acceptance record](../../docs/long-tasks-remote.md).

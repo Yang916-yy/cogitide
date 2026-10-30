@@ -55,12 +55,10 @@ public sealed class SessionEvidenceTool : IAgentTool
             }
 
             await ValidateSessionAsync(cancellationToken);
-            var events = await _store.EventsAsync(_sessionId, sequence.Value - 1, cancellationToken);
+            var evt = await _store.GetEventAsync(_sessionId, sequence.Value, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            var matching = events.Where(e => e.Sequence == sequence.Value).ToArray();
-            if (matching.Length != 1 || matching[0].SessionId != _sessionId)
+            if (evt is null || evt.SessionId != _sessionId)
                 return new("The requested source event is unavailable in this session.", true);
-            var evt = matching[0];
             if (evt.Type != "tool.completed" || evt.Call is null || evt.Result is null ||
                 evt.Call.Name is Name or ProjectExperienceTools.RecallName or ProjectExperienceTools.RememberName)
                 return new("Only original completed tool observations can be recalled; model messages and evidence-recall results are excluded.", true);
@@ -83,15 +81,14 @@ public sealed class SessionEvidenceTool : IAgentTool
     public async Task<EvidenceMemorySnapshot> ReadSnapshotAsync(CancellationToken cancellationToken = default)
     {
         var session = await ValidateSessionAsync(cancellationToken);
-        var events = await _store.EventsAsync(_sessionId, cancellationToken: cancellationToken);
         var ledger = new EvidenceMemory(_sessionId, _workspace);
-        foreach (var evt in events.OrderBy(e => e.Sequence))
+        await foreach (var evt in _store.StreamEventsAsync(_sessionId, cancellationToken: cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             ledger.Observe(evt, evt.Call is { } call && _mutatingToolNames.Contains(call.Name));
         }
         var snapshot = ledger.Snapshot();
-        if (session.Info.Status is "running" or "waiting_approval") return snapshot;
+        if (session.Status is "running" or "waiting_approval") return snapshot;
         return snapshot with
         {
             Entries = Array.AsReadOnly(snapshot.Entries.Select(e => e with { Validity = EvidenceValidity.Stale }).ToArray()),
@@ -99,13 +96,13 @@ public sealed class SessionEvidenceTool : IAgentTool
         };
     }
 
-    private async Task<AgentSession> ValidateSessionAsync(CancellationToken cancellationToken)
+    private async Task<SessionInfo> ValidateSessionAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var session = await _store.LoadAsync(_sessionId, cancellationToken) ?? throw new KeyNotFoundException("Session not found.");
+        var session = await _store.ReadViewAsync(_sessionId, 1, cancellationToken) ?? throw new KeyNotFoundException("Session not found.");
         if (session.Info.Id != _sessionId || !SameWorkspace(session.Info.WorkspacePath))
             throw new InvalidDataException("Session evidence workspace does not match its configured scope.");
-        return session;
+        return session.Info;
     }
 
     private bool SameWorkspace(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)).Equals(_workspace,

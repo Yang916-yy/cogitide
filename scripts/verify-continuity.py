@@ -114,7 +114,7 @@ def run(host, server, session, provider, prompt, phase, mode="WorkspaceWrite", b
         "options": {"maxIterations": 20, "timeoutSeconds": 90, "maxContextCharacters": budget, "executionMode": mode}})
     deadline = time.monotonic() + 100
     while True:
-        terminal = [e for e in host.events if e["runId"] == accepted["runId"] and e["type"] in ("run.completed", "run.failed", "run.cancelled")]
+        terminal = [e for e in host.events if e["runId"] == accepted["runId"] and e["type"] in ("run.completed", "run.failed", "run.cancelled", "run.paused")]
         if terminal:
             assert not server.errors, server.errors
             assert terminal[-1]["type"] == "run.completed", terminal[-1]

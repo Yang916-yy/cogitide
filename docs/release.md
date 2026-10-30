@@ -25,3 +25,7 @@ This English page summarizes the preserved source. [The full Chinese record](rel
 - [Original reference 1](https://developers.openai.com/siwc/token-sharing-open-source/sign-in)
 - [Original reference 2](https://docs.avaloniaui.net/docs/deployment/linux)
 - [Original reference 3](https://support.apple.com/en-us/102445)
+
+## Current headless Host packages
+
+`./scripts/publish.ps1 -Runtime linux-x64 -HostOnly -OutputDirectory artifacts/host-linux-x64` reuses the normal publishing, per-RID lock validation, notices, runtime metadata and hash manifest while omitting Desktop. `verify-release.py` recognizes the explicit `headlessOnly`/`packageKind=host` contract. Use the correct endpoint architecture and transfer the complete output directory. Connection setup does not install or authenticate the endpoint. See [remote setup](../src/Workbench.Desktop/Remote/README.md) and [current long-task/remote validation](long-tasks-remote.md). Desktop packages remain the default without `-HostOnly`.

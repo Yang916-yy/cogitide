@@ -102,7 +102,7 @@ public sealed class CoreEngineTests : IDisposable
         var tool = new CountingTool();
         await new AgentEngine(_store, [tool]).RunAsync(id, "Read", new ScriptedModel(alwaysTool: true), new(MaxIterations: 2), (_, _) => ValueTask.CompletedTask, (_, _) => Task.FromResult(true));
         Assert.Equal(2, tool.Calls);
-        Assert.Equal("failed", (await _store.LoadAsync(id))!.Info.Status);
+        Assert.Equal("paused", (await _store.LoadAsync(id))!.Info.Status);
         Assert.Contains("iteration limit", (await _store.EventsAsync(id))[^1].Text);
     }
 

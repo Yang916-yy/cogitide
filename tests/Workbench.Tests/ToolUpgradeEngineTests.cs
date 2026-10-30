@@ -77,7 +77,7 @@ public sealed class ToolUpgradeEngineTests : IDisposable
         string? id = null;
         var model = new Model((messages, tools) =>
         {
-            Assert.Equal(18, tools.Count);
+            Assert.Contains(tools, tool => tool.Name == "start_command");
             if (++count == 1) return new(ToolCalls: [new("launch", "start_command", JsonSerializer.Serialize(new
                 { command = OperatingSystem.IsWindows() ? "Start-Sleep 60" : "sleep 60", timeoutSeconds = 60, yieldMilliseconds = 0 }))]);
             using var result = JsonDocument.Parse(messages.Last().Content);
@@ -103,8 +103,7 @@ public sealed class ToolUpgradeEngineTests : IDisposable
         await using var commands = new CommandSessionManager(Path.Combine(_root, "command-state"), WorkbenchHost.CommandWorkerStart);
         var model = new Model((_, tools) =>
         {
-            Assert.Equal(13, tools.Count);
-            Assert.DoesNotContain(tools, tool => tool.Name is "start_command" or "apply_patch" or "run_command" or "write_file" or "replace_text");
+            Assert.DoesNotContain(tools, tool => tool.Name is "start_command" or "write_command" or "apply_patch" or "run_command" or "write_file" or "replace_text" or "create_worktree" or "remove_worktree");
             Assert.Contains(tools, tool => tool.Name == "read_command");
             Assert.Contains(tools, tool => tool.Name == "stop_command");
             return new(TextDelta: "Read-only policy confirmed.");
@@ -112,6 +111,7 @@ public sealed class ToolUpgradeEngineTests : IDisposable
         await new AgentEngine(store, WorkspaceTools.Create(new(), commands), WorkspaceService.Resolve, commands)
             .RunAsync(session.Info.Id, "Inspect only.", model, new(ExecutionMode: ExecutionMode.ReadOnly), (_, _) => ValueTask.CompletedTask,
                 (_, _) => throw new InvalidOperationException("No mutation can be approved in this fixture."));
+        Assert.Equal("completed", (await store.LoadAsync(session.Info.Id))!.Info.Status);
     }
 
     [Fact]

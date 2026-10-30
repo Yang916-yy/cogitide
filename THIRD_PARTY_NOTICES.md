@@ -9,6 +9,8 @@ Cogitide's original code is Apache-2.0. This does not replace the licenses of ad
 | Responses state | Pi, MIT; official OpenAI .NET SDK | Selected replay/state behaviors and SDK integration; [provenance](src/Workbench.Core/Licenses/Responses/PROVENANCE.md) |
 | Patch editing | OpenCode, MIT; Codex format reference | Focused port of OpenCode's Codex-style patch module; [exact source and original MIT notice](src/Workbench.Tools/Licenses/Patch/PROVENANCE.md) |
 | Background commands | OpenAI Codex, Apache-2.0 | Behavioral reference, independently implemented with .NET processes; [provenance and original notice](src/Workbench.Tools/Licenses/Commands/PROVENANCE.md) |
+| Interactive command terminals | Porta.Pty 2.2.3, MIT | Existing mature ConPTY/Unix PTY backend reused by Tools and Desktop; [fixed source and retained license](src/Workbench.Tools/Licenses/Commands/Porta-Pty-LICENSE.txt) |
+| Remote workspaces | System OpenSSH and WSL; .NET Process | Existing authenticated stdio transports, no copied SSH/network implementation; [configuration and boundaries](src/Workbench.Desktop/Remote/README.md) |
 | Navigation | .NET regular expressions, Microsoft.Extensions.FileSystemGlobbing, Roslyn and Git | [Components and licenses](src/Workbench.Tools/Licenses/Navigation/PROVENANCE.md) |
 | Official account authentication | OpenAI published OAuth contract; BCL HTTP, JWT and system credential libraries | [Auth provenance and dependency notices](src/Workbench.Auth/Licenses/PROVENANCE.md) |
 | Models and persistence | OpenAI and Anthropic official C# SDKs, Microsoft.Data.Sqlite | [Core dependencies](src/Workbench.Core/DEPENDENCIES.md), [Anthropic integration](src/Workbench.Core/ANTHROPIC.md) |

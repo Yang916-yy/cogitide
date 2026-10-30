@@ -125,6 +125,11 @@
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
         }
       },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "Transitive",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
       "ModelContextProtocol.Core": {
         "type": "Transitive",
         "resolved": "2.3.0",
@@ -139,6 +144,14 @@
         "contentHash": "AeyC3GxbrJ7KRoWDyFeNSUOQQWD9AnNvM7LYQijCcXcqjyr53aGRcf5GBLExcSBzIs0RWYHe+NbzPrHTeuU5zA==",
         "dependencies": {
           "System.ClientModel": "1.15.0"
+        }
+      },
+      "Porta.Pty": {
+        "type": "Transitive",
+        "resolved": "2.2.3",
+        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
         }
       },
       "SQLitePCLRaw.bundle_e_sqlite3": {
@@ -220,6 +233,7 @@
           "Microsoft.Extensions.FileSystemGlobbing": "[10.0.14, )",
           "Microsoft.Playwright": "[1.64.1, )",
           "ModelContextProtocol.Core": "[2.3.0, )",
+          "Porta.Pty": "[2.2.3, )",
           "Workbench.Protocol": "[1.0.0, )"
         }
       }

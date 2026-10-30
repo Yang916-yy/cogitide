@@ -19,7 +19,7 @@ namespace Workbench.Desktop;
 
 public partial class MainWindow : Window
 {
-    private readonly HostClient _host = new();
+    private HostClient _host = new();
     private readonly ObservableCollection<TimelineEntry> _entries = [];
     private readonly ObservableCollection<SessionInfo> _sessions = [];
     private readonly ObservableCollection<ImageAttachment> _draftImages = [];
@@ -64,14 +64,16 @@ public partial class MainWindow : Window
         Timeline.ItemsSource = _entries;
         AttachmentList.ItemsSource = _draftImages;
         SessionList.ItemsSource = _sessions;
-        _workspace = Program.WorkspacePath is { } explicitWorkspace && Directory.Exists(explicitWorkspace)
-            ? explicitWorkspace : _settings.LastWorkspace is { } path && Directory.Exists(path) ? path : "";
+        _workspace = _settings.ActiveConnection.IsRemote
+            ? Workbench.Desktop.Remote.RemotePaths.IsAbsolute(_settings.LastWorkspace) ? _settings.LastWorkspace! : ""
+            : Program.WorkspacePath is { } explicitWorkspace && Directory.Exists(explicitWorkspace)
+                ? explicitWorkspace : _settings.LastWorkspace is { } path && Directory.Exists(path) ? path : "";
         UpdateWorkspaceLabels();
         UpdateModelLabel();
         SetRunState(false);
         SizeChanged += (_, _) => ResizeInspector();
-        _host.Notification += (method, value) => Dispatcher.UIThread.Post(() => OnNotification(method, value));
-        _host.Disconnected += message => Dispatcher.UIThread.Post(() => { _ready = false; SetRunState(false); StatusLabel.Text = message; AddEntry("CONNECTION", message, "#F0B5A7"); });
+        BindHost(_host);
+        RefreshTaskControls();
         Opened += async (_, _) => { RefreshMotion(null, EventArgs.Empty); if (connectHost) await InitializeAsync(); };
         KeyDown += async (_, args) =>
         {
@@ -93,7 +95,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            await _host.StartAsync();
+            await _host.StartAsync(_settings.ActiveConnection);
             _ready = true;
             await RefreshSessionsAsync();
             if (_settings.LastSessionId is { } id && _sessions.FirstOrDefault(x => x.Id == id) is { } saved)
@@ -125,6 +127,11 @@ public partial class MainWindow : Window
 
     private async void OpenProjectClick(object? sender, RoutedEventArgs e) => await GuardAsync(async () =>
     {
+        if (_host.IsRemote)
+        {
+            await OpenRemoteWorkspaceAsync();
+            return;
+        }
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = L.Text("ChooseFolder"), AllowMultiple = false });
         var selected = folders.FirstOrDefault()?.TryGetLocalPath();
         if (selected is null) return;
@@ -134,6 +141,7 @@ public partial class MainWindow : Window
         SessionList.SelectedItem = null;
         _loadingSelection = false;
         _entries.Clear();
+        _liveWindowTrimmed = false;
         _toolEntries.Clear();
         _steeringEntries.Clear();
         _assistantEntry = null;
@@ -155,6 +163,7 @@ public partial class MainWindow : Window
         _session = await _host.RequestAsync<AgentSession>("session.create", new { workspacePath = _workspace, title = title ?? L.Text("NewSession"), backend = SelectedBackend });
         _newSessionBeforeSend = false;
         _entries.Clear();
+        _liveWindowTrimmed = false;
         _toolEntries.Clear();
         _steeringEntries.Clear();
         _assistantEntry = null;
@@ -172,27 +181,18 @@ public partial class MainWindow : Window
         await GuardAsync(async () => await LoadSessionAsync(info.Id));
     }
 
-    private async Task LoadSessionAsync(string id)
-    {
-        var generation = ++_loadGeneration;
-        var sessionTask = _host.RequestAsync<AgentSession>("session.load", new { sessionId = id });
-        var eventsTask = _host.RequestAsync<AgentEvent[]>("session.events", new { sessionId = id });
-        await Task.WhenAll(sessionTask, eventsTask);
-        var loaded = await sessionTask;
-        var events = await eventsTask;
-        if (generation != _loadGeneration) return;
-        RestoreSession(loaded, events);
-        await RefreshWorkspaceAsync();
-    }
+    private async Task LoadSessionAsync(string id) => await LoadSessionPageAsync(id);
 
-    internal void RestoreSession(AgentSession loaded, IReadOnlyList<AgentEvent> events)
+    internal void RestoreSession(AgentSession loaded, IReadOnlyList<AgentEvent> events, bool includeRecovery = true)
     {
         _session = loaded;
+        _liveWindowTrimmed = false;
         _newSessionBeforeSend = false;
         _workspace = loaded.Info.WorkspacePath;
         _settings = _settings with { Backend = ComposerChoices.NormalizeBackend(loaded.Info.Backend) };
         SessionTitle.Text = loaded.Info.Title;
         _entries.Clear();
+        _liveWindowTrimmed = false;
         _toolEntries.Clear();
         _steeringEntries.Clear();
         _assistantEntry = null;
@@ -212,7 +212,7 @@ public partial class MainWindow : Window
             if (message.ToolCalls is { Count: > 0 })
                 foreach (var call in message.ToolCalls) _toolEntries[call.Id] = AddEntry("TOOL · " + call.Name, Pretty(call.ArgumentsJson), "#A4AECA");
         }
-        foreach (var pending in DesktopEventPresentation.UnconfirmedInstructions(events))
+        foreach (var pending in includeRecovery ? DesktopEventPresentation.UnconfirmedInstructions(events) : [])
             AddEntry("RecoveredInput", "", "#E4B499").LocalizeText(() => L.Format("RecoveredInputText", pending.Text));
         if (loaded.Info.Backend == "codex")
         {
@@ -223,6 +223,7 @@ public partial class MainWindow : Window
         EmptyState.IsVisible = _entries.Count == 0;
         UpdateWorkspaceLabels();
         UpdateModelLabel();
+        RefreshTaskControls();
         SaveSettings();
     }
 
@@ -268,6 +269,7 @@ public partial class MainWindow : Window
                 LocalizedControl.Text(StatusLabel, "SteerSubmitted");
                 return;
             }
+            if (_viewingEarlierHistory && _session is not null) await LoadSessionPageAsync(_session.Info.Id);
             if (SelectedBackend == "chatgpt")
                 ApplyAccountState(await _host.RequestAsync<AccountState>("account.status"));
             if (NeedsFreshSession)
@@ -286,7 +288,7 @@ public partial class MainWindow : Window
             try
             {
                 await _host.RequestAsync<JsonElement>("run.start", new { sessionId = _session.Info.Id, prompt, images, provider,
-                    options = new RunOptions(ExecutionMode: _settings.ExecutionMode, Research: _settings.Research) });
+                    options = CurrentRunOptions() });
                 LocalizedControl.Text(StatusLabel, "RunSubmitted");
             }
             catch { SetRunState(false); throw; }
@@ -479,9 +481,13 @@ public partial class MainWindow : Window
                 case "run.steered":
                     if (evt.Text is { } accepted) AddEntry("YOU · SteerAccepted", accepted, "#AAA4FF");
                     break;
+                case "run.usage":
+                    RefreshTaskControls();
+                    break;
                 case "model.usage":
                     AddEntry("TOKENS", "", "#8F98AD").LocalizeText(() => DesktopEventPresentation.Usage(evt.Text));
                     break;
+                case "run.paused":
                 case "run.completed":
                 case "run.cancelled":
                 case "run.failed":
@@ -495,10 +501,13 @@ public partial class MainWindow : Window
                             pending.Entry.Label = "UnconfirmedInput";
                             pending.Entry.LocalizeText(() => L.Format("UnconfirmedInputText", pending.Text));
                         }
-                    var outcome = evt.Type switch { "run.failed" => "Failed", "run.cancelled" => "Stopped", _ => "Completed" };
+                    var status = evt.Type switch { "run.failed" => "failed", "run.cancelled" => "cancelled", "run.paused" => "paused", _ => "completed" };
+                    if (_session is not null) _session = _session with { Info = _session.Info with { Status = status } };
+                    RefreshTaskControls();
+                    var outcome = evt.Type switch { "run.failed" => "Failed", "run.cancelled" => "Stopped", "run.paused" => "Paused", _ => "Completed" };
                     LocalizedControl.Text(RunStateLabel, outcome);
                     LocalizedControl.Text(StatusLabel, outcome);
-                    if (evt.Type != "run.completed") AddEntry(evt.Type == "run.failed" ? "ERROR" : "STOPPED", evt.Text ?? RunStateLabel.Text!, "#E8B391");
+                    if (evt.Type != "run.completed") AddEntry(evt.Type == "run.failed" ? "ERROR" : evt.Type == "run.paused" ? "PAUSED" : "STOPPED", evt.Text ?? RunStateLabel.Text!, "#E8B391");
                     _ = GuardAsync(async () => { await RefreshSessionsAsync(_session?.Info.Id); await RefreshWorkspaceAsync(); });
                     break;
                 default:
@@ -562,35 +571,32 @@ public partial class MainWindow : Window
     {
         if (!_ready || string.IsNullOrWhiteSpace(_workspace)) return;
         var workspace = _workspace;
-        var filesTask = _host.RequestAsync<string[]>("workspace.files", new { workspacePath = workspace });
-        var diffTask = _host.RequestAsync<ToolResult>("workspace.diff", new { workspacePath = workspace });
-        await Task.WhenAll(filesTask, diffTask);
-        if (workspace != _workspace) return;
-        _files = await filesTask;
-        FilterFiles();
-        var diff = await diffTask;
+        var host = _host;
+        var filesTask = LoadFilePageAsync(false);
+        var diff = await host.RequestAsync<ToolResult>("workspace.diff", new { workspacePath = workspace });
+        await filesTask;
+        if (workspace != _workspace || host != _host) return;
         _diffEmpty = string.IsNullOrWhiteSpace(diff.Content);
         DiffPreview.Text = _diffEmpty ? L.Text("NoChanges") : diff.Content;
     }
 
-    private void FileFilterChanged(object? sender, TextChangedEventArgs e) => FilterFiles();
-    private void FilterFiles()
-    {
-        if (FileList is null) return;
-        var filter = FileFilter.Text?.Trim() ?? "";
-        FileList.ItemsSource = _files.Where(x => x.Contains(filter, StringComparison.OrdinalIgnoreCase)).Take(3000).ToArray();
-    }
+    private async void FileFilterChanged(object? sender, TextChangedEventArgs e) => await DebounceFilesAsync();
 
     private async void FileSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (FileList.SelectedItem is not string path || !_ready) return;
+        if (FileList.SelectedItem is not string path || !_ready)
+        {
+            ++_previewGeneration;
+            if (FilePreview is not null) FilePreview.Text = "";
+            if (MorePreviewButton is not null) MorePreviewButton.IsVisible = false;
+            if (PreviewStartButton is not null) PreviewStartButton.IsVisible = false;
+            return;
+        }
         await GuardAsync(async () =>
         {
             var workspace = _workspace;
-            var result = await _host.RequestAsync<ToolResult>("workspace.read", new { workspacePath = workspace, path });
+            await LoadPreviewPageAsync(path, false);
             if (_workspace != workspace || FileList.SelectedItem as string != path) return;
-            PreviewPath.Text = path;
-            FilePreview.Text = DisplayToolResult(result);
             var highlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(path));
             if (highlighting is not null)
             {
@@ -650,6 +656,7 @@ public partial class MainWindow : Window
         try
         {
             RequireWorkspace();
+            if (_host.IsRemote) throw new InvalidOperationException(L.Text("RemoteTerminalHint"));
             var terminal = new WorkbenchTerminalWindow(_workspace);
             _terminals.Add(terminal);
             terminal.Closed += (_, _) => _terminals.Remove(terminal);
@@ -856,15 +863,17 @@ public partial class MainWindow : Window
     }
     private void UpdateWorkspaceLabels()
     {
-        WorkspaceLabel.Text = string.IsNullOrWhiteSpace(_workspace) ? L.Text("ChooseLocalFolder") : new DirectoryInfo(_workspace).Name;
+        var workspaceName = _host.IsRemote ? _workspace.TrimEnd('/').Split('/').LastOrDefault() ?? _workspace : Path.GetFileName(Path.TrimEndingDirectorySeparator(_workspace));
+        WorkspaceLabel.Text = string.IsNullOrWhiteSpace(_workspace) ? L.Text("ChooseLocalFolder") : workspaceName;
         ToolTip.SetTip(WorkspaceLabel, _workspace);
-        HeaderWorkspace.Text = string.IsNullOrWhiteSpace(_workspace) ? L.Text("ChooseProject") : new DirectoryInfo(_workspace).Name;
+        HeaderWorkspace.Text = string.IsNullOrWhiteSpace(_workspace) ? L.Text("ChooseProject") : workspaceName;
+        if (HostLocationLabel is not null) HostLocationLabel.Text = _host.Connection.DisplayLabel;
     }
 
     private void RequireWorkspace()
     {
         if (!_ready) throw new InvalidOperationException(L.Text("HostNotConnected"));
-        if (string.IsNullOrWhiteSpace(_workspace) || !Directory.Exists(_workspace)) throw new InvalidOperationException(L.Text("WorkspaceRequired"));
+        if (string.IsNullOrWhiteSpace(_workspace) || (_host.IsRemote ? !Workbench.Desktop.Remote.RemotePaths.IsAbsolute(_workspace) : !Directory.Exists(_workspace))) throw new InvalidOperationException(L.Text("WorkspaceRequired"));
     }
 
     internal void SetRunState(bool running)
@@ -892,12 +901,18 @@ public partial class MainWindow : Window
         NewSessionButton.IsEnabled = canSwitch;
         SessionList.IsEnabled = canSwitch;
         RunCommandButton.IsEnabled = canSwitch;
+        HostConnectionsButton.IsEnabled = canSwitch;
+        RunBudgetButton.IsEnabled = canSwitch;
+        EarlierHistoryButton.IsEnabled = canSwitch;
+        LatestHistoryButton.IsEnabled = canSwitch;
+        ContinueRunButton.IsEnabled = canSwitch && _ready;
     }
 
     private TimelineEntry AddEntry(string label, string text, string accent = "#929DB6")
     {
         var entry = new TimelineEntry(label, text, accent);
         _entries.Add(entry);
+        BoundTimeline();
         EmptyState.IsVisible = false;
         Dispatcher.UIThread.Post(() => Timeline.ScrollIntoView(entry), DispatcherPriority.Background);
         return entry;

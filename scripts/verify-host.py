@@ -180,7 +180,7 @@ def main():
         accepted = host.request("run.start", {"sessionId": ident, "prompt": prompt, "images": images, "provider": provider,
             "options": {"maxIterations": 10, "timeoutSeconds": 240, "autoApproveWrites": False, "maxContextCharacters": 100000}})
         deadline = time.monotonic() + 260
-        while not any(e["type"] in ("run.completed", "run.failed", "run.cancelled") for e in host.events):
+        while not any(e["type"] in ("run.completed", "run.failed", "run.cancelled", "run.paused") for e in host.events):
             host.next(max(0.1, deadline - time.monotonic()))
         terminal = next(e for e in reversed(host.events) if e["type"].startswith("run."))
         assert terminal["type"] == "run.completed", terminal.get("text")
@@ -230,7 +230,7 @@ def main():
             followup = host.request("run.start", {"sessionId": ident, "prompt": "Without using tools or changing files, give one sentence stating the previous verification result and its scope.",
                 "provider": provider, "options": {"maxIterations": 2, "timeoutSeconds": 90}})
             deadline = time.monotonic() + 100
-            while not any(e["runId"] == followup["runId"] and e["type"] in ("run.completed", "run.failed", "run.cancelled") for e in host.events):
+            while not any(e["runId"] == followup["runId"] and e["type"] in ("run.completed", "run.failed", "run.cancelled", "run.paused") for e in host.events):
                 host.next(max(0.1, deadline - time.monotonic()))
             terminal = next(e for e in reversed(host.events) if e["runId"] == followup["runId"] and e["type"].startswith("run."))
             assert terminal["type"] == "run.completed", terminal.get("text")

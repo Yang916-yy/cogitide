@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Workbench.Auth;
 using Workbench.Core;
 using Workbench.Protocol;
@@ -191,7 +192,9 @@ internal sealed class WorkbenchHost : IAsyncDisposable
             case "initialize":
                 return new { protocolVersion = Wire.Version, tools = _tools.Select(x => x.Definition).Concat([SessionEvidenceTool.Descriptor,
                     ProjectSkillTool.Descriptor, ProjectExperienceTools.RememberDescriptor, ProjectExperienceTools.RecallDescriptor]),
-                    executionEngine = "cogito", chatGptAuthentication = "oauth", apiKeyAvailable = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY")), defaultProvider = new ProviderSettings() };
+                    executionEngine = "cogito", chatGptAuthentication = "oauth", apiKeyAvailable = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY")), defaultProvider = new ProviderSettings(),
+                    platform = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux",
+                    capabilities = new[] { "session.view", "session.messages.page", "session.events.page", "run.continue", "workspace.files.page", "workspace.read.page" } };
             case "session.list": return await _store.ListAsync(ct);
             case "session.create":
             {
@@ -205,6 +208,15 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 return session;
             }
             case "session.load": return await LoadAsync(Required(p, "sessionId"), ct);
+            case "session.view": return await _store.ReadViewAsync(Required(p, "sessionId"), Integer(p, "limit", 100), ct)
+                ?? throw new KeyNotFoundException("Session not found.");
+            case "session.messages.page": return await _store.MessagesPageAsync(Required(p, "sessionId"),
+                p.TryGetProperty("beforeIndex", out var beforeIndex) && beforeIndex.ValueKind != JsonValueKind.Null ? beforeIndex.GetInt32() : null,
+                Integer(p, "limit", 100), ct) ?? throw new KeyNotFoundException("Session not found.");
+            case "session.events.page": return await _store.EventsPageAsync(Required(p, "sessionId"),
+                p.TryGetProperty("beforeSequence", out var beforeSequence) && beforeSequence.ValueKind != JsonValueKind.Null ? beforeSequence.GetInt64() : null,
+                Integer(p, "limit", 100), ct);
+            case "session.pending_inputs": return await _store.PendingInputsAsync(Required(p, "sessionId"), Integer(p, "limit", 128), ct);
             case "session.evidence":
             {
                 var session = await LoadAsync(Required(p, "sessionId"), ct);
@@ -223,39 +235,41 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                     .RecallAsync(Required(p, "query"), cancellationToken: ct);
             }
             case "run.start":
+            case "run.continue":
             {
+                var continuing = method == "run.continue";
                 var id = Required(p, "sessionId");
                 var session = await LoadAsync(id, ct);
                 if (session.Info.Backend == "codex")
                     throw new InvalidOperationException("This is a historical Codex-managed chat with incomplete external tool history. Start a new ChatGPT chat to use the Cogitide agent; the original chat is preserved.");
                 if (session.Info.Backend is not ("api" or "chatgpt")) throw new InvalidOperationException("Unknown session authentication mode.");
-                var prompt = Required(p, "prompt");
-                if (string.IsNullOrWhiteSpace(prompt) || prompt.Length > 100000) throw new ArgumentException("Prompt must contain between 1 and 100000 characters.");
+                var prompt = continuing ? Optional(p, "prompt") ?? "" : Required(p, "prompt");
+                if ((!continuing && string.IsNullOrWhiteSpace(prompt)) || prompt.Length > 100000) throw new ArgumentException("Prompt must contain between 1 and 100000 characters.");
                 var provider = p.TryGetProperty("provider", out var providerJson) ? providerJson.Deserialize<ProviderSettings>(Wire.Json) ?? new() : new();
                 var images = p.TryGetProperty("images", out var imagesJson) ? imagesJson.Deserialize<ImageAttachment[]>(Wire.Json) : null;
                 ImageInputs.Validate(images);
+                if (continuing && images is { Length: > 0 }) throw new ArgumentException("Continuation does not accept attachments. Send a new task with the images explicitly.");
                 if (session.Info.Backend == "api" && images is { Length: > 0 })
                     ModelCapabilities.ValidateImages([new ChatMessage("user", prompt, Images: images)], provider);
                 if (session.Info.Backend == "chatgpt" && !p.TryGetProperty("provider", out _)) provider = provider with { Model = "" };
-                var options = p.TryGetProperty("options", out var optionsJson) ? optionsJson.Deserialize<RunOptions>(Wire.Json) ?? new() : new();
-                if (options.MaxIterations is < 1 or > 100 || options.TimeoutSeconds is < 1 or > 3600 || options.MaxContextCharacters is < 4000 or > 1000000)
-                    throw new ArgumentException("Run limits are outside supported bounds.");
-                if (!Enum.IsDefined(options.ExecutionMode)) throw new ArgumentException("Unknown execution mode.");
+                var options = ReadRunOptions(p, continuing ? session.RunCheckpoint?.Options : null);
+                RunLimits.Validate(options);
+                if (prompt.Length > options.MaxContextCharacters / 2) throw new ArgumentException("Prompt exceeds the context budget.");
+                if (continuing) RunLimits.ValidateContinuation(session);
                 // The durable terminal event can be observed just before the old async run releases
                 // its Host registration. Join that completed turn instead of rejecting the next one.
                 if (_runs.TryGetValue(id, out var finishing) && finishing.Task is { } finishingTask)
                 {
                     var tail = await _store.LastEventAsync(id, ct);
-                    if (tail?.RunId == finishing.Id && tail.Type is "run.completed" or "run.failed" or "run.cancelled")
+                    if (tail?.RunId == finishing.Id && tail.Type is "run.completed" or "run.failed" or "run.cancelled" or "run.paused")
                     {
                         await finishingTask.WaitAsync(ct);
                         session = await LoadAsync(id, ct);
                     }
                 }
                 var run = new ActiveRun(Guid.NewGuid().ToString("N"), CancellationTokenSource.CreateLinkedTokenSource(ct), session.Info.Backend);
-                run.Cancellation.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
                 if (!_runs.TryAdd(id, run)) { run.Cancellation.Dispose(); throw new InvalidOperationException("This session is already running. Stop it before starting another turn."); }
-                if (!_workspaceRuns.TryAdd(session.Info.WorkspacePath, id))
+                if (!_workspaceRuns.TryAdd(session.Info.WorkspacePath, "run:" + run.Id))
                 {
                     _runs.TryRemove(id, out _); run.Cancellation.Dispose();
                     throw new InvalidOperationException("Another session is working in this workspace. Stop it or use an independent worktree.");
@@ -284,15 +298,33 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                         await _store.SaveAsync(session, run.Cancellation.Token);
                     }
                     options = options with { RunId = run.Id };
-                    run.Task = ExecuteRunAsync(session, prompt, provider, options, run, images);
+                    run.Task = ExecuteRunAsync(session, prompt, provider, options, run, images, continuing);
+                    await run.Accepted.Task.WaitAsync(ct);
                     return new { runId = run.Id, accepted = true };
                 }
-                catch { _runs.TryRemove(id, out _); _workspaceRuns.TryRemove(session.Info.WorkspacePath, out _); run.Cancellation.Dispose(); throw; }
+                catch
+                {
+                    if (run.Task is null)
+                    {
+                        _runs.TryRemove(new KeyValuePair<string, ActiveRun>(id, run));
+                        _workspaceRuns.TryRemove(new KeyValuePair<string, string>(session.Info.WorkspacePath, "run:" + run.Id));
+                        run.Cancellation.Dispose();
+                    }
+                    else
+                    {
+                        // Once started, ExecuteRunAsync owns cleanup, including a cancellation drain.
+                        // Releasing its workspace here could admit a writer before that drain ends.
+                        try { run.Cancellation.Cancel(); } catch (ObjectDisposedException) { }
+                        try { await run.Task.WaitAsync(ct); } catch (Exception) { /* Cleanup remains owned by the original task. */ }
+                    }
+                    throw;
+                }
             }
             case "run.cancel":
             {
                 var id = Required(p, "sessionId");
                 if (_runs.TryGetValue(id, out var run)) run.Cancellation.Cancel();
+                await _commands.EndSessionAsync(id);
                 return new { requested = true };
             }
             case "run.steer":
@@ -311,7 +343,16 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 if (!_approvals.TryGetValue(id, out var pending)) throw new InvalidOperationException("Approval is no longer pending.");
                 return new { accepted = pending.TrySetResult(p.GetProperty("approved").GetBoolean()) };
             }
+            case "workspace.validate":
+            {
+                var path = WorkspaceService.Root(Required(p, "workspacePath"));
+                return new { workspacePath = path, name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path)) };
+            }
             case "workspace.files": return await _workspace.ListFilesAsync(Required(p, "workspacePath"), ct);
+            case "workspace.files.page": return await _workspace.BrowseFilesAsync(Required(p, "workspacePath"),
+                Optional(p, "pathPrefix") ?? "", Optional(p, "filter") ?? "", Integer(p, "offset", 0), Integer(p, "limit", 200), Optional(p, "expectedSnapshot"), ct);
+            case "workspace.read.page": return await _workspace.ReadFilePageAsync(Required(p, "workspacePath"), Required(p, "path"),
+                Integer(p, "offset", 0), Integer(p, "limit", 200), Integer(p, "characterOffset", 0), Optional(p, "expectedSha256"), ct);
             case "workspace.read": return await _workspace.ReadFileAsync(Required(p, "workspacePath"), Required(p, "path"), ct);
             case "workspace.diff": return await _workspace.GitDiffAsync(Required(p, "workspacePath"), ct);
             case "workspace.command":
@@ -340,7 +381,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
         }
     }
 
-    private async Task ExecuteRunAsync(AgentSession session, string prompt, ProviderSettings provider, RunOptions options, ActiveRun run, IReadOnlyList<ImageAttachment>? images)
+    private async Task ExecuteRunAsync(AgentSession session, string prompt, ProviderSettings provider, RunOptions options, ActiveRun run, IReadOnlyList<ImageAttachment>? images, bool continuing = false)
     {
         try
         {
@@ -359,11 +400,19 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 model = AgentModelFactory.Create(provider, key, _modelHttpClient);
             }
             options = options with { SecretEnvironmentVariables = [provider.ApiKeyEnvironmentVariable] };
-            await _engine.RunAsync(session.Info.Id, prompt, model, options, EmitAsync, ApproveAsync, run.Cancellation.Token, images);
+            if (continuing)
+                await _engine.ContinueAsync(session.Info.Id, model, options, EmitAsync, ApproveAsync, run.Cancellation.Token,
+                    string.IsNullOrWhiteSpace(prompt) ? null : prompt);
+            else
+                await _engine.RunAsync(session.Info.Id, prompt, model, options, EmitAsync, ApproveAsync, run.Cancellation.Token, images);
         }
         catch (Exception e)
         {
+            var accepted = run.Accepted.Task.IsCompletedSuccessfully;
+            run.Accepted.TrySetException(e);
             if (run.TerminalEmitted) return;
+            var view = await _store.ReadViewAsync(session.Info.Id, 1);
+            if (!accepted && view?.RunCheckpoint?.RunId != run.Id) return;
             var cancelled = e is OperationCanceledException;
             var current = await _store.LoadAsync(session.Info.Id) ?? session;
             await _store.SaveAsync(current with { Info = current.Info with { Status = cancelled ? "cancelled" : "failed", UpdatedAt = DateTimeOffset.UtcNow } });
@@ -372,11 +421,12 @@ internal sealed class WorkbenchHost : IAsyncDisposable
         }
         finally
         {
+            run.Accepted.TrySetException(new InvalidOperationException("The run ended before its request could be durably accepted."));
             try { await _commands.EndRunAsync(session.Info.Id, run.Id); }
             finally
             {
-                _runs.TryRemove(session.Info.Id, out _);
-                _workspaceRuns.TryRemove(session.Info.WorkspacePath, out _);
+                _runs.TryRemove(new KeyValuePair<string, ActiveRun>(session.Info.Id, run));
+                _workspaceRuns.TryRemove(new KeyValuePair<string, string>(session.Info.WorkspacePath, "run:" + run.Id));
                 run.Cancellation.Dispose();
             }
         }
@@ -398,7 +448,8 @@ internal sealed class WorkbenchHost : IAsyncDisposable
 
     private ValueTask EmitAsync(AgentEvent evt, CancellationToken ct)
     {
-        if ((evt.Type is "run.completed" or "run.cancelled" or "run.failed") && _runs.TryGetValue(evt.SessionId, out var run)) run.TerminalEmitted = true;
+        if (evt.Type == "run.accepted" && _runs.TryGetValue(evt.SessionId, out var acceptedRun) && acceptedRun.Id == evt.RunId) acceptedRun.Accepted.TrySetResult(true);
+        if ((evt.Type is "run.completed" or "run.cancelled" or "run.failed" or "run.paused") && _runs.TryGetValue(evt.SessionId, out var run) && run.Id == evt.RunId) run.TerminalEmitted = true;
         return new(WriteAsync(new RpcNotification("agent.event", Wire.Element(evt))));
     }
     private async Task WriteAsync<T>(T value)
@@ -408,6 +459,24 @@ internal sealed class WorkbenchHost : IAsyncDisposable
         finally { _outputGate.Release(); }
     }
     private async Task<AgentSession> LoadAsync(string id, CancellationToken ct) => await _store.LoadAsync(id, ct) ?? throw new KeyNotFoundException("Session not found.");
+    private static RunOptions ReadRunOptions(JsonElement parameters, RunOptions? inherited)
+    {
+        var options = JsonSerializer.SerializeToNode(inherited ?? new RunOptions(), Wire.Json)!.AsObject();
+        if (parameters.TryGetProperty("options", out var supplied))
+        {
+            if (supplied.ValueKind != JsonValueKind.Object) throw new ArgumentException("Run options must be an object.");
+            HashSet<string> seen = new(StringComparer.Ordinal);
+            foreach (var property in supplied.EnumerateObject())
+            {
+                if (!options.ContainsKey(property.Name) || !seen.Add(property.Name))
+                    throw new ArgumentException("Unknown or duplicate run option: " + property.Name);
+                options[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+            }
+        }
+        return options.Deserialize<RunOptions>(Wire.Json) ?? throw new ArgumentException("Run options are invalid.");
+    }
+
+    private static int Integer(JsonElement p, string name, int fallback) => p.TryGetProperty(name, out var value) ? value.GetInt32() : fallback;
     private static string Required(JsonElement p, string name) => Optional(p, name) ?? throw new ArgumentException($"Missing parameter: {name}");
     private static string? Optional(JsonElement p, string name) => p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     public async ValueTask DisposeAsync()
@@ -429,5 +498,6 @@ internal sealed class WorkbenchHost : IAsyncDisposable
         public string? AccountBinding { get; set; }
         public Task? Task { get; set; }
         public bool TerminalEmitted { get; set; }
+        public TaskCompletionSource<bool> Accepted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

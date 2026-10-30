@@ -116,7 +116,7 @@ def main():
         report["runId"] = accepted["runId"]
         deadline = time.monotonic() + 165
         while True:
-            terminal = [event for event in host.events if event["runId"] == accepted["runId"] and event["type"] in ("run.completed", "run.failed", "run.cancelled")]
+            terminal = [event for event in host.events if event["runId"] == accepted["runId"] and event["type"] in ("run.completed", "run.failed", "run.cancelled", "run.paused")]
             if terminal:
                 report["terminal"] = terminal[-1]
                 break
