@@ -1,0 +1,90 @@
+{
+  "measuredDate": "2026-10-30",
+  "os": "Windows 11 build26300.9711",
+  "cpu": "Intel Core i7-13700H (20 logical,14 physical cores)",
+  "sdk": "11.0.100-rc.3.26522.148",
+  "configuration": "Release",
+  "benchmarkDotNet": "0.15.8",
+  "toolchain": "InProcessEmitToolchain; external .NET11 moniker unsupported",
+  "launches": 1,
+  "warmupIterations": 3,
+  "measurementIterations": 10,
+  "textFixture": {
+    "files": 128,
+    "linesPerFile": 120
+  },
+  "semanticFixture": {
+    "sourceFiles": 31,
+    "callers": 30,
+    "packageReferencesLoaded": false
+  },
+  "metrics": [
+    {
+      "method": "ReadPage",
+      "meanMilliseconds": 0.69147291015625,
+      "standardDeviationMilliseconds": 0.027608992541428644,
+      "error999Milliseconds": 0.04174085708934718,
+      "medianMilliseconds": 0.7022716796875,
+      "p95Milliseconds": 0.7153591650390625,
+      "measuredIterations": 10,
+      "managedBytesPerOperation": 69868
+    },
+    {
+      "method": "LiteralSearch",
+      "meanMilliseconds": 179.9644733333333,
+      "standardDeviationMilliseconds": 13.716632022203674,
+      "error999Milliseconds": 20.737590338612918,
+      "medianMilliseconds": 181.58511666666666,
+      "p95Milliseconds": 195.39621166666666,
+      "measuredIterations": 10,
+      "managedBytesPerOperation": 8475917
+    },
+    {
+      "method": "RegexSearch",
+      "meanMilliseconds": 201.31141666666667,
+      "standardDeviationMilliseconds": 10.630095361165353,
+      "error999Milliseconds": 16.071187336905822,
+      "medianMilliseconds": 202.80208333333331,
+      "p95Milliseconds": 211.903145,
+      "measuredIterations": 10,
+      "managedBytesPerOperation": 8492283
+    },
+    {
+      "method": "SyntaxOutline",
+      "meanMilliseconds": 0.65431240234375,
+      "standardDeviationMilliseconds": 0.02353866604101111,
+      "error999Milliseconds": 0.03955520164744832,
+      "medianMilliseconds": 0.64725048828125,
+      "p95Milliseconds": 0.6921138671875,
+      "measuredIterations": 9,
+      "managedBytesPerOperation": 19772
+    },
+    {
+      "method": "SemanticReferences",
+      "meanMilliseconds": 253.66497,
+      "standardDeviationMilliseconds": 16.832493440238338,
+      "error999Milliseconds": 25.44832818843616,
+      "medianMilliseconds": 259.4113,
+      "p95Milliseconds": 271.368875,
+      "measuredIterations": 10,
+      "managedBytesPerOperation": 7375683
+    }
+  ],
+  "hostStartup": {
+    "samples": 10,
+    "medianMilliseconds": 329.2671,
+    "minMilliseconds": 196.8007,
+    "maxMilliseconds": 1487.3298,
+    "meanWorkingSetMiB": 41.201953125,
+    "meanPrivateMiB": 11.81953125,
+    "firstSampleMilliseconds": 1487.3298,
+    "freshProcessesShareOsCache": true
+  },
+  "limitations": [
+    "Local tool latency and managed allocations, not coding task success or model latency.",
+    "In-process benchmarking shares runtime state; output contains noise and outlier processing.",
+    "No comparison with another language, agent, or machine.",
+    "Browser and MCP operations are functional tests, not timed performance claims."
+  ],
+  "rawReportSha256": "f8eaa3adbc7ac05ae8eb73295ba00f9c1729e95d6aacc295f25a713bbbef0a13"
+}

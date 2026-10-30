@@ -13,17 +13,20 @@ public sealed class AgentEngine
     private readonly Func<string, string, bool, string>? _pathResolver;
     private readonly IRunResourceLifetime? _resources;
     private readonly Func<string, string?, CancellationToken, Task<IAgentTool>>? _repositoryMemoryFactory;
+    private readonly Func<string, IReadOnlyList<string>?, CancellationToken, Task<IAgentToolSet?>>? _additionalToolsFactory;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _sessions = new();
     private readonly ConcurrentDictionary<string, SteeringState> _active = new();
 
     public AgentEngine(ISessionStore store, IEnumerable<IAgentTool> tools, Func<string, string, bool, string>? pathResolver = null,
         IRunResourceLifetime? resources = null,
-        Func<string, string?, CancellationToken, Task<IAgentTool>>? repositoryMemoryFactory = null)
+        Func<string, string?, CancellationToken, Task<IAgentTool>>? repositoryMemoryFactory = null,
+        Func<string, IReadOnlyList<string>?, CancellationToken, Task<IAgentToolSet?>>? additionalToolsFactory = null)
     {
         _store = store;
         _pathResolver = pathResolver;
         _resources = resources;
         _repositoryMemoryFactory = repositoryMemoryFactory;
+        _additionalToolsFactory = additionalToolsFactory;
         _tools = tools.ToDictionary(t => t.Definition.Name, StringComparer.Ordinal).ToFrozenDictionary(StringComparer.Ordinal);
         if (_tools.Keys.Any(name => name is "inspect_evidence" or "read_skill" or "remember_experience" or "recall_project_memory"))
             throw new ArgumentException("Session knowledge tool names are reserved.", nameof(tools));
@@ -73,8 +76,15 @@ public sealed class AgentEngine
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
             var token = timeout.Token;
+            await using var additional = new ToolSetLease(options.ExecutionMode != ExecutionMode.ReadOnly && _additionalToolsFactory is not null
+                ? await _additionalToolsFactory(session.Info.WorkspacePath, options.SecretEnvironmentVariables, token) : null);
             var tools = _tools.Where(pair => options.ExecutionMode != ExecutionMode.ReadOnly || !pair.Value.Definition.RequiresApproval)
                 .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            foreach (var tool in additional.Tools)
+            {
+                if (tool.Definition.Name is "inspect_evidence" or "read_skill" or "remember_experience" or "recall_project_memory" ||
+                    !tools.TryAdd(tool.Definition.Name, tool)) throw new InvalidOperationException("An integration tool name conflicts with a reserved or existing tool.");
+            }
             if (research.RepositoryMemory)
             {
                 if (_repositoryMemoryFactory is null) throw new InvalidOperationException("Repository memory is unavailable in this host.");
@@ -82,7 +92,7 @@ public sealed class AgentEngine
                 tools.Add(repositoryTool.Definition.Name, repositoryTool);
             }
             tools.Add("inspect_evidence", new SessionEvidenceTool(_store, sessionId, session.Info.WorkspacePath,
-                _tools.Values.Where(tool => tool.Definition.RequiresApproval).Select(tool => tool.Definition.Name).ToHashSet(StringComparer.Ordinal)));
+                tools.Values.Where(tool => tool.Definition.RequiresApproval).Select(tool => tool.Definition.Name).ToHashSet(StringComparer.Ordinal)));
             ProjectRules? project = _pathResolver is null ? null : new(session.Info.WorkspacePath, _pathResolver);
             ProjectExperienceTools? experience = null;
             var explicitSkills = ProjectRules.ExplicitSkills(prompt).ToHashSet(StringComparer.Ordinal);
@@ -401,6 +411,13 @@ public sealed class AgentEngine
                 await SendAsync("speculation.summary", JsonSerializer.Serialize(prefetch.Statistics, Wire.Json));
             }
 
+            try { await additional.DisposeAsync(); }
+            catch (Exception ex)
+            {
+                outcome = new Failed($"Integration cleanup could not be verified ({ex.GetType().Name}). Inspect external servers before continuing.");
+                await SendAsync("integrations.cleanup_failed", "Integration cleanup failed; completion is unknown.");
+            }
+
             if (_resources is not null)
             {
                 try
@@ -440,6 +457,17 @@ public sealed class AgentEngine
                 finally { steering.Gate.Release(); }
             }
             gate.Release();
+        }
+    }
+
+    private sealed class ToolSetLease(IAgentToolSet? tools) : IAsyncDisposable
+    {
+        private IAgentToolSet? _tools = tools;
+        public IReadOnlyList<IAgentTool> Tools => _tools?.Tools ?? [];
+        public async ValueTask DisposeAsync()
+        {
+            var current = Interlocked.Exchange(ref _tools, null);
+            if (current is not null) await current.DisposeAsync();
         }
     }
 

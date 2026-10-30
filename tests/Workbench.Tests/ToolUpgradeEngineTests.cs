@@ -77,7 +77,7 @@ public sealed class ToolUpgradeEngineTests : IDisposable
         string? id = null;
         var model = new Model((messages, tools) =>
         {
-            Assert.Equal(17, tools.Count);
+            Assert.Equal(18, tools.Count);
             if (++count == 1) return new(ToolCalls: [new("launch", "start_command", JsonSerializer.Serialize(new
                 { command = OperatingSystem.IsWindows() ? "Start-Sleep 60" : "sleep 60", timeoutSeconds = 60, yieldMilliseconds = 0 }))]);
             using var result = JsonDocument.Parse(messages.Last().Content);
@@ -103,7 +103,7 @@ public sealed class ToolUpgradeEngineTests : IDisposable
         await using var commands = new CommandSessionManager(Path.Combine(_root, "command-state"), WorkbenchHost.CommandWorkerStart);
         var model = new Model((_, tools) =>
         {
-            Assert.Equal(12, tools.Count);
+            Assert.Equal(13, tools.Count);
             Assert.DoesNotContain(tools, tool => tool.Name is "start_command" or "apply_patch" or "run_command" or "write_file" or "replace_text");
             Assert.Contains(tools, tool => tool.Name == "read_command");
             Assert.Contains(tools, tool => tool.Name == "stop_command");

@@ -2,7 +2,7 @@
 
 Read [AGENTS.md](AGENTS.md) and the README in the module being changed. The public name is Cogitide; internal namespaces, assembly names and data paths remain Workbench.
 
-**严禁重复造不必要的轮子。** Start by checking .NET/BCL, existing project components, official SDKs, then focused adaptations of mature upstream projects. If custom code is necessary, explain the concrete gap and alternatives. Keep the smallest implementation that serves the product. Record fixed source revisions and retain all original notices for adapted code.
+**Do not reinvent unnecessary infrastructure.** Start by checking .NET/BCL, existing project components, official SDKs, then focused adaptations of mature upstream projects. If custom code is necessary, explain the concrete gap and alternatives. Keep the smallest implementation that serves the product. Record fixed source revisions and retain all original notices for adapted code.
 
 Use the pinned SDK through `scripts/build.ps1`. Python 3 and Git are needed for offline integration fixtures. Do not run overlapping SDK commands against the same checkout. Tests should run without opening windows or accessing real model accounts. Explicit live flags in the older scripts consume API usage and are not part of default verification.
 

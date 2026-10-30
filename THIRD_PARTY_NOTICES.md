@@ -13,6 +13,10 @@ Cogitide's original code is Apache-2.0. This does not replace the licenses of ad
 | Official account authentication | OpenAI published OAuth contract; BCL HTTP, JWT and system credential libraries | [Auth provenance and dependency notices](src/Workbench.Auth/Licenses/PROVENANCE.md) |
 | Models and persistence | OpenAI and Anthropic official C# SDKs, Microsoft.Data.Sqlite | [Core dependencies](src/Workbench.Core/DEPENDENCIES.md), [Anthropic integration](src/Workbench.Core/ANTHROPIC.md) |
 | Desktop | Avalonia, AvaloniaEdit and declared packages | [Desktop dependencies](src/Workbench.Desktop/DEPENDENCIES.md) |
+| MCP | Official ModelContextProtocol.Core 2.3.0, Apache-2.0 | Stdio and Streamable HTTP transports, framing and lifetime; [exact revision and boundaries](src/Workbench.Tools/Mcp/README.md) |
+| Browser acceptance | Official Microsoft.Playwright 1.64.1, MIT | Headless Chromium, isolated contexts and assertions; [source revision, browser installation and limits](src/Workbench.Tools/Browser/README.md) |
+| Semantic navigation | Microsoft.CodeAnalysis.CSharp 5.9.0, MIT | Source-only symbol binding, definitions/references/diagnostics; [supported scope](src/Workbench.Tools/Navigation/README.md) |
+| Benchmarks (development only) | BenchmarkDotNet 0.15.8, MIT | Warmup, measurements and GC/allocation reporting; [runtime/toolchain notes](benchmarks/Workbench.Benchmarks/README.md) |
 
 Exact transitive package versions and content hashes are in each project's `packages.lock.json`; package license metadata remains owned by upstream. Publishing retains the existing per-module `Licenses` files and adds the root license and notices. The self-contained runtime retains its upstream runtime notices as well.
 

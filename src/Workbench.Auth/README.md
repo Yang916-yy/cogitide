@@ -1,7 +1,11 @@
-# Auth：官方账号鉴权
+**English** | [简体中文](README.zh-CN.md)
 
-[Accounts](Accounts/README.md) 按官方公开 OAuth 契约管理账号，复用 .NET HTTP 与 Microsoft JWT 组件；[Storage](Storage/README.md) 使用系统保护存储。登录仅提供模型鉴权，不委托外部 agent 执行。程序不读取其他应用的账号文件。
+# Official account authentication
 
-来源、依赖和原始告知见 [Licenses/PROVENANCE.md](Licenses/PROVENANCE.md)。公开产品名为 Cogitide；既有系统存储服务名保持兼容。真实登录与三平台系统凭据服务仍需实机验证。
+[Accounts](Accounts/README.md) integrates the documented OAuth account contract; [Storage](Storage/README.md) protects credentials with system facilities. Login supplies model authentication only. Agent execution stays in the shared Core kernel, and this library does not read another application's account files.
 
-**严禁重复造不必要的轮子。** 不另写密码学、JWT 验签器或系统密钥库；先使用成熟 .NET 组件。不存在公开官方协议的厂商只使用 API，不模拟私有订阅登录。
+The public name is Cogitide; historical system storage identifiers remain compatible. Sources, exact dependency commits and unmodified notices are recorded in [Auth provenance](Licenses/PROVENANCE.md). The implementation reuses BCL HTTP/TLS/JSON and Microsoft JWT and native credential storage components. Real authorization and each platform's vault require separate live verification; local protocol fixtures do not establish account entitlement.
+
+**Do not reinvent infrastructure.** Reuse mature .NET cryptography, JWT validation and system vaults. A vendor without a supported public login contract uses its API integration; do not invent private subscription authentication.
+
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.

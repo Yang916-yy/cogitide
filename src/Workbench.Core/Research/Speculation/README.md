@@ -1,13 +1,15 @@
-# Speculation：可撤销的只读文件预取
+**English** | [简体中文](README.zh-CN.md)
 
-本模块采用 [Speculative Actions v2](https://arxiv.org/html/2510.04371v2) 的“预测下一动作、与模型推理重叠、实际动作匹配后才消费”的机制。论文允许基于领域规则的预测器；这里使用一次 `search_files` 或 `glob_files` 的首个文件路径预测默认分页 `read_file`。没有复制论文作者代码，没有增加预测模型调用，也没有迁入写入、命令或通用多分支推测执行。
+# Revocable read only prefetch
 
-`ReadOnlyPrefetch.cs` 复用现有 `IAgentTool`、`Task`、取消令牌、路径解析器及 [共享有界哈希](../../Memory/EvidenceFileHash.cs)。每次运行一个未消费分支，默认最多 4 次、配置上限 8 次、单次 5 秒。结果不提前进入对话/证据；实际请求的工具、物理路径和分页参数一致，并通过当前整文件 SHA-256 检查，才作为本次工具结果提交。未知参数、不匹配、变化或失败都回退到普通读取。
+The mechanism follows [Speculative Actions v2](https://arxiv.org/html/2510.04371v2): predict a future action, overlap it with model inference, and consume only if the actual action matches. A domain heuristic chooses the first file from `search_files`/`glob_files` and predicts default `read_file` pagination. No author code or predictor model call is copied/added; writes, commands and general multi branch speculation are excluded.
 
-本项目增加的保护是：运行级隔离、写入/追加指令/结束时取消并等待、无输出回调、忽略文件和符号链接边界沿用原工具、整文件哈希最多读取 16 MiB + 1 字节。这些是工程设计，不是已经证明的学术创新。只支持内置且遵守取消的 `read_file`，不是任意插件的安全推测框架；文件仍可能在检查之后变化，和普通读取一样需要后续修改时的版本保护。
+`ReadOnlyPrefetch.cs` reuses `IAgentTool`, BCL `Task`, cancellation, the existing path resolver and [bounded shared hashes](../../Memory/EvidenceFileHash.cs). Each run owns one unconsumed branch, default four/max eight prefetches, five seconds each. Results stay outside conversation/evidence until tool name, physical path, page parameters and a current full file SHA-256 match. Unknown parameters, mismatch, changed content or failure fall back to an ordinary read.
 
-通过 `ResearchOptions.ReadOnlyPrefetch` 或桌面实验选项启用。`speculation.started/hit/summary` 事件记录消耗和命中；未命中也会花费 I/O。关闭时保持基线，没有跨会话/账号缓存。我们尚未测得真实任务延迟收益，需在相同模型/任务集上比较总延迟、读取量和正确率。
+Project safeguards are run isolation, cancel and wait on writes/steering/end, no output callback, existing ignore/link boundaries and a 16 MiB + one byte hash read cap. These are engineering additions rather than proved novelty. Only built in cooperative `read_file` is supported, not arbitrary plugin speculation. A file can still change after validation, so edits require normal version protection.
 
-[SpeculationTests.cs](../../../../tests/Workbench.Tests/SpeculationTests.cs) 验证真实 AgentEngine 的重叠、匹配、变化回退、取消和生命周期；它不代表性能基准。
+Enable through `ResearchOptions.ReadOnlyPrefetch` or desktop experiments. `speculation.started/hit/summary` records usage/hits, including wasted I/O. Default off has no cross session/account cache. [SpeculationTests](../../../../tests/Workbench.Tests/SpeculationTests.cs) exercises real AgentEngine overlap, matches, fallback, cancellation and lifetime. Real task latency/accuracy gains have not been measured.
 
-**严禁重复造不必要的轮子。** 不另写调度器、文件解析器、哈希算法、线程池或缓存服务；优先复用 BCL 和当前工具。扩展预测范围必须先证明动作可撤销/无副作用、匹配边界和测得的收益，并更新本文与测试。
+**Do not reinvent infrastructure.** Reuse BCL and existing tools rather than a scheduler, filesystem parser, hash algorithm, thread pool or cache service. Expansion needs reversible/side effect boundaries, matching evidence and measured benefit before enabling it.
+
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.

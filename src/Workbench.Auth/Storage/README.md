@@ -1,9 +1,17 @@
-# 系统保护凭据存储
+**English** | [简体中文](README.zh-CN.md)
 
-[ProtectedAuthStore.cs](ProtectedAuthStore.cs) 保存本应用独立注册的账号凭据与非秘密元数据，提供实例隔离、存储生命周期及提交边界。用户会话和代码历史另存于 [Core/Persistence](../../Workbench.Core/Persistence/README.md)，不要把二者合成一个未经区分的 JSON 文件。
+# System protected credential storage
 
-保护能力复用 **Microsoft.Identity.Client.Extensions.Msal 4.92.0** 的公开 `Storage` API：Windows DPAPI、macOS Keychain、Linux libsecret/Secret Service。Windows 的 `ProtectedData` 使用固定 **10.0.14** 依赖。MSAL 在这里用于成熟系统存储，不是 Microsoft 账号鉴权。
+`ProtectedAuthStore` stores this application's own registrations, account credentials and nonsecret metadata, with installation isolation, an exclusive lifetime lock and complete token set commits. User conversations and code history remain in [Core/Persistence](../../Workbench.Core/Persistence/README.md); they are not merged into an unprotected JSON account file.
 
-上游存储组件不提供所需的跨进程互斥，因此本模块只补充 BCL 排他文件句柄和按数据目录分隔的 vault 标识；Windows 用保护后的临时文件与替换提交完整记录。精确源 commit、MIT notices、平台边界见 [Auth provenance](../Licenses/PROVENANCE.md)。系统凭据服务不可用会明确失败，不切换明文保存。
+Native protection reuses the public `Storage` API from **Microsoft.Identity.Client.Extensions.Msal 4.92.0**, fixed commit `2465fc31fa2b481b68660670e2becfd3fba7c631`: Windows DPAPI, macOS Keychain and Linux libsecret/Secret Service. Windows `ProtectedData` is explicitly pinned to **10.0.14**. MSAL supplies storage, not Microsoft account authentication. The component's missing cross process lock is supplied by an exclusive BCL file handle. Vault identifiers include the application data directory; Windows encrypts a temporary file before an atomic rename. Exact licenses and platform limits are in [Auth provenance](../Licenses/PROVENANCE.md).
 
-**严禁重复造不必要的轮子。** 不得编写自制密码库、令牌加密算法、Keychain/libsecret 包装服务或新的明文 fallback；首先复用 Microsoft 组件和平台能力。确有平台缺口时在 PR 提供系统环境、最小复现、替代组件及迁移/损坏恢复测试，不把跨平台编译当作 vault 实机通过。
+An unavailable native vault fails explicitly without plaintext fallback. Cross platform compilation does not verify the vault on every OS.
+
+**Do not reinvent infrastructure.** Do not add a credential daemon, cryptography, Keychain/libsecret wrapper or plaintext fallback. A new storage component needs a demonstrated platform gap, system evidence, mature alternatives and migration/corruption recovery tests.
+
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.
+
+## Preserved source references
+
+- [Original reference 1](ProtectedAuthStore.cs)

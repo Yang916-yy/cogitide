@@ -6,11 +6,12 @@ These rules apply throughout this repository. More local module README files pro
 
 - Build a coding-first desktop agent in C# 15 / .NET 11. Desktop, stdio Host and all model providers share the same agent kernel. Account login supplies authentication only.
 - Retain `Workbench` assembly names and data paths for compatibility. The public product name is Cogitide.
+- English is the default Markdown documentation language. Retain substantial Chinese historical records as adjacent `*.zh-CN.md` with bidirectional language links; identify summaries versus fully synchronized translations.
 - Runtime research features are explicit opt-ins. Offline optimization must never silently spend money, activate a candidate, grow a budget, or use final-test feedback to choose candidates.
 
 ## Reuse is mandatory
 
-**严禁重复造不必要的轮子。** Before adding infrastructure, inspect .NET/BCL, the existing adapters and mature upstream implementations. Prefer existing official SDKs, `SocketsHttpHandler`, System.Text.Json, SQLite, Git, Roslyn and Avalonia to parallel home-made equivalents. Port only needed behavior from a fixed upstream revision; preserve its license and record changes. New custom infrastructure requires a concrete missing capability, comparison with existing choices, and validation evidence in the PR. This is a design requirement, not an extra human-approval gate for routine authorized work.
+**Do not reinvent unnecessary infrastructure.** Before adding infrastructure, inspect .NET/BCL, the existing adapters and mature upstream implementations. Prefer existing official SDKs, `SocketsHttpHandler`, System.Text.Json, SQLite, Git, Roslyn and Avalonia to parallel home-made equivalents. Port only needed behavior from a fixed upstream revision; preserve its license and record changes. New custom infrastructure requires a concrete missing capability, comparison with existing choices, and validation evidence in the PR. This is a design requirement, not an extra human-approval gate for routine authorized work.
 
 - Peripheral module READMEs must identify which code is adapted, which behavior is merely referenced, and which C# components are reused. Never imply a line-for-line port when only behavior was borrowed.
 - Kernel module READMEs must cite primary papers, identify the implemented mechanism, describe project additions, and separate functional tests from measured research benefits. Do not call an engineering combination a proven academic innovation.

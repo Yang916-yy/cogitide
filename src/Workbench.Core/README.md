@@ -1,7 +1,11 @@
-# Core：统一 agent 内核
+**English** | [简体中文](README.zh-CN.md)
 
-所有模型进入同一个 [Runtime](Runtime/README.md)。[Models](Models/README.md) 负责成熟 SDK 适配，[Persistence](Persistence/README.md) 负责 SQLite；这两部分优先复用现成实现。规则在 [Projects](Projects/README.md)，证据与经验在 [Memory](Memory/README.md)，自动摘要与指南在 [Context](Context/README.md)。可选研究搜索与预取在 [Research](Research/README.md)。共享接口位于 Protocol，具体实现按上述职责组织。
+# Core: one shared agent kernel
 
-固定上游与原始许可证在 `Licenses/`。核心论文机制、项目增加部分、未实现部分分别写在上述模块中；论文引用不是性能保证。默认行为和研究选项共享同一个工具/审批/存储路径，不建立平行 agent。
+Every model enters [Runtime](Runtime/README.md). [Models](Models/README.md) adapts official SDKs; [Persistence](Persistence/README.md) uses SQLite. [Projects](Projects/README.md) owns rules/skills, [Memory](Memory/README.md) owns source evidence and candidate procedures, and [Context](Context/README.md) owns compaction/guidelines. Optional search and prefetch experiments live in [Research](Research/README.md). Interfaces are shared through Protocol rather than a parallel agent.
 
-**严禁重复造不必要的轮子。** HTTP/SSE、JSON、数据库、密码学和调度先复用现有 SDK 与 .NET 组件；必要自实现须说明缺口、替代方案和验证。文件统计见 [模块清单](../../docs/module-map.md)。
+Fixed upstream sources and original licenses live in `Licenses/`; focused Pi/OpenCode behavior uses commits `e7a0df27c09d11bf4161d3605246cbf57a129cb2` and `60072747957926e7aeec7e911fe6e23abe9bf830`. Each kernel module distinguishes primary paper mechanisms, engineering additions, exclusions and functional tests. Citations do not establish performance gains. Research paths preserve the same tool, approval and storage boundaries as the baseline.
+
+**Do not reinvent infrastructure.** Reuse official SDK HTTP/SSE, System.Text.Json, Microsoft.Data.Sqlite and BCL cryptography/cancellation/concurrency. A custom component requires a missing capability, alternatives and validation. File statistics are generated in the [module map](../../docs/module-map.md).
+
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.

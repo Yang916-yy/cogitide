@@ -132,10 +132,10 @@ class FixtureHandler(http.server.BaseHTTPRequestHandler):
             mode = next(name for name in ("main", "crash", "cold") if prompt.startswith("TOOLS_UPGRADE_" + name.upper()))
             definitions = {tool["function"]["name"] for tool in body["tools"]}
             if mode == "cold":
-                assert len(definitions) == 12, definitions
+                assert len(definitions) == 13, definitions
                 assert not definitions.intersection({"write_file", "replace_text", "apply_patch", "run_command", "start_command"})
             else:
-                assert len(definitions) == 17, definitions
+                assert len(definitions) == 19, definitions
             self.server.tool_counts[mode] = len(definitions)
             tail = messages[start + 1:]
             calls = {call["id"]: call for message in tail for call in message.get("tool_calls", [])}
@@ -396,7 +396,7 @@ while True: time.sleep(0.2)
     try:
         host = StrictHost(directory / "state", env, workspace, policy, executable)
         init = host.request("initialize", {})
-        assert len(init["tools"]) == 17
+        assert len(init["tools"]) == 19
         session = host.request("session.create", {"workspacePath": str(workspace), "backend": "api"})["info"]["id"]
         policy["sessions"][session] = "main"
         run = start(host, session, "MAIN " + marker, provider)

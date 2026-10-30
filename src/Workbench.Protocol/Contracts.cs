@@ -74,6 +74,10 @@ public interface IRunResourceLifetime
     // Stops owned resources before a run releases its workspace. Returns the number that were still active.
     Task<int> EndRunAsync(string sessionId, string runId);
 }
+public interface IAgentToolSet : IAsyncDisposable
+{
+    IReadOnlyList<IAgentTool> Tools { get; }
+}
 public interface ISessionStore
 {
     Task<IReadOnlyList<SessionInfo>> ListAsync(CancellationToken cancellationToken = default);

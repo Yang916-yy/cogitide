@@ -68,9 +68,11 @@ internal sealed class WorkbenchHost : IAsyncDisposable
     {
         _store = new SqliteSessionStore(Path.Combine(directory, "sessions.db"));
         _commands = new(Path.Combine(directory, "commands"), CommandWorkerStart);
-        _tools = WorkspaceTools.Create(_workspace, _commands);
+        _tools = [.. WorkspaceTools.Create(_workspace, _commands), new BrowserCheckTool(Path.Combine(directory, "browser-artifacts"))];
         _engine = new AgentEngine(_store, _tools, WorkspaceService.Resolve, _commands,
-            (workspace, revision, ct) => _workspace.CreateRepositoryMemoryToolAsync(workspace, revision, ct));
+            (workspace, revision, ct) => _workspace.CreateRepositoryMemoryToolAsync(workspace, revision, ct),
+            async (workspace, excluded, ct) => File.Exists(Path.Combine(directory, "mcp.json"))
+                ? await McpToolSet.ConnectAsync(Path.Combine(directory, "mcp.json"), workspace, excluded, ct) : null);
         _accounts = accounts ?? new ChatGptAccountService(directory);
         _modelHttpClient = modelHttpClient;
         _accounts.AccountChanged += AccountChanged;

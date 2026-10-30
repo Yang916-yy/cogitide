@@ -34,6 +34,7 @@ public static class WorkspaceTools
             new FunctionTool(new("stop_command", "Stop an owned command and its process tree, retaining logs for inspection. This cannot start commands or access another chat's jobs.", Schema(new { commandId = StringProperty("Owned command session ID"), offset = new { type = "integer", minimum = 0, maximum = 4194304 } }, "commandId")),
                 (arg, ctx, ct) => commands.StopAsync(ctx, Required(arg, "commandId"), Integer(arg, "offset", 0), ct))
         ]);
+        tools.Add(service.CreateCSharpSemanticTool());
         return tools;
     }
 

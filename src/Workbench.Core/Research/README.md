@@ -1,7 +1,11 @@
-# Research：可关闭或显式启动的核心增强
+**English** | [简体中文](README.zh-CN.md)
 
-- [SkillOptimization](SkillOptimization/README.md)：GEPA/SkillOpt 的离线技能搜索，冻结选择后才评估最终留出集，不自动安装技能。
-- [Speculation](Speculation/README.md)：下一次文件读取与模型推理重叠，实际请求匹配和文件哈希核对后才使用。
-- ACON 压缩与指南优化复用既有摘要模块，位于 [Context](../Context/README.md)。
+# Explicit or switchable research mechanisms
 
-算法只负责策略与结果；模型、工具、进程和状态继续复用主内核及成熟 .NET 组件。**严禁重复造不必要的轮子。** 具体论文、工程改造、边界与测试在子目录 README；功能通过不等于论文收益复现。
+[SkillOptimization](SkillOptimization/README.md) provides GEPA/SkillOpt inspired offline text search, freezing selection before final holdout evaluation and never installing a candidate. [Speculation](Speculation/README.md) overlaps a predicted file read with inference, consuming it only after exact request and current hash checks. [Context](../Context/README.md) owns ACON guideline compaction and offline comparison.
+
+These independent C# mechanisms reuse `IAgentModel`, `IAgentTool`, AgentEngine, BCL Tasks/CancellationToken/SHA-256/System.Text.Json and existing SQLite. Child READMEs cite primary papers, mechanism scope, project additions and test boundaries. No author research source was imported into these independent implementations, and a fixture pass is not a paper benefit reproduction.
+
+**Do not reinvent infrastructure.** Policies/results belong here; models, tools, execution, process ownership and storage stay in the existing kernel/mature .NET components. Research is explicit or disabled by default and never expands budget or activates a candidate by itself.
+
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.

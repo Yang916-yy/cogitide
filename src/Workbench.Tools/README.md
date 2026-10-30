@@ -1,7 +1,13 @@
-# Tools：成熟工具契约的 C# 适配
+**English** | [简体中文](README.zh-CN.md)
 
-`WorkspaceTools.cs` 汇总工具定义，[Workspace](Workspace/README.md) 处理路径与 BCL 文件/进程能力，[Navigation](Navigation/README.md) 复用 Git、Roslyn、正则与官方 globbing，[Editing](Editing/README.md) 聚焦移植 OpenCode 的 Codex 风格 patch 模块，[Execution](Execution/README.md) 使用 .NET 进程实现 Codex 启发的后台命令生命周期。
+# Tools: C# adapters for mature contracts
 
-[RepositoryMemory](RepositoryMemory/README.md) 是例外的研究模块：按 RepoMem/DCI 思路检索冻结版本的仓库历史，并提供可核对的来源。它不替代当前源码阅读。
+`WorkspaceTools.cs` assembles definitions. [Workspace](Workspace/README.md) owns checked paths and BCL file/process operations; [Navigation](Navigation/README.md) reuses Git, Roslyn, regular expressions and official globbing; [Editing](Editing/README.md) adapts OpenCode's Codex style patch format; [Execution](Execution/README.md) implements Codex inspired command lifetimes with .NET processes. New optional integrations are described separately in [MCP](Mcp/README.md) and [headless browser acceptance](Browser/README.md).
 
-固定源文件、commit、改编范围与上游许可证在 `Licenses/`。**严禁重复造不必要的轮子。** 新工具先检查 BCL、现有工作区原语与成熟库；对新自实现说明实际缺口及验证，不因上游有功能而全量搬入不需要的运行时。
+[RepositoryMemory](RepositoryMemory/README.md) is an explicit research option: frozen revision Git history search with source evidence, inspired by RepoMem/DCI. Historical evidence never replaces reading current source.
+
+Fixed source files, commits, adaptation boundaries and original licenses live in `Licenses/` and [DEPENDENCIES](DEPENDENCIES.md). Examples are OpenCode patch commit `810c0eba1a7348036f8bdf61e6632d0c36c6876c`, OpenCode navigation commit `60072747957926e7aeec7e911fe6e23abe9bf830` and Codex unified exec reference `788b9d7bf6e37f735647b7f84b556c2a807df4d8`. Reused components include `System.Text.Json`, `Process`, `FileStream`, SHA-256, Git CLI, Microsoft.CodeAnalysis and Microsoft.Extensions.FileSystemGlobbing.
+
+**Do not reinvent infrastructure.** Inspect BCL, existing workspace primitives and mature implementations before adding a tool. Custom infrastructure needs a concrete gap, alternatives and validation; an upstream feature list is not a reason to import its whole runtime.
+
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.

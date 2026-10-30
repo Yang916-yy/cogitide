@@ -1,24 +1,22 @@
-# 证据与项目经验
+**English** | [简体中文](README.zh-CN.md)
 
-本目录保存能够追溯来源的观察和可复用步骤。它不训练模型，不把模型自述升级为事实，也不自动执行召回的命令。
+# Evidence and project experience
 
-| 文件 | 职责 |
-| --- | --- |
-| [EvidenceMemory.cs](EvidenceMemory.cs) | 从真实工具事件投影观察、产物、来源及保守失效状态，包含多文件补丁和后台命令终态。 |
-| [SessionEvidenceTool.cs](SessionEvidenceTool.cs) | 本会话 `inspect_evidence` 工具，按来源回读有界证据。 |
-| [ProjectExperienceTools.cs](ProjectExperienceTools.cs) | `remember_experience` / `recall_project_memory`，按项目保存、去重、显式替代及检索带前置条件的步骤候选。 |
-| [EvidenceFileHash.cs](EvidenceFileHash.cs) | 共用有大小上限的流式文件哈希，避免各个记忆模块重复实现读取/校验。 |
+`EvidenceMemory` projects observed events into bounded evidence, artifacts, sources and conservative stale states, including deleted/moved files and running background commands. `SessionEvidenceTool` exposes session bound `inspect_evidence`. `ProjectExperienceTools` implements `remember_experience` / `recall_project_memory`: project scoped deduplication, explicit replacement, prerequisites and version checks. `EvidenceFileHash` shares one bounded streaming hash across modules.
 
-## 论文与工程增量
+Mechanism references are [ACE v2](https://arxiv.org/html/2510.04618v2)'s incremental playbook entries and [APC](https://proceedings.neurips.cc/paper_files/paper/2025/hash/9549f7d06700f0966d5f938f1d11022a-Abstract-Conference.html)'s conditional procedure reuse. Only inspectable procedure candidates are implemented: no learned retriever, full ACE Generator/Reflector/Curator or complete APC system. Engineering additions are real tool source events, version/deletion provenance, replay checks and current hashes of reported files. Reappearance invalidates deletion evidence. Model suggestions remain `Candidate`; unchanged reported files do not prove dependencies, environment or tests remain valid.
 
-采用 [ACE](https://arxiv.org/html/2510.04618v2) 的小条目增量更新思路，以及 [APC](https://proceedings.neurips.cc/paper_files/paper/2025/hash/9549f7d06700f0966d5f938f1d11022a-Abstract-Conference.html) 的有条件步骤复用思路。当前实现范围是可检索的 procedure 候选、适用条件与增量替代，不是完整 ACE Generator/Reflector/Curator 或 APC 论文系统。
+Project procedures, [Git history localization](../../Workbench.Tools/RepositoryMemory/README.md) and [offline skill optimization](../Research/SkillOptimization/README.md) are separate mechanisms; [PROJECT-REUSE](../PROJECT-REUSE.md) records provenance. Combining them is not proved novelty or measured benefit. Recalled commands are never automatically executed.
 
-Cogitide 增加了确定性来源和版本约束：只接受实际工具事件作为证据；多文件修改同时记录所有目标及删除来源；召回时重查源事件、结果和报告过的文件哈希；旧文件重新出现也会使删除观察失效。模型解释始终是 `Candidate`，文件版本一致只说明这些文件，没有证明整个依赖环境或自然语言经验正确。
+The implementation reuses the [SQLite event store](../Persistence/README.md), BCL SHA-256, async cancellation, generated JSON metadata, immutable records and bounded keyword matching. No vector/graph service or second storage layer is added. Save validates that a complete single recall package fits its retrieval budget.
 
-项目经验、Git 历史定位和技能离线优化分别由本目录、[RepositoryMemory](../../Workbench.Tools/RepositoryMemory/README.md) 与 [SkillOptimization](../Research/SkillOptimization/README.md) 承担，不能混称已实现同一种论文算法。来源关系与范围详见 [PROJECT-REUSE](../PROJECT-REUSE.md)。工程增量尚无独立基准证明收益或学术新颖性。
+**Do not reinvent infrastructure.** Reuse event storage and hashing. A new semantic/index layer needs a measured retrieval gap, mature alternatives and migration/comparison evidence; it cannot discard failures, grant permissions or replace frozen validation with the producing model's own judgment.
 
-## 组件与贡献约束
+This English page summarizes the preserved source. [The full Chinese record](README.zh-CN.md) retains complete historical details, examples, evidence paths and qualifications. Historical dates and test counts above are not new verification claims.
 
-复用现有 [SQLite 会话事件库](../Persistence/README.md)、.NET SHA-256、异步流、JSON 源生成、不可变 record 和有界关键词匹配；没有新增向量库、图数据库或记忆服务。保存前校验完整召回包预算，避免“能保存但永远取不出”的条目。
+## Preserved source references
 
-**严禁重复造不必要的轮子。** 不得另建并行的事件存储、哈希实现或自动脚本执行器；优先复用本模块和成熟 .NET 组件。新增索引/检索器必须先说明现有路径与关键词检索的具体不足、替代方案、迁移和对照结果。贡献不得删除原始失败记录、隐式提高经验权威或用同一模型自评代替冻结任务验证。
+- [Original reference 1](EvidenceMemory.cs)
+- [Original reference 2](SessionEvidenceTool.cs)
+- [Original reference 3](ProjectExperienceTools.cs)
+- [Original reference 4](EvidenceFileHash.cs)
