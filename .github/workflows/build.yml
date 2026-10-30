@@ -41,13 +41,15 @@ jobs:
           $root | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           "DOTNET_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "DOTNET_HOST_PATH=$dotnet" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-      - name: Locked restore, build and unit tests
-        run: |
-          ./scripts/build.ps1 -Configuration Debug -SkipTests
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          ./tests/Workbench.Tests/bin/Debug/net11.0/playwright.ps1 install --with-deps chromium
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet test tests/Workbench.Tests/Workbench.Tests.csproj --no-build --no-restore --logger 'trx;LogFileName=workbench.trx' --results-directory artifacts/test-results
+      - name: Locked restore and build
+        timeout-minutes: 10
+        run: ./scripts/build.ps1 -Configuration Debug -SkipTests
+      - name: Install headless Chromium and system dependencies
+        timeout-minutes: 8
+        run: ./tests/Workbench.Tests/bin/Debug/net11.0/playwright.ps1 install --with-deps --only-shell chromium
+      - name: Unit and regression tests
+        timeout-minutes: 8
+        run: dotnet test tests/Workbench.Tests/Workbench.Tests.csproj --no-build --no-restore --blame-hang-timeout 180s --logger 'trx;LogFileName=workbench.trx' --results-directory artifacts/test-results
       - name: Host integration with local SSE fixture
         run: python scripts/verify-host.py
       - name: Host lifecycle and concurrency integration
