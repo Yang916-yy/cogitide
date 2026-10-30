@@ -45,6 +45,9 @@ public sealed class StorePersistenceTests : IDisposable
         var events = await store.EventsAsync("a", 16);
         Assert.Equal(Enumerable.Range(17, 16).Select(x => (long)x), events.Select(e => e.Sequence));
         Assert.Equal(1, (await store.EventsAsync("b"))[0].Sequence);
+        Assert.Equal(events[^1], await store.LastEventAsync("a"));
+        Assert.Equal("b", (await store.LastEventAsync("b"))!.SessionId);
+        Assert.Null(await store.LastEventAsync("missing"));
     }
 
     [Fact]

@@ -140,6 +140,22 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
         finally { _gate.Release(); }
     }
 
+    /// <summary>Read one indexed journal tail record without materializing a long conversation.</summary>
+    public async Task<AgentEvent?> LastEventAsync(string sessionId, CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var connection = Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT payload FROM events WHERE session_id=$id ORDER BY sequence DESC LIMIT 1;";
+            command.Parameters.AddWithValue("$id", sessionId);
+            var payload = await command.ExecuteScalarAsync(cancellationToken);
+            return payload is string json ? JsonSerializer.Deserialize<AgentEvent>(json, Wire.Json) : null;
+        }
+        finally { _gate.Release(); }
+    }
+
     public async Task<IReadOnlyList<AgentEvent>> EventsAsync(string sessionId, long afterSequence = 0, CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken);

@@ -241,6 +241,17 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 if (options.MaxIterations is < 1 or > 100 || options.TimeoutSeconds is < 1 or > 3600 || options.MaxContextCharacters is < 4000 or > 1000000)
                     throw new ArgumentException("Run limits are outside supported bounds.");
                 if (!Enum.IsDefined(options.ExecutionMode)) throw new ArgumentException("Unknown execution mode.");
+                // The durable terminal event can be observed just before the old async run releases
+                // its Host registration. Join that completed turn instead of rejecting the next one.
+                if (_runs.TryGetValue(id, out var finishing) && finishing.Task is { } finishingTask)
+                {
+                    var tail = await _store.LastEventAsync(id, ct);
+                    if (tail?.RunId == finishing.Id && tail.Type is "run.completed" or "run.failed" or "run.cancelled")
+                    {
+                        await finishingTask.WaitAsync(ct);
+                        session = await LoadAsync(id, ct);
+                    }
+                }
                 var run = new ActiveRun(Guid.NewGuid().ToString("N"), CancellationTokenSource.CreateLinkedTokenSource(ct), session.Info.Backend);
                 run.Cancellation.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
                 if (!_runs.TryAdd(id, run)) { run.Cancellation.Dispose(); throw new InvalidOperationException("This session is already running. Stop it before starting another turn."); }

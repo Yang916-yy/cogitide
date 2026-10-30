@@ -292,8 +292,13 @@ public sealed partial class WorkspaceService
         return new ProcessResult(process.HasExited ? process.ExitCode : -1, output.ToString(), timeoutCts.IsCancellationRequested, truncated);
     }
 
-    private static async Task StopProcessAsync(Process process)
+    internal static async Task StopProcessAsync(Process process)
     {
+        if (OperatingSystem.IsMacOS())
+        {
+            await StopMacProcessTreeAsync(process);
+            return;
+        }
         Exception? failure = null;
         try
         {
@@ -314,6 +319,143 @@ public sealed partial class WorkspaceService
         }
         if (!process.HasExited)
             throw new IOException($"Command process {process.Id} has not exited after termination.", failure);
+    }
+
+    // The pinned .NET 11 RC's macOS Kill(true) SIGSTOP path can deadlock its child reaper
+    // and signal unrelated members of the caller's process group (dotnet/runtime#131944).
+    // Upstream fix: dotnet/runtime#135409, c8b56e6c12e3010e74e1724487a65cbb1c75d0d1.
+    // Until that runtime is deployed, use the reported ps-snapshot/BCL Kill() workaround:
+    // no native interop, SIGSTOP, process-group signalling, or unbounded background kill.
+    // This is best-effort ownership of snapshot descendants, not containment of new forks
+    // or deliberately detached processes. Retained start times reject recycled PIDs.
+    private static async Task StopMacProcessTreeAsync(Process process)
+    {
+        if (process.HasExited) return;
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        List<(Process Process, DateTime Started)> descendants = [];
+        List<Exception> failures = [];
+        try
+        {
+            var snapshotStarted = DateTime.UtcNow;
+            var parents = await ReadMacProcessParentsAsync(deadline.Token);
+            var children = parents.GroupBy(pair => pair.Value).ToDictionary(group => group.Key, group => group.Select(pair => pair.Key).ToArray());
+            HashSet<int> seen = [process.Id];
+            Stack<int> pending = new();
+            pending.Push(process.Id);
+            while (pending.TryPop(out var parent))
+            {
+                deadline.Token.ThrowIfCancellationRequested();
+                if (!children.TryGetValue(parent, out var childIds)) continue;
+                foreach (var pid in childIds)
+                {
+                    if (!seen.Add(pid)) continue;
+                    if (seen.Count > 4096) throw new IOException("Owned process cleanup exceeds the 4096-process snapshot budget.");
+                    Process? child = null;
+                    try
+                    {
+                        child = Process.GetProcessById(pid);
+                        var started = child.StartTime.ToUniversalTime();
+                        // A PID born after snapshot collection began cannot be trusted as the
+                        // same process seen by ps. Do not signal a potentially recycled PID.
+                        if (started > snapshotStarted)
+                        {
+                            failures.Add(new IOException("A descendant PID changed or was created during process inventory; its cleanup is unverified."));
+                            child.Dispose();
+                            continue;
+                        }
+                        descendants.Add((child, started));
+                        pending.Push(pid);
+                    }
+                    catch (ArgumentException) { child?.Dispose(); }
+                    catch (Exception ex) when (IsProcessExitRace(ex))
+                    {
+                        // Missing start-time metadata is not proof that a live child exited.
+                        if (child is null || !child.HasExited) failures.Add(ex);
+                        child?.Dispose();
+                    }
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException or System.ComponentModel.Win32Exception)
+        { failures.Add(ex); }
+
+        try
+        {
+            // The traversal records ancestors before descendants. Kill leaves first so ordinary
+            // waiting shells can reap children before their own exit, without stopping any process.
+            foreach (var owned in descendants.AsEnumerable().Reverse())
+            {
+                try
+                {
+                    if (owned.Process.HasExited) continue;
+                    using var current = Process.GetProcessById(owned.Process.Id);
+                    if (current.StartTime.ToUniversalTime() != owned.Started) continue;
+                    owned.Process.Kill();
+                }
+                catch (ArgumentException) { /* PID is no longer present. */ }
+                catch (Exception ex) when (IsProcessExitRace(ex))
+                {
+                    if (!owned.Process.HasExited) failures.Add(ex);
+                }
+            }
+            try { if (!process.HasExited) process.Kill(); }
+            catch (Exception ex) when (IsProcessExitRace(ex))
+            { if (!process.HasExited) failures.Add(ex); }
+            try
+            {
+                await Task.WhenAll(descendants.Select(owned => owned.Process.WaitForExitAsync(deadline.Token))
+                    .Append(process.WaitForExitAsync(deadline.Token)));
+            }
+            catch (OperationCanceledException ex) { failures.Add(ex); }
+            if (failures.Count > 0)
+                throw new IOException("Owned process cleanup could not be fully verified on macOS. Inspect the command before continuing.", new AggregateException(failures));
+        }
+        finally { foreach (var owned in descendants) owned.Process.Dispose(); }
+    }
+
+    private static async Task<Dictionary<int, int>> ReadMacProcessParentsAsync(CancellationToken ct)
+    {
+        // BSD ps owns process enumeration. Parse only its two numeric fields, never command lines.
+        var start = new ProcessStartInfo("/bin/ps")
+        {
+            UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true,
+            RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        foreach (var argument in new[] { "-A", "-o", "pid=,ppid=" }) start.ArgumentList.Add(argument);
+        start.Environment.Clear();
+        start.Environment["LC_ALL"] = "C";
+        using var snapshot = new Process { StartInfo = start };
+        ct.ThrowIfCancellationRequested();
+        if (!snapshot.Start()) throw new IOException("Process inventory did not start.");
+        snapshot.StandardInput.Close();
+        var errors = snapshot.StandardError.ReadToEndAsync(ct);
+        try
+        {
+            Dictionary<int, int> parents = [];
+            var characters = 0;
+            while (await snapshot.StandardOutput.ReadLineAsync(ct) is { } line)
+            {
+                characters += line.Length;
+                if (characters > 1_048_576 || parents.Count >= 32_768 || line.Length > 64)
+                    throw new IOException("Process inventory exceeded its bounded output budget.");
+                var values = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (values.Length != 2 || !int.TryParse(values[0], out var pid) || !int.TryParse(values[1], out var parent) ||
+                    pid < 0 || parent < 0 || !parents.TryAdd(pid, parent))
+                    throw new IOException("Process inventory contained invalid or duplicate process identifiers.");
+            }
+            await snapshot.WaitForExitAsync(ct);
+            await errors;
+            if (snapshot.ExitCode != 0) throw new IOException("Process inventory did not complete successfully.");
+            return parents;
+        }
+        catch
+        {
+            // ps has no command children. A single-process kill avoids the affected runtime path.
+            if (!snapshot.HasExited) snapshot.Kill();
+            await snapshot.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            try { await errors; } catch (OperationCanceledException) { }
+            throw;
+        }
     }
 
     private static bool IsProcessExitRace(Exception exception) => exception switch

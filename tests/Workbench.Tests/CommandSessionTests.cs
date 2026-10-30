@@ -267,25 +267,61 @@ public sealed class CommandSessionTests : IDisposable
         Assert.Equal(directories, Directory.GetDirectories(State).Length);
     }
 
-    [Fact]
-    public async Task OutputSinkFailureStopsProcessBeforePropagatingError()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OutputSinkFailureStopsProcessBeforePropagatingError(bool standardError)
     {
         Process? owned = null;
+        Process? child = null;
+        using var cancellation = new CancellationTokenSource();
+        Task<ToolResult>? running = null;
         try
         {
-            var command = OperatingSystem.IsWindows() ? "Write-Output ('ROOT=' + $PID); Start-Sleep 60"
-                : "printf 'ROOT=%s\n' \"$$\"; sleep 60";
-            await Assert.ThrowsAsync<IOException>(() => new WorkspaceService().RunCommandAsync(Workspace, command, 60,
+            var command = OperatingSystem.IsWindows()
+                ? "$ownedChild = Start-Process -FilePath powershell.exe -ArgumentList '-NoLogo','-NoProfile','-NonInteractive','-Command','Start-Sleep -Seconds 60' -WindowStyle Hidden -PassThru; " +
+                    (standardError ? "[Console]::Error.WriteLine" : "[Console]::WriteLine") + "(('ROOT=' + $PID + ';CHILD=' + $ownedChild.Id)); Wait-Process -Id $ownedChild.Id"
+                : "sleep 60 & child=$!; printf 'ROOT=%s;CHILD=%s\n' \"$$\" \"$child\"" + (standardError ? " >&2" : "") + "; wait \"$child\"";
+            var output = new StringBuilder();
+            running = new WorkspaceService().RunCommandAsync(Workspace, command, 60,
                 onOutput: (chunk, _) =>
                 {
-                    var match = Regex.Match(chunk, @"ROOT=(\d+)");
-                    if (match.Success) owned = Process.GetProcessById(int.Parse(match.Groups[1].Value));
+                    output.Append(chunk);
+                    var match = Regex.Match(output.ToString(), @"ROOT=(\d+);CHILD=(\d+)");
+                    if (!match.Success) return ValueTask.CompletedTask;
+                    owned = Process.GetProcessById(int.Parse(match.Groups[1].Value));
+                    child = Process.GetProcessById(int.Parse(match.Groups[2].Value));
                     throw new IOException("Generated output sink failure.");
-                }).WaitAsync(TimeSpan.FromSeconds(15)));
+                }, ct: cancellation.Token);
+            var failure = await Assert.ThrowsAsync<IOException>(() => running.WaitAsync(TimeSpan.FromSeconds(15)));
+            Assert.IsType<IOException>(failure.InnerException);
+            Assert.Equal("Generated output sink failure.", failure.InnerException!.Message);
             Assert.NotNull(owned);
-            await owned.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.NotNull(child);
+            await Task.WhenAll(owned.WaitForExitAsync(), child.WaitForExitAsync()).WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(owned.HasExited && child.HasExited);
+            // A stopped-child reaper deadlock affects all later Process.Start/exit operations,
+            // not just the failing sink. Prove the caller and its BCL reaper remain usable.
+            var probe = await new WorkspaceService().RunCommandAsync(Workspace,
+                OperatingSystem.IsWindows() ? "[Console]::Write('reaper-alive')" : "printf 'reaper-alive'", 5).WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.False(probe.IsError, probe.Content);
+            Assert.Equal("reaper-alive", Json(probe).GetProperty("output").GetString());
         }
-        finally { owned?.Dispose(); }
+        finally
+        {
+            cancellation.Cancel();
+            // Fixture cleanup only targets the exact handles obtained before the intentional
+            // sink exception; it must not repeat the macOS Kill(true) path under regression.
+            foreach (var process in new[] { child, owned })
+            {
+                if (process is null) continue;
+                try { if (!process.HasExited) process.Kill(); await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5)); }
+                finally { process.Dispose(); }
+            }
+            if (running is not null)
+                try { await running.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (Exception ex) when (ex is IOException or OperationCanceledException) { }
+        }
     }
 
     private async Task<Match> WaitForPids(CommandSessionManager manager, string id)

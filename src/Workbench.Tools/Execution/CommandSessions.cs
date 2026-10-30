@@ -87,7 +87,7 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
             }
             catch
             {
-                try { if (!process.HasExited) process.Kill(true); } catch (Exception) { }
+                try { if (!process.HasExited) await WorkspaceService.StopProcessAsync(process); } catch (Exception) { }
                 process.Dispose();
                 await SaveRecordAsync(directory, record with { Status = "failed", Error = "The command worker did not start.", FinishedAt = DateTimeOffset.UtcNow });
                 throw;
@@ -246,7 +246,7 @@ public sealed class CommandSessionManager : IAsyncDisposable, IRunResourceLifeti
         try { await job.Completion.WaitAsync(TimeSpan.FromSeconds(15)); }
         catch (TimeoutException)
         {
-            try { if (!job.Process.HasExited) job.Process.Kill(true); } catch (InvalidOperationException) { }
+            try { if (!job.Process.HasExited) await WorkspaceService.StopProcessAsync(job.Process); } catch (InvalidOperationException) { }
             await job.Completion.WaitAsync(TimeSpan.FromSeconds(5));
         }
     }

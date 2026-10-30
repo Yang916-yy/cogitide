@@ -20,7 +20,8 @@ under Apache-2.0. Its NuGet repository commit is
 
 No SDK implementation was copied or ported. The SDK implements JSON-RPC,
 initialization/version negotiation, stdio framing, Streamable HTTP/SSE framing,
-request cancellation, HTTP session ownership and child-process shutdown. The BCL
+request cancellation, HTTP session ownership and standard stdio child-process
+shutdown on Windows/Linux. The BCL
 provides `SocketsHttpHandler`, `HttpClient`, `System.Text.Json`, environment access,
 SHA-256 and cancellation. There is no second production HTTP/SSE implementation,
 protocol parser, process scheduler or storage layer.
@@ -29,6 +30,23 @@ Cogitide adds only the local configuration contract, credential forwarding polic
 bounded discovery, provider-compatible names, approval flag and bounded projection
 from MCP content into the existing text-based `ToolResult`. The tiny stdio and HTTP
 peers in `McpIntegrationTests` are independent test fixtures, not runtime transports.
+
+On macOS, the pinned SDK's sealed `StdioClientTransport` has no process-start or
+termination hook and eventually calls `Process.Kill(entireProcessTree: true)`.
+The runtime has a documented macOS process-tree termination failure involving
+stopped children and hosted runner process groups
+([runtime issue 131944](https://github.com/dotnet/runtime/issues/131944),
+[runtime fix 135409](https://github.com/dotnet/runtime/pull/135409)). To avoid that
+path, this adapter starts only the macOS stdio process through BCL `Process` and
+passes its streams to the SDK's public `StreamClientTransport`. Process shutdown
+reuses `WorkspaceService.StopProcessAsync`, the same bounded macOS process cleanup
+used for workspace commands; it does not add another process enumeration or kill
+implementation. Stderr is drained with a fixed-size buffer without retaining its
+contents. The SDK still owns all protocol parsing, framing, cancellation and
+version negotiation. Windows/Linux retain the SDK's complete stdio transport.
+This is a narrow lifecycle workaround, not a port of SDK internals or a private
+reflection hook. The same stdio lifecycle fixtures exercise this branch on macOS;
+their results must be observed on that platform before claiming Mac validation.
 
 ## Explicit local configuration
 
@@ -98,9 +116,11 @@ They fit the provider tool-name limit and distinguish names such as `a.b` and
 `a_b`, including across servers. The original remote name is retained for calls.
 Definitions stay fixed for one run; reconnecting on the next run refreshes them.
 
-The run owns every client and HTTP transport, including partially connected
-sets. Cancellation and timeout close the set; SDK disposal terminates owned stdio
-process trees and closes owned HTTP sessions. Calls are never retried or replayed.
+The run owns every client, process and HTTP transport, including partially
+connected sets. Cancellation and timeout close the set; SDK disposal terminates
+Windows/Linux stdio process trees and closes owned HTTP sessions. On macOS the
+shared command process cleanup terminates owned processes before the SDK stream
+session is disposed. Calls are never retried or replayed.
 A two-second cleanup deadline disposes owned HTTP clients if a session-deletion
 request stalls; remote session deletion is then unconfirmed.
 A cancelled or timed-out call may already have changed the remote system: timeout

@@ -19,3 +19,11 @@ This English page summarizes the preserved source. [The full Chinese record](REA
 ## Preserved source references
 
 - [Original reference 1](CommandSessions.cs)
+
+## Pinned-runtime macOS process cleanup
+
+The pinned .NET 11 RC macOS runtime has a documented `Process.Kill(entireProcessTree: true)` SIGSTOP/child-reaper regression: [runtime issue 131944](https://github.com/dotnet/runtime/issues/131944), [upstream backport 135409](https://github.com/dotnet/runtime/pull/135409), commit `c8b56e6c12e3010e74e1724487a65cbb1c75d0d1`. `ProcessStartInfo.CreateNewProcessGroup` is Windows-only in this SDK and cannot solve it on Unix.
+
+Until the fixed runtime is deployed, the shared macOS stop helper uses the existing system `/bin/ps` for a bounded PID/parent snapshot and BCL single-process `Kill()` in descendants-first order, without SIGSTOP or process-group signals. Start-time checks reject recycled PID identities. Other platforms keep the existing BCL tree operation. Commands and macOS MCP clients share this helper; no second process supervisor, native interop or MCP protocol parser was added.
+
+This is a targeted workaround for a measured runtime gap. The snapshot cannot contain new forks or deliberately detached descendants and is not an OS sandbox. Inventory/cleanup failures are reported as unverified cleanup, never successful command execution. Tests exercise owned parent/child cancellation, failing stdout/stderr retention and a subsequent fresh process to check the runtime reaper remains usable.

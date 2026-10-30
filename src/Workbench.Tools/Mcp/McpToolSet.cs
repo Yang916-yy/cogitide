@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -23,6 +24,7 @@ public sealed class McpToolSet : IAgentToolSet
     private readonly List<McpClient> _clients = [];
     private readonly List<IAsyncDisposable> _transports = [];
     private readonly List<HttpClient> _httpClients = [];
+    private readonly List<(Process Process, Task StderrDrain)> _stdioProcesses = [];
     private readonly CancellationTokenSource _shutdown = new();
     private readonly object _disposeLock = new();
     private Task? _disposeTask;
@@ -151,6 +153,30 @@ public sealed class McpToolSet : IAgentToolSet
             foreach (var name in excluded) environment.Remove(name);
             foreach (var name in server.EnvironmentVariables ?? [])
                 environment[name] = RequiredEnvironment(name);
+            if (OperatingSystem.IsMacOS())
+            {
+                // SDK 2.3.0's sealed stdio launcher has no process-start/termination hook and
+                // calls Kill(entireProcessTree:true). Reuse our safe Mac process lifetime,
+                // keeping every byte of MCP framing and parsing in the SDK's public stream transport.
+                var start = new ProcessStartInfo(server.Command!)
+                {
+                    WorkingDirectory = workspace, UseShellExecute = false, CreateNoWindow = true,
+                    RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
+                    StandardInputEncoding = new UTF8Encoding(false), StandardOutputEncoding = new UTF8Encoding(false),
+                    StandardErrorEncoding = new UTF8Encoding(false)
+                };
+                foreach (var argument in server.Arguments ?? []) start.ArgumentList.Add(argument);
+                start.Environment.Clear();
+                foreach (var (name, value) in environment) start.Environment[name] = value;
+                var process = new Process { StartInfo = start };
+                try
+                {
+                    if (!process.Start()) throw new IOException("MCP server did not start.");
+                }
+                catch { process.Dispose(); throw; }
+                _stdioProcesses.Add((process, DrainStderrAsync(process.StandardError)));
+                return new StreamClientTransport(process.StandardInput.BaseStream, process.StandardOutput.BaseStream);
+            }
             return new StdioClientTransport(new StdioClientTransportOptions
             {
                 Name = server.Id, Command = server.Command!, Arguments = server.Arguments ?? [],
@@ -180,6 +206,14 @@ public sealed class McpToolSet : IAgentToolSet
         }, httpClient, ownsHttpClient: true);
         _transports.Add(transport);
         return transport;
+    }
+
+    private static async Task DrainStderrAsync(StreamReader reader)
+    {
+        // Drain without retaining server-controlled diagnostics or credentials in application logs.
+        var buffer = new char[4096];
+        try { while (await reader.ReadAsync(buffer.AsMemory()) > 0) { } }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException) { }
     }
 
     private static void Validate(McpServerConfiguration? server, HashSet<string> excluded)
@@ -256,11 +290,21 @@ public sealed class McpToolSet : IAgentToolSet
             foreach (var httpClient in (List<HttpClient>)state!) httpClient.Dispose();
         }, _httpClients);
         List<Exception> errors = [];
+        // The SDK stream transport owns protocol messages, not its source process. Stop these
+        // processes before disposing sessions; shared cleanup observes descendants before EOF
+        // or parent exit can make them disappear from the owned process tree.
+        foreach (var (process, _) in _stdioProcesses.AsEnumerable().Reverse())
+            try { await WorkspaceService.StopProcessAsync(process); } catch (Exception ex) { errors.Add(ex); }
         foreach (var client in _clients.AsEnumerable().Reverse())
             try { await client.DisposeAsync(); } catch (Exception ex) { errors.Add(ex); }
         foreach (var transport in _transports.AsEnumerable().Reverse())
             try { await transport.DisposeAsync(); } catch (Exception ex) { errors.Add(ex); }
         foreach (var httpClient in _httpClients) httpClient.Dispose();
+        foreach (var (process, drain) in _stdioProcesses.AsEnumerable().Reverse())
+        {
+            process.Dispose();
+            try { await drain.WaitAsync(TimeSpan.FromSeconds(2)); } catch (Exception ex) { errors.Add(ex); }
+        }
         if (errors.Count > 0) throw new AggregateException("MCP cleanup failed.", errors);
     }
 

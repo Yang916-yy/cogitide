@@ -31,18 +31,26 @@ public sealed class McpIntegrationTests : IDisposable
         Environment.SetEnvironmentVariable(allowedVariable, "explicit-server-value");
         try
         {
+            const string identityFile = "workspace-identity.txt";
+            var directoryIdentity = Guid.NewGuid().ToString("N");
+            await File.WriteAllTextAsync(Path.Combine(_workspace, identityFile), directoryIdentity);
             var config = await StdioConfiguration("normal", [allowedVariable]);
             await using var tools = await McpToolSet.ConnectAsync(config, _workspace);
             var tool = Assert.Single(tools.Tools);
             Assert.True(tool.Definition.RequiresApproval);
             Assert.StartsWith("mcp_fixture__echo_", tool.Definition.Name);
-            var result = await Invoke(tool, new { fail = true, inspect = new[] { unrelatedSecret, allowedVariable } });
+            var result = await Invoke(tool, new { fail = true, identityFile, inspect = new[] { unrelatedSecret, allowedVariable } });
             Assert.True(result.IsError);
             using var json = JsonDocument.Parse(result.Content);
             var structured = json.RootElement.GetProperty("structuredContent");
             Assert.Equal(JsonValueKind.Null, structured.GetProperty("environment").GetProperty(unrelatedSecret).ValueKind);
             Assert.Equal("explicit-server-value", structured.GetProperty("environment").GetProperty(allowedVariable).GetString());
-            Assert.Equal(_workspace, structured.GetProperty("cwd").GetString());
+            // macOS Python resolves /var to /private/var. Prove both paths reach this
+            // unique workspace marker instead of comparing two valid path spellings.
+            var reportedWorkspace = structured.GetProperty("cwd").GetString()!;
+            Assert.True(Path.IsPathFullyQualified(reportedWorkspace));
+            Assert.Equal(directoryIdentity, structured.GetProperty("workspaceIdentity").GetString());
+            Assert.Equal(directoryIdentity, await File.ReadAllTextAsync(Path.Combine(reportedWorkspace, identityFile)));
             Assert.Equal("fixture error", json.RootElement.GetProperty("content")[0].GetProperty("text").GetString());
             var image = json.RootElement.GetProperty("content")[1];
             Assert.True(image.GetProperty("dataOmitted").GetBoolean());
@@ -294,6 +302,9 @@ public sealed class McpIntegrationTests : IDisposable
                 with open('call-started.txt','a',encoding='utf-8') as marker: marker.write('once\n')
                 if args.get('hang'): time.sleep(120)
                 structured = {'environment':{k:os.getenv(k) for k in args.get('inspect',[])},'cwd':os.getcwd()}
+                if args.get('identityFile'):
+                    with open(args['identityFile'], encoding='utf-8') as identity:
+                        structured['workspaceIdentity'] = identity.read()
                 text = 'fixture error' if args.get('fail') else 'fixture success'
                 if args.get('large'): structured = {'large':'A'*100000}; text = 'A'*100000
                 if args.get('unicode'): structured = {'unicode':'中'*7000}

@@ -23,7 +23,7 @@ The Host exposes **19 built-in/knowledge tools**, or **13** in ReadOnly. Optiona
 ## Functional verification
 
 - Strict Debug and Release builds: zero warnings/errors.
-- Full regression suite: **552 passed, 0 failed, 0 skipped**, including real SDK transport and headless browser fixtures, 11 semantic cases and 16 additional-tool lifetime/approval cases.
+- Full regression suite: **553 passed, 0 failed, 0 skipped**, including real SDK transport and headless browser fixtures, 11 semantic cases and 16 additional-tool lifetime/approval cases.
 - Existing Host, Responses, lifecycle, continuity, tools and research fixtures exercise local SSE models and generated repositories. Exact tool-count expectations were updated for the two new tools.
 - `python scripts/verify-integrations.py` passed through the actual stdio Host and local SSE model: denied MCP call did not execute; a later approved Unicode echo did; ambient/provider credentials were absent; browser assertions produced a valid PNG; Roslyn found the correct cross-file overload and reference; a cold restart preserved events; ReadOnly neither reconnected nor replayed actions. Both owned MCP workers exited. Eight local model requests, no paid or external model calls.
 
@@ -54,3 +54,9 @@ Reproduce with the commands in [the benchmark project](../benchmarks/Workbench.B
 ## Reuse and licensing
 
 No new HTTP/SSE stack, browser driver, MCP parser, regex engine or C# parser was handwritten. Official SDKs own their transports and runtime details; adapters reuse the common agent protocol and .NET cancellation, JSON, hashing and process components. Exact SDK revisions and retained upstream notices are indexed in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). **Do not reinvent unnecessary infrastructure.** Any future custom implementation must document the actual gap and validation evidence.
+
+## Follow-up CI compatibility checks
+
+The first integration CI run passed Windows/Linux and exposed further macOS portability defects: Python reports physical `/private/var` cwd aliases, and the pinned runtime's tree-kill regression can hang child process cleanup. The cwd test now verifies random file identity through both paths instead of comparing their spelling. macOS commands and MCP use a shared, bounded system-process snapshot/BCL single-PID kill workaround, while the MCP wire protocol stays entirely in the official SDK's public StreamClientTransport.
+
+A Linux run also exposed the small interval between a durable terminal event and Host ownership release. A new run now checks one indexed journal tail record and joins the finishing task before acquiring the next run; active tasks are still rejected. CI setup, browser installation and tests are separate timed steps, with VSTest hang diagnostics. These follow-ups do not change the measured Windows tool operations.
