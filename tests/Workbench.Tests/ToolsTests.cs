@@ -7,11 +7,12 @@ using Xunit;
 
 namespace Workbench.Tests;
 
-public sealed class ToolsTests : IDisposable
+public sealed class ToolsTests : IAsyncLifetime
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "workbench-tools-" + Guid.NewGuid().ToString("N"));
     private readonly WorkspaceService _service = new();
     public ToolsTests() => Directory.CreateDirectory(_root);
+    public Task InitializeAsync() => Task.CompletedTask;
 
     [Theory]
     [InlineData("../escape.txt")]
@@ -248,7 +249,7 @@ public sealed class ToolsTests : IDisposable
         Assert.DoesNotContain("TEXTCONV_EXECUTED", result.Content);
     }
 
-    public void Dispose()
+    public async Task DisposeAsync()
     {
         // Only the exact test-owned temporary directory may be removed. Git creates read-only object files.
         var resolvedRoot = Path.GetFullPath(_root);
@@ -266,6 +267,28 @@ public sealed class ToolsTests : IDisposable
             var attributes = File.GetAttributes(resolvedPath);
             if ((attributes & FileAttributes.ReadOnly) != 0) File.SetAttributes(resolvedPath, attributes & ~FileAttributes.ReadOnly);
         }
-        Directory.Delete(resolvedRoot, true);
+        var cleanup = Stopwatch.StartNew();
+        var budget = TimeSpan.FromSeconds(2);
+        var delayMilliseconds = 20;
+        while (true)
+        {
+            try
+            {
+                Directory.Delete(resolvedRoot, true);
+                return;
+            }
+            catch (IOException error) when (OperatingSystem.IsWindows() &&
+                (error.HResult & 0xffff) is 32 or 33 && cleanup.Elapsed < budget)
+            {
+                // Cancellation assertions already observe both owned processes exiting. Windows
+                // can release their directory handles later; retry only sharing/lock violations.
+                // A persistent handle leak still fails with its original filesystem error.
+                var remaining = budget - cleanup.Elapsed;
+                if (remaining <= TimeSpan.Zero) throw;
+                var delay = TimeSpan.FromMilliseconds(delayMilliseconds);
+                await Task.Delay(delay < remaining ? delay : remaining);
+                delayMilliseconds = Math.Min(200, delayMilliseconds * 2);
+            }
+        }
     }
 }

@@ -389,6 +389,72 @@
     "kernelAndNativeHostImplementationChanged": false,
     "paidModelCalls": 0,
     "visibleDesktopOpened": false,
-    "ciScope": "Final three-platform result is the check attached to the published commit containing these source hashes."
+    "ciScope": "Final three-platform result is the check attached to the published commit containing these source hashes.",
+    "commit": "4079b85d4735af2c69c6a28a2ab0a31021cf068f"
+  },
+  "testFixtureCleanupFollowUp": {
+    "priorCiRun": "https://github.com/Yang916-yy/cogitide/actions/runs/41106994877",
+    "priorCiResults": {
+      "linux": "success",
+      "macos": "success",
+      "windows": "one failure in cancellation test fixture Directory.Delete teardown; both owned process exit waits/assertions had passed"
+    },
+    "productionChanged": false,
+    "fix": "Use existing xUnit IAsyncLifetime teardown and BCL Task.Delay/Stopwatch for a two-second retry budget only on Windows IOException HRESULT 32/33. Keep exact temporary-root validation, read-only handling and every process-exit assertion. Persistent errors propagate.",
+    "strictDebugBuild": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "affectedClass": {
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0,
+      "total": 21,
+      "trxSha256": "54727cc33a90e256d7401afa70c3c32ebb9b5d87c44d2c0760ba2f513256c842"
+    },
+    "repeatedParentChildCancellationBatches": [
+      {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "total": 5,
+        "trxSha256": "bc4809c87b091ee4f6fcaae3b1b0154e96dffd5676b96b0ea844ec8ffe889db3"
+      },
+      {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "total": 5,
+        "trxSha256": "932876e17308a4ddd39ab4ca3746468b2b41629699f0a999f47002c4740b7a7a"
+      },
+      {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "total": 5,
+        "trxSha256": "9b5743eb8b82b90f0f669b623e2572a735ed63c4a48faa2f3d7169c9e84dbec2"
+      },
+      {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "total": 5,
+        "trxSha256": "3af28d7f39e2be042e771407b389a0dc15d5dbd0aa0e85f6a4b26330138456a0"
+      },
+      {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "total": 5,
+        "trxSha256": "ddbcda6c5cb7f7bb864c5f9de2a8c143b4124561b52d991d389c0de0695ee111"
+      }
+    ],
+    "sourceSha256Lf": {
+      "tests/Workbench.Tests/ToolsTests.cs": "27f1c3da1442eeadeab088cd6b19800bdd7a9590b3c6549154c00bf3ec91c977"
+    },
+    "validationScope": "Production and full local Release evidence above refer to production commit 4079b85. This follow-up changes fixture teardown only; the affected class/repeated cancellations were rebuilt and tested, and final CI rebuilds the complete source.",
+    "paidModelCalls": 0,
+    "visibleDesktopOpened": false,
+    "ciScope": "Final check is attached to the published commit containing this fixture hash."
   }
 }
