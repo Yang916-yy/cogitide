@@ -15,6 +15,10 @@ Globs reuse **Microsoft.Extensions.FileSystemGlobbing 10.0.14**. Regular express
 
 Searching and reading on demand can support DCI-style direct corpus interaction, but these are primarily mature engineering tools. Their presence is not a complete DCI paper reproduction or evidence of measured research benefit. Frozen-history retrieval is documented separately in [RepositoryMemory](../RepositoryMemory/README.md).
 
+## Allocation-sensitive implementation
+
+Paged reads reuse BCL `ArrayPool<byte>` with cleared returns, bounded `FileStream.ReadAtLeastAsync`, strict UTF-8 span decoding and full raw-byte SHA-256. Search retains context line positions until an actual returned match needs strings; it still scans all eligible bytes for the same snapshot, total counts and regex timeout behavior. Git NUL parsing uses BCL span splitting. These are .NET component adaptations, not a new parser/index/cache. Regression cases cover pooled tails, BOM/multibyte boundaries, malformed UTF-8 after a requested page, same-length edits, context order and later regex timeouts. See [measured results and rejected experiments](../../../docs/performance-tuning.md); reduced allocation does not by itself prove a latency or resident-memory improvement.
+
 ## `csharp_semantic`
 
 The tool accepts `action` (`definition`, `references`, or `diagnostics`) and a workspace-relative `.cs` `path`. `line` and `column` default to 1 and use **one-based UTF-16 code units**, matching Roslyn/.NET strings. Source result end positions are exclusive. Diagnostics without a source location use an empty path and zero positions.
@@ -26,6 +30,8 @@ The tool accepts `action` (`definition`, `references`, or `diagnostics`) and a w
 `definition` resolves the symbol at the requested token and returns its source locations. Metadata-only BCL symbols return an empty source result list with `symbol.metadataOnly=true`. `references` compares bound Roslyn symbols, so overloads, unrelated same-name types and shadowed locals remain distinct; comments and string contents do not become references. Constructed generic methods, reduced extension methods and partial method implementations normalize to their original declaration. Results cover explicit bound names/types and constructor/operator uses. Declarations are excluded; override families, reflection, dynamically resolved calls and string-based references are not expanded into an inferred call graph. An unresolved or ambiguous symbol returns an error instead of choosing an arbitrary candidate.
 
 `diagnostics` returns warning/error diagnostics from the bounded source compilation, including binding/type errors that a syntax outline cannot find. These results are not a successful build or test claim.
+
+Reference scanning uses Roslyn's decoded identifier `ValueText` to skip different-name candidates for ordinary/local methods, ordinary fields/properties, parameters and locals before binding. Matching names still require exact Roslyn symbol equality. Types and aliases, constructors, operators, conversions, tuple element aliases and explicit interface properties retain full semantic binding. A compiler-confirmed `nameof` method group with one member uses Roslyn's `GetMemberGroup`; overloaded groups remain unresolved. The selected file's semantic model is reused only inside that request. Every syntax node still participates in the existing budget/cancellation checks; no source or compilation cache is introduced. Regression fixtures cover `nameof`, escaped/Unicode identifiers, overloads/generics, constructor overloads and type aliases. Latency and allocation tradeoffs are measured separately in the performance report.
 
 ### Source scope and execution boundary
 

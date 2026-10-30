@@ -187,13 +187,20 @@ public sealed partial class WorkspaceService
                 }
                 else
                 {
+                    // This can only reject names that cannot denote these ordinary symbols.
+                    // Keep aliases/types, constructors/operators and tuple element aliases on
+                    // the full Roslyn path; equal text alone never establishes a reference.
+                    var filterSimpleNames = symbol is IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.LocalFunction } or ILocalSymbol or IParameterSymbol ||
+                        symbol is IFieldSymbol { ContainingType.IsTupleType: false } ||
+                        symbol is IPropertySymbol { IsIndexer: false, ExplicitInterfaceImplementations.IsEmpty: true };
                     foreach (var source in sources)
                     {
-                        var semanticModel = compilation.GetSemanticModel(source.Tree);
+                        var semanticModel = ReferenceEquals(source.Tree, selected.Tree) ? model : compilation.GetSemanticModel(source.Tree);
                         HashSet<TextSpan> found = [];
                         foreach (var node in source.Root.DescendantNodesAndSelf())
                         {
                             ct.ThrowIfCancellationRequested();
+                            if (filterSimpleNames && node is SimpleNameSyntax candidateName && candidateName.Identifier.ValueText != symbol.Name) continue;
                             // Roslyn resolves each occurrence; text matches, comments and shadowed names cannot qualify.
                             var operatorUse = symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator or MethodKind.Conversion } &&
                                 node is BinaryExpressionSyntax or PrefixUnaryExpressionSyntax or PostfixUnaryExpressionSyntax or AssignmentExpressionSyntax or CastExpressionSyntax;
@@ -247,7 +254,17 @@ public sealed partial class WorkspaceService
     {
         if (node is IdentifierNameSyntax identifier && model.GetAliasInfo(identifier, ct) is { } alias) return alias.Target;
         // GetSymbolInfo returns null for ambiguous overloads; never pick a CandidateSymbol arbitrarily.
-        return model.GetDeclaredSymbol(node, ct) ?? model.GetSymbolInfo(node, ct).Symbol;
+        var symbol = model.GetDeclaredSymbol(node, ct) ?? model.GetSymbolInfo(node, ct).Symbol;
+        if (symbol is not null || node is not SimpleNameSyntax) return symbol;
+        // nameof(method) is a method group even when it contains a single method: Symbol is
+        // null. Only the compiler's real nameof operation may use this unique-group fallback.
+        var expression = node;
+        while (expression.Parent is MemberAccessExpressionSyntax or QualifiedNameSyntax or AliasQualifiedNameSyntax)
+            expression = expression.Parent;
+        if (expression.Parent is not ArgumentSyntax { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax invocation } } ||
+            model.GetOperation(invocation, ct) is not Microsoft.CodeAnalysis.Operations.INameOfOperation) return null;
+        var members = model.GetMemberGroup(node, ct);
+        return members.Length == 1 ? members[0] : null;
     }
 
     private static ISymbol? SemanticCanonical(ISymbol? symbol)

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -13,6 +14,7 @@ public sealed partial class WorkspaceService
     private const int NavigationPageCharacters = 12_000;
     private const int NavigationScanFiles = 2000;
     private const int NavigationScanBytes = 32 * 1024 * 1024;
+    private static readonly UTF8Encoding NavigationUtf8 = new(false, true);
     private sealed record NavigationText(string Text, string Sha256, int Bytes);
     private readonly record struct NavigationLine(int Start, int ContentEnd, int Next);
     private sealed record NavigationContext(int Line, string Text, bool Truncated);
@@ -124,7 +126,11 @@ public sealed partial class WorkspaceService
                 AppendNavigationDigest(digest, new { path, skipped = true });
                 continue;
             }
-            Queue<NavigationContext> before = new();
+            // Retain only line positions while scanning. Context strings are needed only for
+            // returned matches, not for every nonmatching line or matches outside this page.
+            NavigationLine[] before = contextLines == 0 ? [] : new NavigationLine[contextLines];
+            var beforeStart = 0;
+            var beforeCount = 0;
             var number = 1;
             for (var position = 0; position < document.Text.Length; number++)
             {
@@ -151,13 +157,16 @@ public sealed partial class WorkspaceService
                 }
                 if (column >= 0)
                 {
-                    if (seen >= offset && matches.Count < limit + 1)
+                    if (seen >= offset && matches.Count < limit)
                     {
                         var previewStart = Math.Max(0, column - 160);
                         if (previewStart > 0 && char.IsLowSurrogate(body[previewStart]) && char.IsHighSurrogate(body[previewStart - 1])) previewStart--;
                         var previewEnd = SafeTextEnd(document.Text, line.Start + previewStart, Math.Min(line.ContentEnd, line.Start + previewStart + 500));
-                        var after = new List<NavigationContext>();
-                        for (var next = line.Next; next < document.Text.Length && after.Count < contextLines;)
+                        NavigationContext[] previous = beforeCount == 0 ? [] : new NavigationContext[beforeCount];
+                        for (var index = 0; index < beforeCount; index++)
+                            previous[index] = NavigationContextAt(document.Text, before[(beforeStart + index) % contextLines], number - beforeCount + index);
+                        List<NavigationContext>? after = contextLines == 0 ? null : new(contextLines);
+                        for (var next = line.Next; next < document.Text.Length && after is not null && after.Count < contextLines;)
                         {
                             var context = NavigationLineAt(document.Text, next);
                             after.Add(NavigationContextAt(document.Text, context, number + after.Count + 1));
@@ -165,14 +174,19 @@ public sealed partial class WorkspaceService
                         }
                         matches.Add(new(path, document.Sha256, number, column + 1, matchLength,
                             document.Text[(line.Start + previewStart)..previewEnd], previewStart + 1,
-                            previewStart > 0 || previewEnd < line.ContentEnd, before.ToArray(), after.ToArray()));
+                            previewStart > 0 || previewEnd < line.ContentEnd, previous, after?.ToArray() ?? []));
                     }
                     seen++;
                 }
                 if (contextLines > 0)
                 {
-                    before.Enqueue(NavigationContextAt(document.Text, line, number));
-                    if (before.Count > contextLines) before.Dequeue();
+                    if (beforeCount < contextLines)
+                        before[(beforeStart + beforeCount++) % contextLines] = line;
+                    else
+                    {
+                        before[beforeStart] = line;
+                        beforeStart = (beforeStart + 1) % contextLines;
+                    }
                 }
                 position = line.Next;
             }
@@ -181,7 +195,7 @@ public sealed partial class WorkspaceService
         var snapshot = Convert.ToHexStringLower(digest.GetHashAndReset());
         if (expectedSnapshot is not null && !snapshot.Equals(expectedSnapshot, StringComparison.OrdinalIgnoreCase))
             return new("Search contents or inventory changed between pages. Restart at offset 0; no stale search page was returned.", true);
-        var page = matches.Take(limit).ToArray();
+        var page = matches.ToArray();
         return BoundedPageResult(page, offset, seen > (long)offset + page.Length, (items, nextOffset, responseTruncated) => new
         {
             query, pathPrefix = prefix, regex, glob, caseSensitive, contextLines, matches = items, offset, limit, nextOffset,
@@ -236,27 +250,32 @@ public sealed partial class WorkspaceService
         var beforeLength = before.Length;
         var beforeWrite = before.LastWriteTimeUtc;
         if (beforeLength > NavigationFileBytes) throw new IOException("File exceeds the 16 MiB navigation limit.");
-        await using var file = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
-            16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        using var bytes = new MemoryStream();
-        var buffer = new byte[16 * 1024];
-        while (true)
+        // The metadata supplies a bounded read size; a separate EOF probe still rejects growth.
+        // Pooling removes per-file staging buffers/MemoryStream growth. UTF8Encoding owns all
+        // decoding/validation; full raw bytes, including the BOM, remain the hash input.
+        var length = checked((int)beforeLength);
+        var buffer = ArrayPool<byte>.Shared.Rent(Math.Max(1, length));
+        try
         {
-            var count = await file.ReadAsync(buffer, ct);
-            if (count == 0) break;
-            if (bytes.Length + count > NavigationFileBytes) throw new IOException("File grew beyond the navigation limit.");
-            bytes.Write(buffer, 0, count);
+            await using var file = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
+                bufferSize: 1, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var count = await file.ReadAtLeastAsync(buffer.AsMemory(0, length), length, throwOnEndOfStream: false, ct);
+            var first = buffer[0];
+            var extra = await file.ReadAsync(buffer.AsMemory(0, 1), ct);
+            buffer[0] = first;
+            var after = new FileInfo(full);
+            if (extra != 0 || after.Length != beforeLength || after.LastWriteTimeUtc != beforeWrite || count != length)
+                throw new IOException("File changed while reading. Read it again before continuing.");
+            ct.ThrowIfCancellationRequested();
+            var data = buffer.AsSpan(0, count);
+            if (data.Contains((byte)0)) throw new IOException("Binary and UTF-16 files are unsupported by the UTF-8 navigation tools.");
+            var sha256 = Convert.ToHexStringLower(SHA256.HashData(data));
+            var content = data.StartsWith("\uFEFF"u8) ? data[3..] : data;
+            var text = NavigationUtf8.GetString(content);
+            ct.ThrowIfCancellationRequested();
+            return new(text, sha256, count);
         }
-        var after = new FileInfo(full);
-        if (after.Length != beforeLength || after.LastWriteTimeUtc != beforeWrite || bytes.Length != beforeLength)
-            throw new IOException("File changed while reading. Read it again before continuing.");
-        var data = bytes.GetBuffer().AsSpan(0, (int)bytes.Length);
-        if (data.Contains((byte)0)) throw new IOException("Binary and UTF-16 files are unsupported by the UTF-8 navigation tools.");
-        var sha256 = Convert.ToHexStringLower(SHA256.HashData(data));
-        bytes.Position = data.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }) ? 3 : 0;
-        using var reader = new StreamReader(bytes, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: false, leaveOpen: true);
-        var text = await reader.ReadToEndAsync(ct);
-        return new(text, sha256, (int)bytes.Length);
+        finally { ArrayPool<byte>.Shared.Return(buffer, clearArray: true); }
     }
 
     private static NavigationLine NavigationLineAt(string text, int start)

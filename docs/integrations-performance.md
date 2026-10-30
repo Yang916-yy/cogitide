@@ -49,6 +49,8 @@ A separate BCL Process/Stopwatch probe launched ten fresh Host processes, waited
 
 These data identify repository search allocation and source-compilation rebuilding as useful profiling targets. They do not establish that C# is faster than TypeScript/Rust, that the agent outperforms Codex/OpenCode, or that research features reduce real task cost. Real task/model latency, browser/MCP performance, Linux/macOS timings and before/after optimization remain unmeasured.
 
+A subsequent [allocation-tuning report](performance-tuning.md) provides its own matched before/after sources, reverse-order probes, native traces and rejected cache experiments. The measurements above remain the original historical baseline.
+
 Reproduce with the commands in [the benchmark project](../benchmarks/Workbench.Benchmarks/README.md), using an idle machine and serial SDK operations. Raw BDN JSON/CSV/HTML, startup samples and logs remain in ignored `artifacts/`; the portable numeric summary is committed here. .NET counters/traces can be used next if profiling a measured bottleneck warrants it.
 
 ## Reuse and licensing

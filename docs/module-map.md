@@ -31,11 +31,11 @@ Counts exclude build output, SDKs and local evidence. Submodule rows are subsets
 | [src/Workbench.Tools/Navigation](../src/Workbench.Tools/Navigation/README.md) | 4 | 0 | 1 | 5 |
 | [src/Workbench.Tools/RepositoryMemory](../src/Workbench.Tools/RepositoryMemory/README.md) | 2 | 0 | 2 | 4 |
 | [src/Workbench.Tools/Workspace](../src/Workbench.Tools/Workspace/README.md) | 1 | 0 | 2 | 3 |
-| [tests](../tests/) | 39 | 1 | 0 | 42 |
+| [tests](../tests/) | 40 | 1 | 0 | 43 |
 | [benchmarks](../benchmarks/) | 1 | 0 | 1 | 4 |
 | [scripts](../scripts/) | 0 | 0 | 0 | 16 |
-| [docs](../docs/) | 0 | 0 | 16 | 17 |
-| [research](../research/) | 0 | 0 | 16 | 16 |
+| [docs](../docs/) | 0 | 0 | 17 | 19 |
+| [research](../research/) | 0 | 0 | 17 | 17 |
 | [.github](../.github/) | 0 | 0 | 0 | 1 |
 
 Peripheral modules reuse .NET/BCL and mature SDKs; adaptation boundaries are in adjacent README/PROVENANCE files.

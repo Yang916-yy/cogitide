@@ -52,14 +52,15 @@ public sealed partial class WorkspaceService
                 HashSet<string> files = new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
                 var skipped = 0;
                 var truncated = result.Truncated;
-                var entries = result.Output.Split('\0');
                 // Never interpret a partial path when an output cap terminates the stream.
-                var count = entries.Length - 1;
-                for (var index = 0; index < count; index++)
+                // BCL span splitting avoids allocating an array and strings for rejected prefixes.
+                foreach (var range in result.Output.AsSpan().Split('\0'))
                 {
                     ct.ThrowIfCancellationRequested();
-                    var path = entries[index];
-                    if (!path.StartsWith(prefix, PathComparison)) continue;
+                    if (range.End.GetOffset(result.Output.Length) == result.Output.Length) break;
+                    var entry = result.Output.AsSpan(range);
+                    if (!entry.StartsWith(prefix.AsSpan(), PathComparison)) continue;
+                    var path = entry.ToString();
                     try
                     {
                         var full = Resolve(root, path);
@@ -152,7 +153,7 @@ public sealed partial class WorkspaceService
         {
             var responseTruncated = count < records.Count;
             var next = count > 0 && (more || responseTruncated) ? offset + count : (int?)null;
-            var data = envelope(records.Take(count).ToArray(), next, responseTruncated);
+            var data = envelope(count == records.Count ? records : records.Take(count).ToArray(), next, responseTruncated);
             var json = JsonSerializer.Serialize(data, Wire.Json);
             if (json.Length <= MaxResponseCharacters) return new ToolResult(json, ArtifactPath: artifact);
             if (count <= 1) return new ToolResult("A navigation record exceeds the response budget. Narrow the path or query and inspect the file directly.", true);

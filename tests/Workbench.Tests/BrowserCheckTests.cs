@@ -256,7 +256,14 @@ public sealed class BrowserCheckTests : IDisposable
                     await context.Response.OutputStream.WriteAsync(bytes, _stop.Token);
                 }
                 catch (Exception ex) when (ex is OperationCanceledException or HttpListenerException or ObjectDisposedException or IOException) { }
-                finally { context.Response.Close(); }
+                finally
+                {
+                    // DisposeAsync closes the listener to unblock pending I/O. A stalled
+                    // response may reach this finally after its native request queue closed.
+                    try { context.Response.Close(); }
+                    catch (ObjectDisposedException) when (_stop.IsCancellationRequested) { }
+                    catch (HttpListenerException) when (_stop.IsCancellationRequested) { }
+                }
             }
         }
 

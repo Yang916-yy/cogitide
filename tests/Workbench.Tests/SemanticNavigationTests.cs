@@ -68,6 +68,120 @@ public sealed class SemanticNavigationTests : IDisposable
     }
 
     [Fact]
+    public async Task MethodReferencesPreserveNameofEscapedIdentifiersAndLocalFunctions()
+    {
+        const string source = """
+            class C
+            {
+                void @class() { }
+                void \u006d() { }
+                int Use()
+                {
+                    @class(); m();
+                    var a = nameof(@class);
+                    var b = nameof(m);
+                    int @event(int value) => value;
+                    return @event(1) + @event(2);
+                }
+            }
+            """;
+        await Write("C.cs", source);
+        using var keyword = await Analyze("references", "C.cs", Position(source, "@class()"));
+        Assert.Equal(2, Results(keyword).Length);
+        Assert.Contains(Results(keyword), result => result.GetProperty("line").GetInt32() == Position(source, "@class);").Line);
+        using var unicode = await Analyze("references", "C.cs", Position(source, "\\u006d()"));
+        Assert.Equal(2, Results(unicode).Length);
+        Assert.Contains(Results(unicode), result => result.GetProperty("line").GetInt32() == Position(source, "nameof(m)").Line);
+        using var local = await Analyze("references", "C.cs", Position(source, "@event(int"));
+        Assert.Equal(2, Results(local).Length);
+    }
+
+    [Theory]
+    [InlineData("@field;")]
+    [InlineData("@property {")]
+    [InlineData("@param)")]
+    [InlineData("@local =")]
+    public async Task MemberParameterAndLocalReferencesKeepEscapedIdentifierUses(string declaration)
+    {
+        const string source = """
+            class C
+            {
+                int @field;
+                int @property { get; set; }
+                int M(int @param)
+                {
+                    int @local = @param;
+                    @field = @local;
+                    @property = @field;
+                    return @local + @property + @param;
+                }
+            }
+            """;
+        await Write("C.cs", source);
+        using var references = await Analyze("references", "C.cs", Position(source, declaration));
+        Assert.Equal(2, Results(references).Length);
+        Assert.All(Results(references), result => Assert.Equal("reference", result.GetProperty("kind").GetString()));
+    }
+
+    [Fact]
+    public async Task ConstructorOverloadsAndTypeAliasesRemainSemanticallyBound()
+    {
+        const string source = """
+            using Alias = Widget;
+            class Widget
+            {
+                public Widget(int value) { }
+                public Widget(string value) { }
+            }
+            class Consumer
+            {
+                Widget first = new Alias(1);
+                Widget second = new Widget("text");
+            }
+            """;
+        await Write("C.cs", source);
+        using var numeric = await Analyze("references", "C.cs", Position(source, "Widget(int"));
+        var location = Assert.Single(Results(numeric));
+        var alias = Position(source, "Alias(1)");
+        Assert.Equal(alias.Line, location.GetProperty("line").GetInt32());
+        Assert.Equal(alias.Column, location.GetProperty("column").GetInt32());
+        using var text = await Analyze("references", "C.cs", Position(source, "Widget(string"));
+        Assert.Equal(Position(source, "Widget(\"text\")").Line, Assert.Single(Results(text)).GetProperty("line").GetInt32());
+        var typeDeclaration = Position(source, "class Widget");
+        using var type = await Analyze("references", "C.cs", (typeDeclaration.Line, typeDeclaration.Column + "class ".Length));
+        Assert.Contains(Results(type), result => result.GetProperty("line").GetInt32() == alias.Line && result.GetProperty("column").GetInt32() == alias.Column);
+    }
+
+    [Fact]
+    public async Task UserDefinedOperatorsAndConversionsRemainSemanticallyBound()
+    {
+        const string source = """
+            struct Number
+            {
+                public static Number operator +(Number a, Number b) => a;
+                public static explicit operator int(Number n) => 0;
+                int Read(Number other) => (int)(this + other);
+            }
+            """;
+        await Write("C.cs", source);
+        using var addition = await Analyze("references", "C.cs", Position(source, "+(Number"));
+        Assert.Equal(Position(source, "+ other").Column, Assert.Single(Results(addition)).GetProperty("column").GetInt32());
+        using var conversion = await Analyze("references", "C.cs", Position(source, "explicit operator"));
+        Assert.Equal(Position(source, "int)(this").Column, Assert.Single(Results(conversion)).GetProperty("column").GetInt32());
+    }
+
+    [Fact]
+    public async Task OverloadedNameofGroupsNeverChooseAnArbitraryMethod()
+    {
+        const string source = "class C { void F(int value) { } void F(string value) { } void Use() { var name = nameof(F); F(1); } }";
+        await Write("C.cs", source);
+        using var references = await Analyze("references", "C.cs", Position(source, "F(int"));
+        Assert.Equal(Position(source, "F(1)").Column, Assert.Single(Results(references)).GetProperty("column").GetInt32());
+        var group = Position(source, "F);");
+        Assert.True((await _service.CSharpSemanticAsync(_root, "definition", "C.cs", group.Line, group.Column)).IsError);
+    }
+
+    [Fact]
     public async Task AmbiguousOverloadsNeverChooseAnArbitraryCandidate()
     {
         const string source = "class C { void F(string x) {} void F(System.Uri x) {} void M() { F(null); } }";

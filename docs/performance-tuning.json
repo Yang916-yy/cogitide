@@ -1,0 +1,2366 @@
+{
+  "measuredDate": "2026-10-30",
+  "baselineCommit": "9f89241e00ae263df6772d354f52b5efd3da5ff6",
+  "adoptedSourceSha256": {
+    "benchmarks/Workbench.Benchmarks/Program.cs": "3f2b0e762862b5197d58bce32565747bae42bb48a1792fb74c5eab89a13f5627",
+    "src/Workbench.Tools/Navigation/NavigationTools.cs": "4fe1358500ba500745f18052926cb6e4abf3817c76933ab456f4c1aca6dfb1d0",
+    "src/Workbench.Tools/Navigation/RepositoryInventory.cs": "bdf0283517cfd3d5ed7c35ff00d33ebf7e551364df1d8326e6c9c93dc2ed3388",
+    "src/Workbench.Tools/Navigation/SemanticNavigation.cs": "f4648dcd433ca67c5cd4df74d330d3ddaa4349741768d8d8586663821ce8ca7d"
+  },
+  "benchmark": "BDN0.15.8 InProcessEmit,1launch,3warmups,10measurements; shared-laptop variation; exact per-method counts retained",
+  "fixture": {
+    "textFiles": 128,
+    "textLinesPerFile": 120,
+    "semanticSourceFiles": 31,
+    "semanticCallers": 30,
+    "externalModels": false,
+    "desktopOpened": false
+  },
+  "before": {
+    "rawReportSha256": "164fc1b820ffb2d0b2c8cbcf951dbf59db76e0cfad9dc93b2a77bdea6cf54a33",
+    "environment": {
+      "BenchmarkDotNetCaption": "BenchmarkDotNet",
+      "BenchmarkDotNetVersion": "0.15.8",
+      "OsVersion": "Windows 11 (10.0.26300.9711)",
+      "ProcessorName": "13th Gen Intel Core i7-13700H",
+      "PhysicalProcessorCount": 1,
+      "PhysicalCoreCount": 14,
+      "LogicalCoreCount": 20,
+      "RuntimeVersion": ".NET 11.0.0 (11.0.0-rc.3.26522.148, 11.0.26.52348)",
+      "Architecture": "X64",
+      "HasAttachedDebugger": false,
+      "HasRyuJit": true,
+      "Configuration": "RELEASE",
+      "DotNetCliVersion": "11.0.100-rc.3.26522.148",
+      "ChronometerFrequency": {
+        "Hertz": 10000000
+      },
+      "HardwareTimerKind": "Unknown"
+    },
+    "metrics": [
+      {
+        "method": "ReadPage",
+        "meanMilliseconds": 0.410395087890625,
+        "medianMilliseconds": 0.4317745361328125,
+        "standardDeviationMilliseconds": 0.03389962160386441,
+        "confidenceMargin999Milliseconds": 0.051251390597703804,
+        "measuredIterations": 10,
+        "managedBytesPerOperation": 69727,
+        "iterationMilliseconds": [
+          0.359845654296875,
+          0.364235888671875,
+          0.368852490234375,
+          0.398819775390625,
+          0.440147607421875,
+          0.432658642578125,
+          0.436199560546875,
+          0.43483037109375,
+          0.4308904296875,
+          0.437470458984375
+        ]
+      },
+      {
+        "method": "LiteralSearch",
+        "meanMilliseconds": 151.51779444444443,
+        "medianMilliseconds": 151.028275,
+        "standardDeviationMilliseconds": 3.678871268872292,
+        "confidenceMargin999Milliseconds": 6.18210456878536,
+        "measuredIterations": 9,
+        "managedBytesPerOperation": 8454268,
+        "iterationMilliseconds": [
+          157.544175,
+          152.781525,
+          145.215875,
+          148.62015,
+          151.028275,
+          155.90335,
+          151.835275,
+          150.2656,
+          150.465925
+        ]
+      },
+      {
+        "method": "RegexSearch",
+        "meanMilliseconds": 155.9727475,
+        "medianMilliseconds": 156.601775,
+        "standardDeviationMilliseconds": 2.837018355682453,
+        "confidenceMargin999Milliseconds": 4.289166928735324,
+        "measuredIterations": 10,
+        "managedBytesPerOperation": 8465524,
+        "iterationMilliseconds": [
+          152.6627,
+          152.8532,
+          158.359975,
+          151.872625,
+          157.05665,
+          154.36565,
+          156.1469,
+          157.84325,
+          159.151975,
+          159.41455
+        ]
+      },
+      {
+        "method": "SyntaxOutline",
+        "meanMilliseconds": 0.48154541015625,
+        "medianMilliseconds": 0.48353828125,
+        "standardDeviationMilliseconds": 0.014071612217875578,
+        "confidenceMargin999Milliseconds": 0.026904573586593455,
+        "measuredIterations": 8,
+        "managedBytesPerOperation": 19685,
+        "iterationMilliseconds": [
+          0.457387548828125,
+          0.496768896484375,
+          0.477459423828125,
+          0.491899365234375,
+          0.468058837890625,
+          0.489617138671875,
+          0.476444873046875,
+          0.494727197265625
+        ]
+      },
+      {
+        "method": "SemanticReferences",
+        "meanMilliseconds": 154.00117666666665,
+        "medianMilliseconds": 155.40151666666665,
+        "standardDeviationMilliseconds": 4.291535479851839,
+        "confidenceMargin999Milliseconds": 6.488189269838865,
+        "measuredIterations": 10,
+        "managedBytesPerOperation": 7357661,
+        "iterationMilliseconds": [
+          159.5483,
+          155.36106666666666,
+          155.44196666666664,
+          157.42736666666664,
+          159.00153333333336,
+          155.78916666666666,
+          149.79406666666665,
+          150.69486666666666,
+          149.3281,
+          147.62533333333334
+        ]
+      }
+    ]
+  },
+  "after": {
+    "rawReportSha256": "ea2a23292cdc65ac6c9f4eec53f6dbf10234d1c69598cbbd0a8a20f328ec6464",
+    "environment": {
+      "BenchmarkDotNetCaption": "BenchmarkDotNet",
+      "BenchmarkDotNetVersion": "0.15.8",
+      "OsVersion": "Windows 11 (10.0.26300.9711)",
+      "ProcessorName": "13th Gen Intel Core i7-13700H",
+      "PhysicalProcessorCount": 1,
+      "PhysicalCoreCount": 14,
+      "LogicalCoreCount": 20,
+      "RuntimeVersion": ".NET 11.0.0 (11.0.0-rc.3.26522.148, 11.0.26.52348)",
+      "Architecture": "X64",
+      "HasAttachedDebugger": false,
+      "HasRyuJit": true,
+      "Configuration": "RELEASE",
+      "DotNetCliVersion": "11.0.100-rc.3.26522.148",
+      "ChronometerFrequency": {
+        "Hertz": 10000000
+      },
+      "HardwareTimerKind": "Unknown"
+    },
+    "metrics": [
+      {
+        "method": "ReadPage",
+        "meanMilliseconds": 0.631242626953125,
+        "medianMilliseconds": 0.617120263671875,
+        "standardDeviationMilliseconds": 0.05902128434653858,
+        "confidenceMargin999Milliseconds": 0.11284723195111176,
+        "measuredIterations": 8,
+        "managedBytesPerOperation": 24996,
+        "iterationMilliseconds": [
+          0.61466103515625,
+          0.58817734375,
+          0.5946390625,
+          0.5775357421875,
+          0.6195794921875,
+          0.643716796875,
+          0.64829697265625,
+          0.7633345703125
+        ]
+      },
+      {
+        "method": "LiteralSearch",
+        "meanMilliseconds": 296.15714444444444,
+        "medianMilliseconds": 299.6013,
+        "standardDeviationMilliseconds": 63.81270952986386,
+        "confidenceMargin999Milliseconds": 107.23311969871457,
+        "measuredIterations": 9,
+        "managedBytesPerOperation": 2720664,
+        "iterationMilliseconds": [
+          324.844,
+          413.7581,
+          299.6013,
+          338.8942,
+          292.8971,
+          317.8999,
+          244.5422,
+          227.5267,
+          205.4508
+        ]
+      },
+      {
+        "method": "RegexSearch",
+        "meanMilliseconds": 172.20925,
+        "medianMilliseconds": 172.08386666666667,
+        "standardDeviationMilliseconds": 5.374286782212156,
+        "confidenceMargin999Milliseconds": 10.275503046040662,
+        "measuredIterations": 8,
+        "managedBytesPerOperation": 2728312,
+        "iterationMilliseconds": [
+          180.53556666666665,
+          177.44443333333334,
+          173.83246666666665,
+          174.76639999999998,
+          169.30366666666666,
+          166.1201,
+          170.33526666666666,
+          165.3361
+        ]
+      },
+      {
+        "method": "SyntaxOutline",
+        "meanMilliseconds": 0.411708525390625,
+        "medianMilliseconds": 0.394611279296875,
+        "standardDeviationMilliseconds": 0.05812887761923782,
+        "confidenceMargin999Milliseconds": 0.08788256832725432,
+        "measuredIterations": 10,
+        "managedBytesPerOperation": 19601,
+        "iterationMilliseconds": [
+          0.407124169921875,
+          0.38513994140625,
+          0.4040826171875,
+          0.493117919921875,
+          0.44484755859375,
+          0.52527333984375,
+          0.36028173828125,
+          0.369077783203125,
+          0.363057666015625,
+          0.36508251953125
+        ]
+      },
+      {
+        "method": "SemanticReferences",
+        "meanMilliseconds": 146.7656475,
+        "medianMilliseconds": 143.4941625,
+        "standardDeviationMilliseconds": 15.75737993797338,
+        "confidenceMargin999Milliseconds": 23.82290998509063,
+        "measuredIterations": 10,
+        "managedBytesPerOperation": 7360702,
+        "iterationMilliseconds": [
+          131.092225,
+          159.611925,
+          163.495725,
+          143.585525,
+          177.993275,
+          139.41345,
+          128.74755,
+          146.538025,
+          143.4028,
+          133.775975
+        ]
+      }
+    ]
+  },
+  "intermediateOptimizedRun": {
+    "rawReportSha256": "76f570e17c3c72c436d80ebf6ad4ba874a8ed9abacabdd716c88c892846d37de",
+    "environment": {
+      "BenchmarkDotNetCaption": "BenchmarkDotNet",
+      "BenchmarkDotNetVersion": "0.15.8",
+      "OsVersion": "Windows 11 (10.0.26300.9711)",
+      "ProcessorName": "13th Gen Intel Core i7-13700H",
+      "PhysicalProcessorCount": 1,
+      "PhysicalCoreCount": 14,
+      "LogicalCoreCount": 20,
+      "RuntimeVersion": ".NET 11.0.0 (11.0.0-rc.3.26522.148, 11.0.26.52348)",
+      "Architecture": "X64",
+      "HasAttachedDebugger": false,
+      "HasRyuJit": true,
+      "Configuration": "RELEASE",
+      "DotNetCliVersion": "11.0.100-rc.3.26522.148",
+      "ChronometerFrequency": {
+        "Hertz": 10000000
+      },
+      "HardwareTimerKind": "Unknown"
+    },
+    "metrics": [
+      {
+        "method": "ReadPage",
+        "meanMilliseconds": 0.470257177734375,
+        "medianMilliseconds": 0.44425009765625,
+        "standardDeviationMilliseconds": 0.047176633298169485,
+        "confidenceMargin999Milliseconds": 0.09020055289229395,
+        "measuredIterations": 8,
+        "managedBytesPerOperation": 25358,
+        "iterationMilliseconds": [
+          0.558990234375,
+          0.4925205078125,
+          0.5155115234375,
+          0.4400890625,
+          0.445048046875,
+          0.4420287109375,
+          0.4434521484375,
+          0.4244171875
+        ]
+      },
+      {
+        "method": "LiteralSearch",
+        "meanMilliseconds": 180.6444592592593,
+        "medianMilliseconds": 186.32406666666665,
+        "standardDeviationMilliseconds": 20.050660294542936,
+        "confidenceMargin999Milliseconds": 33.69383421020163,
+        "measuredIterations": 9,
+        "managedBytesPerOperation": 2739053,
+        "iterationMilliseconds": [
+          151.32376666666664,
+          159.80753333333334,
+          190.7549,
+          170.66566666666668,
+          195.28163333333333,
+          186.32406666666665,
+          215.37073333333333,
+          189.43966666666665,
+          166.83216666666667
+        ]
+      },
+      {
+        "method": "RegexSearch",
+        "meanMilliseconds": 193.97333703703703,
+        "medianMilliseconds": 193.28433333333334,
+        "standardDeviationMilliseconds": 10.062276473230824,
+        "confidenceMargin999Milliseconds": 16.90900300966773,
+        "measuredIterations": 9,
+        "managedBytesPerOperation": 2754837,
+        "iterationMilliseconds": [
+          213.17546666666667,
+          201.7427,
+          179.4174,
+          192.5506,
+          182.19166666666666,
+          194.0957,
+          190.99083333333334,
+          198.31133333333335,
+          193.28433333333334
+        ]
+      },
+      {
+        "method": "SyntaxOutline",
+        "meanMilliseconds": 0.6236021118164062,
+        "medianMilliseconds": 0.58180458984375,
+        "standardDeviationMilliseconds": 0.0938860377653346,
+        "confidenceMargin999Milliseconds": 0.1795077758469162,
+        "measuredIterations": 8,
+        "managedBytesPerOperation": 19668,
+        "iterationMilliseconds": [
+          0.841797119140625,
+          0.652172705078125,
+          0.569899853515625,
+          0.630475146484375,
+          0.580517626953125,
+          0.583091552734375,
+          0.559084228515625,
+          0.571778662109375
+        ]
+      },
+      {
+        "method": "SemanticReferences",
+        "meanMilliseconds": 183.8462722222222,
+        "medianMilliseconds": 181.414575,
+        "standardDeviationMilliseconds": 8.541930159251958,
+        "confidenceMargin999Milliseconds": 14.354159633300867,
+        "measuredIterations": 9,
+        "managedBytesPerOperation": 7360904,
+        "iterationMilliseconds": [
+          191.217175,
+          181.414575,
+          173.804525,
+          177.6799,
+          185.2422,
+          202.533875,
+          180.250525,
+          179.380825,
+          183.09285
+        ]
+      }
+    ]
+  },
+  "rejectedCacheExperiments": {
+    "asyncCatalog": {
+      "rawReportSha256": "638782ec7b3b5f7e2c5f8b9c12ba387424f491133355397fcad7e74c58e5061f",
+      "environment": {
+        "BenchmarkDotNetCaption": "BenchmarkDotNet",
+        "BenchmarkDotNetVersion": "0.15.8",
+        "OsVersion": "Windows 11 (10.0.26300.9711)",
+        "ProcessorName": "13th Gen Intel Core i7-13700H",
+        "PhysicalProcessorCount": 1,
+        "PhysicalCoreCount": 14,
+        "LogicalCoreCount": 20,
+        "RuntimeVersion": ".NET 11.0.0 (11.0.0-rc.3.26522.148, 11.0.26.52348)",
+        "Architecture": "X64",
+        "HasAttachedDebugger": false,
+        "HasRyuJit": true,
+        "Configuration": "RELEASE",
+        "DotNetCliVersion": "11.0.100-rc.3.26522.148",
+        "ChronometerFrequency": {
+          "Hertz": 10000000
+        },
+        "HardwareTimerKind": "Unknown"
+      },
+      "metrics": [
+        {
+          "method": "ReadPage",
+          "meanMilliseconds": 0.3149786926269531,
+          "medianMilliseconds": 0.3152590576171875,
+          "standardDeviationMilliseconds": 0.0019958160870924527,
+          "confidenceMargin999Milliseconds": 0.0038159508625652417,
+          "measuredIterations": 8,
+          "managedBytesPerOperation": 25054,
+          "iterationMilliseconds": [
+            0.316317626953125,
+            0.311617529296875,
+            0.31705361328125,
+            0.314866455078125,
+            0.312473193359375,
+            0.315366064453125,
+            0.31515205078125,
+            0.3169830078125
+          ]
+        },
+        {
+          "method": "LiteralSearch",
+          "meanMilliseconds": 112.821794,
+          "medianMilliseconds": 112.92361,
+          "standardDeviationMilliseconds": 1.4109009797541112,
+          "confidenceMargin999Milliseconds": 2.1330809545029803,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 2717309,
+          "iterationMilliseconds": [
+            114.86254,
+            111.12002,
+            111.11894,
+            111.67604,
+            113.50258,
+            114.40434,
+            114.03682,
+            113.53776,
+            111.61426,
+            112.34464
+          ]
+        },
+        {
+          "method": "RegexSearch",
+          "meanMilliseconds": 132.441185,
+          "medianMilliseconds": 133.6890125,
+          "standardDeviationMilliseconds": 3.7409032932717112,
+          "confidenceMargin999Milliseconds": 5.655711975553408,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 2728832,
+          "iterationMilliseconds": [
+            133.6279,
+            128.212525,
+            133.92335,
+            128.325575,
+            134.2442,
+            127.57332499999998,
+            133.750125,
+            130.70594999999997,
+            139.655075,
+            134.393825
+          ]
+        },
+        {
+          "method": "SyntaxOutline",
+          "meanMilliseconds": 0.4080034016927083,
+          "medianMilliseconds": 0.40634208984375,
+          "standardDeviationMilliseconds": 0.017490227699981386,
+          "confidenceMargin999Milliseconds": 0.029391193295626214,
+          "measuredIterations": 9,
+          "managedBytesPerOperation": 19599,
+          "iterationMilliseconds": [
+            0.38240595703125,
+            0.387311865234375,
+            0.401276416015625,
+            0.406115283203125,
+            0.4067865234375,
+            0.40634208984375,
+            0.41632158203125,
+            0.435760107421875,
+            0.429710791015625
+          ]
+        },
+        {
+          "method": "SemanticReferences",
+          "meanMilliseconds": 272.3551111111111,
+          "medianMilliseconds": 275.74775,
+          "standardDeviationMilliseconds": 9.841857412944774,
+          "confidenceMargin999Milliseconds": 16.538603074456226,
+          "measuredIterations": 9,
+          "managedBytesPerOperation": 3182288,
+          "iterationMilliseconds": [
+            262.22155000000004,
+            252.22835,
+            279.58,
+            270.73765,
+            279.50395,
+            275.74775,
+            270.8237,
+            283.7118,
+            276.64125
+          ]
+        }
+      ]
+    },
+    "syncCatalog": {
+      "rawReportSha256": "755cd6e0a49f72cd4986a114340758fa91f08c6d184193521649fc1d1c789f95",
+      "environment": {
+        "BenchmarkDotNetCaption": "BenchmarkDotNet",
+        "BenchmarkDotNetVersion": "0.15.8",
+        "OsVersion": "Windows 11 (10.0.26300.9711)",
+        "ProcessorName": "13th Gen Intel Core i7-13700H",
+        "PhysicalProcessorCount": 1,
+        "PhysicalCoreCount": 14,
+        "LogicalCoreCount": 20,
+        "RuntimeVersion": ".NET 11.0.0 (11.0.0-rc.3.26522.148, 11.0.26.52348)",
+        "Architecture": "X64",
+        "HasAttachedDebugger": false,
+        "HasRyuJit": true,
+        "Configuration": "RELEASE",
+        "DotNetCliVersion": "11.0.100-rc.3.26522.148",
+        "ChronometerFrequency": {
+          "Hertz": 10000000
+        },
+        "HardwareTimerKind": "Unknown"
+      },
+      "metrics": [
+        {
+          "method": "ReadPage",
+          "meanMilliseconds": 0.32061517578125,
+          "medianMilliseconds": 0.3199756103515625,
+          "standardDeviationMilliseconds": 0.004743181079305052,
+          "confidenceMargin999Milliseconds": 0.007171012969165113,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 25124,
+          "iterationMilliseconds": [
+            0.315935546875,
+            0.324821728515625,
+            0.3211078125,
+            0.31883359375,
+            0.319439501953125,
+            0.326171435546875,
+            0.312187353515625,
+            0.327970166015625,
+            0.32051171875,
+            0.319172900390625
+          ]
+        },
+        {
+          "method": "LiteralSearch",
+          "meanMilliseconds": 129.18034166666666,
+          "medianMilliseconds": 129.287275,
+          "standardDeviationMilliseconds": 5.978418997749843,
+          "confidenceMargin999Milliseconds": 10.046345386646772,
+          "measuredIterations": 9,
+          "managedBytesPerOperation": 2737904,
+          "iterationMilliseconds": [
+            133.935175,
+            126.324575,
+            140.231425,
+            120.877125,
+            123.301475,
+            132.93255000000002,
+            125.4177,
+            130.315775,
+            129.287275
+          ]
+        },
+        {
+          "method": "RegexSearch",
+          "meanMilliseconds": 128.233115,
+          "medianMilliseconds": 128.8201125,
+          "standardDeviationMilliseconds": 3.9592506270512318,
+          "confidenceMargin999Milliseconds": 5.985821987407515,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 2748164,
+          "iterationMilliseconds": [
+            120.8329,
+            130.6426,
+            124.7647,
+            129.452525,
+            129.50942500000002,
+            135.388575,
+            128.002225,
+            130.39165,
+            125.15884999999999,
+            128.18769999999998
+          ]
+        },
+        {
+          "method": "SyntaxOutline",
+          "meanMilliseconds": 0.3545604833984375,
+          "medianMilliseconds": 0.351749853515625,
+          "standardDeviationMilliseconds": 0.016774102690983887,
+          "confidenceMargin999Milliseconds": 0.025360049707563937,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 19633,
+          "iterationMilliseconds": [
+            0.337083642578125,
+            0.323906884765625,
+            0.347036767578125,
+            0.350173779296875,
+            0.35059833984375,
+            0.3529013671875,
+            0.375178662109375,
+            0.3772966796875,
+            0.36673642578125,
+            0.36469228515625
+          ]
+        },
+        {
+          "method": "SemanticReferences",
+          "meanMilliseconds": 187.16967666666665,
+          "medianMilliseconds": 188.55436666666665,
+          "standardDeviationMilliseconds": 11.033019962552702,
+          "confidenceMargin999Milliseconds": 16.680351839343015,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 2645869,
+          "iterationMilliseconds": [
+            191.2213,
+            189.99916666666667,
+            187.10956666666667,
+            201.7142,
+            198.76376666666667,
+            198.17996666666664,
+            183.32773333333336,
+            179.59363333333334,
+            171.88346666666666,
+            169.90396666666666
+          ]
+        }
+      ]
+    },
+    "status": "withdrawn; full catalog hashes preserved; only report artifacts retained, not reusable candidate code"
+  },
+  "runtimeAsyncExperiment": {
+    "status": "isolated only; main build disabled",
+    "bdn": {
+      "rawReportSha256": "d237fc98cfb36902daa857ec0cdf0d4562ecb6249ffde78a5bfc281f7cfdb50b",
+      "environment": {
+        "BenchmarkDotNetCaption": "BenchmarkDotNet",
+        "BenchmarkDotNetVersion": "0.15.8",
+        "OsVersion": "Windows 11 (10.0.26300.9711)",
+        "ProcessorName": "13th Gen Intel Core i7-13700H",
+        "PhysicalProcessorCount": 1,
+        "PhysicalCoreCount": 14,
+        "LogicalCoreCount": 20,
+        "RuntimeVersion": ".NET 11.0.0 (11.0.0-rc.3.26522.148, 11.0.26.52348)",
+        "Architecture": "X64",
+        "HasAttachedDebugger": false,
+        "HasRyuJit": true,
+        "Configuration": "RELEASE",
+        "DotNetCliVersion": "11.0.100-rc.3.26522.148",
+        "ChronometerFrequency": {
+          "Hertz": 10000000
+        },
+        "HardwareTimerKind": "Unknown"
+      },
+      "metrics": [
+        {
+          "method": "ReadPage",
+          "meanMilliseconds": 0.480776875,
+          "medianMilliseconds": 0.448000537109375,
+          "standardDeviationMilliseconds": 0.0968117496632837,
+          "confidenceMargin999Milliseconds": 0.1463655510501172,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 25158,
+          "iterationMilliseconds": [
+            0.4311203125,
+            0.4056044921875,
+            0.3959431640625,
+            0.390883203125,
+            0.5031579101562499,
+            0.5538740234375,
+            0.6869423828125,
+            0.56598193359375,
+            0.46488076171875,
+            0.40938056640625
+          ]
+        },
+        {
+          "method": "LiteralSearch",
+          "meanMilliseconds": 154.5410175,
+          "medianMilliseconds": 155.2197,
+          "standardDeviationMilliseconds": 4.920640796304577,
+          "confidenceMargin999Milliseconds": 7.439306738859104,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 2712792,
+          "iterationMilliseconds": [
+            145.58025,
+            154.10785,
+            158.07705,
+            149.48365,
+            156.90475,
+            149.9518,
+            159.3717,
+            154.989625,
+            155.449775,
+            161.493725
+          ]
+        },
+        {
+          "method": "RegexSearch",
+          "meanMilliseconds": 183.73322666666667,
+          "medianMilliseconds": 182.7360166666667,
+          "standardDeviationMilliseconds": 7.870702415134557,
+          "confidenceMargin999Milliseconds": 11.899378950895658,
+          "measuredIterations": 10,
+          "managedBytesPerOperation": 2724152,
+          "iterationMilliseconds": [
+            200.00803333333334,
+            189.34,
+            178.81453333333334,
+            171.13283333333334,
+            181.3938,
+            179.8397,
+            188.3885,
+            178.235,
+            186.10163333333335,
+            184.07823333333334
+          ]
+        },
+        {
+          "method": "SyntaxOutline",
+          "meanMilliseconds": 0.45365157335069445,
+          "medianMilliseconds": 0.4562146484375,
+          "standardDeviationMilliseconds": 0.01654973969344459,
+          "confidenceMargin999Milliseconds": 0.027810764197360636,
+          "measuredIterations": 9,
+          "managedBytesPerOperation": 19740,
+          "iterationMilliseconds": [
+            0.4658626953125,
+            0.45903662109375,
+            0.46175751953125,
+            0.48004052734375,
+            0.4562146484375,
+            0.44548681640625,
+            0.4230376953125,
+            0.45328017578125,
+            0.4381474609375
+          ]
+        },
+        {
+          "method": "SemanticReferences",
+          "meanMilliseconds": 144.444515625,
+          "medianMilliseconds": 144.4651375,
+          "standardDeviationMilliseconds": 1.7336024646742267,
+          "confidenceMargin999Milliseconds": 3.3146049193621914,
+          "measuredIterations": 8,
+          "managedBytesPerOperation": 7349116,
+          "iterationMilliseconds": [
+            146.4642,
+            143.6937,
+            145.3508,
+            141.91315,
+            142.54115,
+            146.66285,
+            145.02235,
+            143.907925
+          ]
+        }
+      ]
+    },
+    "toolsAssembly": {
+      "defaultBytes": 443392,
+      "runtimeAsyncBytes": 373248,
+      "defaultAsyncMethodCount": 0,
+      "runtimeAsyncMethodCount": 58
+    },
+    "sourceScope": "same optimized source before the later nameof correctness fix; do not attribute intervening source changes to lowering"
+  },
+  "reverseOrderDiagnosticProbes": {
+    "description": "baseline,candidate,candidate,baseline;24calls after3warmups; prior to nameof correctness fix; not BDN or agent quality",
+    "operations": [
+      {
+        "operation": "read",
+        "records": [
+          {
+            "order": 0,
+            "variant": "before",
+            "rawSha256": "a0e36d566a908b437f7cf193156b116ccca0cea6e7c697ff36596ab247a50847",
+            "operation": "read",
+            "iterations": 24,
+            "milliseconds": [
+              0.7954,
+              0.7133,
+              0.6772,
+              0.6787,
+              0.6758,
+              0.6,
+              0.5926,
+              0.5935,
+              0.6665,
+              0.7037,
+              0.5705,
+              0.6518,
+              0.5849,
+              1.193,
+              0.675,
+              0.7107,
+              0.628,
+              0.6021,
+              0.5597,
+              0.5479,
+              0.5956,
+              0.4952,
+              0.5144,
+              0.621
+            ],
+            "managedBytesPerOperation": 71071.33333333333,
+            "cpuMilliseconds": 15.625,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153976832,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 1,
+            "variant": "after",
+            "rawSha256": "97160f247a86b735a734c3c9f08bf1c7d73933a435829b2bacd6f9a0cd7c51e3",
+            "operation": "read",
+            "iterations": 24,
+            "milliseconds": [
+              0.5982,
+              0.6089,
+              0.6005,
+              0.5063,
+              0.4985,
+              0.4777,
+              0.5167,
+              0.4654,
+              0.4981,
+              0.4572,
+              0.4877,
+              0.4141,
+              0.4664,
+              0.4471,
+              0.4978,
+              0.4799,
+              0.4266,
+              0.5083,
+              0.553,
+              0.5354,
+              0.4928,
+              0.4722,
+              0.5068,
+              0.52
+            ],
+            "managedBytesPerOperation": 24916.666666666668,
+            "cpuMilliseconds": 0,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153321472,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 2,
+            "variant": "after",
+            "rawSha256": "b7315c17f0c02a935de1db5fa44871df21ac3494393704f680d314bfcb91b2a3",
+            "operation": "read",
+            "iterations": 24,
+            "milliseconds": [
+              0.7457,
+              0.7616,
+              0.5872,
+              0.5467,
+              0.5516,
+              0.5517,
+              0.5743,
+              0.7053,
+              0.6133,
+              0.5896,
+              0.6087,
+              0.5145,
+              0.5437,
+              0.5867,
+              0.6095,
+              0.5239,
+              0.531,
+              0.595,
+              0.642,
+              0.5611,
+              0.5029,
+              0.4934,
+              0.4944,
+              0.5941
+            ],
+            "managedBytesPerOperation": 26306.666666666668,
+            "cpuMilliseconds": 15.625,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153448448,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 3,
+            "variant": "before",
+            "rawSha256": "e5f980270e78c34e340cd1cee7f980671546506a05d404bbe0e7f9bbbe67fc56",
+            "operation": "read",
+            "iterations": 24,
+            "milliseconds": [
+              0.9035,
+              0.6862,
+              0.5841,
+              0.5743,
+              0.5591,
+              0.6794,
+              0.6792,
+              0.8227,
+              0.6839,
+              0.5672,
+              0.593,
+              0.5433,
+              0.6363,
+              0.6739,
+              0.6916,
+              0.6228,
+              0.6272,
+              0.6404,
+              0.6223,
+              0.5853,
+              0.7067,
+              0.5885,
+              0.6052,
+              0.6278
+            ],
+            "managedBytesPerOperation": 71051,
+            "cpuMilliseconds": 31.25,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153690112,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          }
+        ]
+      },
+      {
+        "operation": "literal",
+        "records": [
+          {
+            "order": 0,
+            "variant": "before",
+            "rawSha256": "8d5fae78f36f7e40e5ec102b16a8b5b38a7df2185f57ede8261e5c0e99c087c8",
+            "operation": "literal",
+            "iterations": 24,
+            "milliseconds": [
+              188.4632,
+              174.895,
+              187.5401,
+              173.7369,
+              175.0482,
+              176.4123,
+              176.9189,
+              165.7665,
+              189.0206,
+              165.5489,
+              205.1223,
+              169.9567,
+              188.765,
+              172.1651,
+              178.9684,
+              168.2983,
+              165.6869,
+              168.086,
+              162.8286,
+              213.732,
+              201.2004,
+              208.8587,
+              201.7158,
+              235.5995
+            ],
+            "managedBytesPerOperation": 8455805.333333334,
+            "cpuMilliseconds": 4109.375,
+            "collections": [
+              16,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 159436800,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 1,
+            "variant": "after",
+            "rawSha256": "582eb2231f2e07a73260ead9bbb8fbf3057a1550ec9b0d5258f693aac4b9fe3b",
+            "operation": "literal",
+            "iterations": 24,
+            "milliseconds": [
+              204.7282,
+              194.02,
+              206.7236,
+              221.0544,
+              198.2317,
+              196.4163,
+              255.1189,
+              297.9423,
+              258.9996,
+              157.6969,
+              159.459,
+              176.9391,
+              160.5081,
+              187.6389,
+              131.8046,
+              156.41,
+              130.0713,
+              126.451,
+              129.1676,
+              130.1421,
+              133.949,
+              135.2417,
+              131.3114,
+              129.5234
+            ],
+            "managedBytesPerOperation": 2717283,
+            "cpuMilliseconds": 4109.375,
+            "collections": [
+              5,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 162136064,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 2,
+            "variant": "after",
+            "rawSha256": "93e206d51e16c808ec69f1427124052312ebdaf6a5abfbeff2ed12dd05b19d1f",
+            "operation": "literal",
+            "iterations": 24,
+            "milliseconds": [
+              139.0633,
+              136.4516,
+              144.1015,
+              139.7502,
+              135.9247,
+              140.6,
+              146.8616,
+              137.2634,
+              156.1396,
+              137.0411,
+              146.4565,
+              136.0823,
+              138.1798,
+              134.6124,
+              132.8629,
+              129.4783,
+              143.666,
+              132.8164,
+              140.4555,
+              134.778,
+              131.9626,
+              128.2637,
+              126.5558,
+              132.3472
+            ],
+            "managedBytesPerOperation": 2716010.6666666665,
+            "cpuMilliseconds": 3234.375,
+            "collections": [
+              5,
+              2,
+              1
+            ],
+            "PeakWorkingSet64": 159571968,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 3,
+            "variant": "before",
+            "rawSha256": "2c2023fbab256064026c2d7fcf52c7209dfb64f174b30843f3e458fa920d8c6a",
+            "operation": "literal",
+            "iterations": 24,
+            "milliseconds": [
+              154.2498,
+              143.2942,
+              149.6025,
+              146.1008,
+              149.6465,
+              144.1829,
+              145.9532,
+              136.4685,
+              139.9925,
+              141.3743,
+              140.2406,
+              150.3878,
+              165.4717,
+              225.7491,
+              177.1842,
+              223.0302,
+              169.4339,
+              152.6057,
+              137.7608,
+              135.1605,
+              133.6131,
+              134.3891,
+              149.8686,
+              182.8885
+            ],
+            "managedBytesPerOperation": 8452816.666666666,
+            "cpuMilliseconds": 3703.125,
+            "collections": [
+              16,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 159498240,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          }
+        ]
+      },
+      {
+        "operation": "regex",
+        "records": [
+          {
+            "order": 0,
+            "variant": "before",
+            "rawSha256": "3e7c5e9353b99b3b5e4907bc4edded539161b00a6c7a40a43d1b5e5bc5419f1d",
+            "operation": "regex",
+            "iterations": 24,
+            "milliseconds": [
+              154.2879,
+              146.6308,
+              153.8229,
+              145.1271,
+              156.9633,
+              148.799,
+              144.6984,
+              138.1988,
+              135.8805,
+              146.5319,
+              139.4297,
+              149.9135,
+              137.6978,
+              147.0312,
+              141.4689,
+              136.8955,
+              140.7505,
+              138.8043,
+              141.6209,
+              145.6451,
+              139.7362,
+              136.3085,
+              129.9378,
+              130.2007
+            ],
+            "managedBytesPerOperation": 8463799,
+            "cpuMilliseconds": 3296.875,
+            "collections": [
+              16,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 159514624,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 1,
+            "variant": "after",
+            "rawSha256": "9693ffd840c67239a3ced9984ce13039fbc8d278c996587e259cdba7b39b73a7",
+            "operation": "regex",
+            "iterations": 24,
+            "milliseconds": [
+              191.0341,
+              190.6322,
+              203.2267,
+              211.2196,
+              182.3138,
+              189.7632,
+              162.9695,
+              177.3681,
+              264.1589,
+              190.0519,
+              179.6932,
+              176.8139,
+              154.5527,
+              139.6476,
+              145.7897,
+              149.1206,
+              179.9304,
+              160.5988,
+              173.4866,
+              163.1571,
+              146.5467,
+              156.5434,
+              130.6425,
+              133.6445
+            ],
+            "managedBytesPerOperation": 2726848,
+            "cpuMilliseconds": 3968.75,
+            "collections": [
+              5,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 161890304,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 2,
+            "variant": "after",
+            "rawSha256": "6a667c6e325c7fdba348532da0c8ee5fab96387fc9f5e92d81eac592b1655f50",
+            "operation": "regex",
+            "iterations": 24,
+            "milliseconds": [
+              184.8173,
+              213.093,
+              197.0154,
+              178.0191,
+              149.3654,
+              151.0684,
+              147.7828,
+              143.4145,
+              153.9929,
+              140.645,
+              147.0424,
+              133.3464,
+              142.8841,
+              141.917,
+              148.4304,
+              139.3179,
+              151.608,
+              145.4782,
+              148.3155,
+              137.3841,
+              134.3613,
+              143.401,
+              134.5475,
+              133.4757
+            ],
+            "managedBytesPerOperation": 2726871.3333333335,
+            "cpuMilliseconds": 3578.125,
+            "collections": [
+              5,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 159551488,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 3,
+            "variant": "before",
+            "rawSha256": "c4412c7edf43684aa046008b73628cc742dcc71d863b89c31d7958e8255ecb30",
+            "operation": "regex",
+            "iterations": 24,
+            "milliseconds": [
+              152.9479,
+              148.7953,
+              153.0879,
+              150.9858,
+              146.1474,
+              148.9108,
+              149.2759,
+              155.5133,
+              148.2343,
+              152.6616,
+              148.1506,
+              148.8913,
+              147.584,
+              143.4643,
+              147.5772,
+              143.079,
+              142.9028,
+              214.4458,
+              140.5336,
+              139.1122,
+              151.7732,
+              155.8932,
+              140.022,
+              135.1217
+            ],
+            "managedBytesPerOperation": 8463955,
+            "cpuMilliseconds": 3390.625,
+            "collections": [
+              16,
+              1,
+              1
+            ],
+            "PeakWorkingSet64": 159510528,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          }
+        ]
+      },
+      {
+        "operation": "syntax",
+        "records": [
+          {
+            "order": 0,
+            "variant": "before",
+            "rawSha256": "7869e53ec0904b9ecb5413e09f26ee9c16c8110489c828d9f62c6813ae4248cf",
+            "operation": "syntax",
+            "iterations": 24,
+            "milliseconds": [
+              0.5256,
+              0.4096,
+              0.4539,
+              0.4678,
+              0.4777,
+              0.4308,
+              0.4459,
+              0.4099,
+              0.4332,
+              0.4583,
+              0.4211,
+              0.4231,
+              0.3478,
+              0.3579,
+              0.7253,
+              0.3618,
+              0.443,
+              0.4786,
+              0.5453,
+              0.4897,
+              0.4723,
+              0.5325,
+              0.4425,
+              0.5375
+            ],
+            "managedBytesPerOperation": 19691.666666666668,
+            "cpuMilliseconds": 15.625,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 154112000,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 1,
+            "variant": "after",
+            "rawSha256": "8d4a233af440f23a3f91df5a9a45a6b98eaa204d9ecdde89f99392255374673c",
+            "operation": "syntax",
+            "iterations": 24,
+            "milliseconds": [
+              0.5264,
+              0.6024,
+              0.4748,
+              0.4766,
+              0.6443,
+              0.4969,
+              0.4617,
+              0.594,
+              0.4699,
+              0.4638,
+              0.4094,
+              0.4523,
+              0.4835,
+              0.518,
+              0.3732,
+              0.4985,
+              0.4497,
+              0.4147,
+              0.4114,
+              0.5194,
+              0.4217,
+              0.5065,
+              0.5384,
+              0.4396
+            ],
+            "managedBytesPerOperation": 19611.666666666668,
+            "cpuMilliseconds": 0,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153661440,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 2,
+            "variant": "after",
+            "rawSha256": "d1467c13abf1001d8707ad735e9547f82699f705ce6f909abe9e541ba3e4d44e",
+            "operation": "syntax",
+            "iterations": 24,
+            "milliseconds": [
+              0.728,
+              0.7345,
+              0.5977,
+              0.5723,
+              0.5562,
+              0.5443,
+              0.5725,
+              0.5508,
+              0.6126,
+              0.5744,
+              0.5268,
+              0.5466,
+              0.5281,
+              0.5293,
+              0.5121,
+              0.5205,
+              0.5213,
+              0.5263,
+              0.5205,
+              0.5198,
+              0.4881,
+              0.5328,
+              0.4831,
+              0.5611
+            ],
+            "managedBytesPerOperation": 20326.666666666668,
+            "cpuMilliseconds": 15.625,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153899008,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 3,
+            "variant": "before",
+            "rawSha256": "3c5302dcb4d0b632fda1b1c3831d5376c60ac38da77d598512176599dd384a03",
+            "operation": "syntax",
+            "iterations": 24,
+            "milliseconds": [
+              0.5115,
+              0.4887,
+              0.4345,
+              0.4445,
+              0.3963,
+              0.4285,
+              0.4167,
+              0.4249,
+              0.4392,
+              0.4683,
+              0.4881,
+              0.5196,
+              0.5281,
+              0.4452,
+              0.5255,
+              0.4458,
+              0.5624,
+              0.4597,
+              0.4414,
+              0.5292,
+              0.5018,
+              0.4623,
+              0.5212,
+              0.4785
+            ],
+            "managedBytesPerOperation": 19691.666666666668,
+            "cpuMilliseconds": 0,
+            "collections": [
+              0,
+              0,
+              0
+            ],
+            "PeakWorkingSet64": 153976832,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          }
+        ]
+      },
+      {
+        "operation": "semantic",
+        "records": [
+          {
+            "order": 0,
+            "variant": "before",
+            "rawSha256": "a20ed7b7656cb3593aef0294100c62de5946088fae8b00673cb00ebda157d064",
+            "operation": "semantic",
+            "iterations": 24,
+            "milliseconds": [
+              167.8129,
+              165.9159,
+              171.4935,
+              169.9369,
+              170.6666,
+              165.996,
+              195.4377,
+              204.259,
+              215.1471,
+              287.3064,
+              197.9496,
+              186.2727,
+              182.8856,
+              188.8426,
+              197.869,
+              187.6855,
+              178.7009,
+              165.8894,
+              176.7866,
+              160.3365,
+              171.7036,
+              167.0222,
+              168.3081,
+              160.5289
+            ],
+            "managedBytesPerOperation": 7368294.333333333,
+            "cpuMilliseconds": 4984.375,
+            "collections": [
+              17,
+              12,
+              4
+            ],
+            "PeakWorkingSet64": 522723328,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 1,
+            "variant": "after",
+            "rawSha256": "1e76e9587dc6b60432d0592b2344b10d07cd40c496e82e899af1bb19e7d9cfba",
+            "operation": "semantic",
+            "iterations": 24,
+            "milliseconds": [
+              166.915,
+              169.9593,
+              159.5883,
+              174.7472,
+              167.924,
+              162.4645,
+              172.7638,
+              187.8712,
+              188.7226,
+              194.283,
+              188.2562,
+              201.8047,
+              185.09,
+              180.7546,
+              178.3323,
+              182.3382,
+              183.4058,
+              177.5615,
+              194.2419,
+              180.3838,
+              181.8508,
+              157.6512,
+              183.387,
+              170.7341
+            ],
+            "managedBytesPerOperation": 7359578.333333333,
+            "cpuMilliseconds": 5234.375,
+            "collections": [
+              17,
+              11,
+              4
+            ],
+            "PeakWorkingSet64": 521605120,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 2,
+            "variant": "after",
+            "rawSha256": "b4aef46b27034f377724e61564497daa87e143109a5c9825be292a30d4576a66",
+            "operation": "semantic",
+            "iterations": 24,
+            "milliseconds": [
+              178.2732,
+              181.6281,
+              185.6854,
+              182.0672,
+              191.9222,
+              175.994,
+              178.1786,
+              168.4467,
+              193.5728,
+              176.8568,
+              178.9279,
+              179.7754,
+              180.5544,
+              183.9826,
+              202.4028,
+              206.2831,
+              190.6818,
+              200.7869,
+              209.5537,
+              199.5086,
+              214.0291,
+              183.0661,
+              207.1853,
+              187.1733
+            ],
+            "managedBytesPerOperation": 7364993.666666667,
+            "cpuMilliseconds": 5093.75,
+            "collections": [
+              17,
+              11,
+              4
+            ],
+            "PeakWorkingSet64": 518950912,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          },
+          {
+            "order": 3,
+            "variant": "before",
+            "rawSha256": "626f370dcc545f7bfc30aca27376be5e10ceb42231f005e4276ffedada9f0ec4",
+            "operation": "semantic",
+            "iterations": 24,
+            "milliseconds": [
+              213.8729,
+              224.5517,
+              222.2681,
+              230.145,
+              241.9672,
+              214.3724,
+              224.2556,
+              188.4862,
+              230.6957,
+              211.4853,
+              209.1605,
+              225.969,
+              204.4798,
+              225.3671,
+              210.8377,
+              223.8215,
+              212.4223,
+              203.5208,
+              213.115,
+              232.44,
+              257.0072,
+              194.2246,
+              212.5879,
+              203.966
+            ],
+            "managedBytesPerOperation": 7367438.666666667,
+            "cpuMilliseconds": 6140.625,
+            "collections": [
+              17,
+              12,
+              4
+            ],
+            "PeakWorkingSet64": 522379264,
+            "framework": ".NET 11.0.0-rc.3.26522.148",
+            "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+          }
+        ]
+      }
+    ]
+  },
+  "profiling": {
+    "before": {
+      "traceSha256": "f07ad12479533dda06b036d5bea5fbb79df5363e8ef43d90732da7e4b0c8520a",
+      "allocationSummary": {
+        "description": "Sampled GC allocation ticks, including startup/warmup; not exact byte totals or per-operation allocations.",
+        "types": [
+          {
+            "type": "System.String",
+            "sampledBytes": 202431912,
+            "events": 1820
+          },
+          {
+            "type": "System.Byte[]",
+            "sampledBytes": 172486512,
+            "events": 1640
+          },
+          {
+            "type": "System.Char[]",
+            "sampledBytes": 114593144,
+            "events": 1106
+          },
+          {
+            "type": "System.Text.StringBuilder",
+            "sampledBytes": 57907872,
+            "events": 547
+          },
+          {
+            "type": "System.Threading.CompleteWaitThreadPoolWorkItem",
+            "sampledBytes": 1308168,
+            "events": 12
+          },
+          {
+            "type": "Entry[]",
+            "sampledBytes": 1048960,
+            "events": 8
+          },
+          {
+            "type": "System.ValueTuple`2[System.Int32,Roslyn.Utilities.TextKeyedCache`1+SharedEntryValue[Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken]][]",
+            "sampledBytes": 1048600,
+            "events": 1
+          },
+          {
+            "type": "System.ValueTuple`2[System.Int32,Roslyn.Utilities.TextKeyedCache`1+SharedEntryValue[Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxTrivia]][]",
+            "sampledBytes": 1048600,
+            "events": 1
+          },
+          {
+            "type": "Entry[System.String,System.ValueTuple`2[System.Int32,System.Int32]][]",
+            "sampledBytes": 592232,
+            "events": 5
+          },
+          {
+            "type": "System.Reflection.Metadata.MetadataReader",
+            "sampledBytes": 530952,
+            "events": 5
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.GreenNode[]",
+            "sampledBytes": 524312,
+            "events": 1
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.ArrayElement`1[Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken][]",
+            "sampledBytes": 389208,
+            "events": 3
+          },
+          {
+            "type": "System.Threading.SemaphoreSlim",
+            "sampledBytes": 317392,
+            "events": 3
+          },
+          {
+            "type": "System.Comparison`1[System.Int32]",
+            "sampledBytes": 218752,
+            "events": 2
+          },
+          {
+            "type": "System.SByte[]",
+            "sampledBytes": 217952,
+            "events": 2
+          },
+          {
+            "type": "System.String[]",
+            "sampledBytes": 216952,
+            "events": 2
+          },
+          {
+            "type": "Bucket[]",
+            "sampledBytes": 215800,
+            "events": 2
+          },
+          {
+            "type": "System.Int32[]",
+            "sampledBytes": 215368,
+            "events": 2
+          },
+          {
+            "type": "PENamedTypeSymbolNonGeneric",
+            "sampledBytes": 214400,
+            "events": 2
+          },
+          {
+            "type": "Node[System.Reflection.Metadata.TypeDefinitionHandle,Microsoft.CodeAnalysis.CSharp.Symbols.TypeSymbol]",
+            "sampledBytes": 213200,
+            "events": 2
+          },
+          {
+            "type": "System.Reflection.Metadata.TypeDefinitionHandle[]",
+            "sampledBytes": 213200,
+            "events": 2
+          },
+          {
+            "type": "System.Comparison`1[System.String]",
+            "sampledBytes": 213200,
+            "events": 2
+          },
+          {
+            "type": "System.Object",
+            "sampledBytes": 212016,
+            "events": 2
+          },
+          {
+            "type": "System.ValueTuple`3[System.String,System.Int32,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken][]",
+            "sampledBytes": 134656,
+            "events": 1
+          },
+          {
+            "type": "System.ValueTuple`3[System.String,System.Int32,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxTrivia][]",
+            "sampledBytes": 114840,
+            "events": 1
+          },
+          {
+            "type": "Builder[Microsoft.CodeAnalysis.CSharp.Symbols.ParameterSymbol]",
+            "sampledBytes": 110416,
+            "events": 1
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.PooledObjects.ArrayBuilder`1[Microsoft.CodeAnalysis.CSharp.Symbols.Metadata.PE.PENamedTypeSymbol]",
+            "sampledBytes": 109720,
+            "events": 1
+          },
+          {
+            "type": "System.Func`2[System.ValueTuple`3[System.String,System.Type,System.Reflection.MemberInfo],System.Func`2[System.Object,System.Nullable`1[System.Int32]]]",
+            "sampledBytes": 109368,
+            "events": 1
+          },
+          {
+            "type": "System.IO.FileNotFoundException",
+            "sampledBytes": 109064,
+            "events": 1
+          },
+          {
+            "type": "",
+            "sampledBytes": 108976,
+            "events": 1
+          }
+        ]
+      },
+      "workload": {
+        "operation": "literal",
+        "iterations": 60,
+        "milliseconds": [
+          149.8793,
+          151.4907,
+          153.3139,
+          145.7903,
+          159.3657,
+          134.514,
+          136.1804,
+          134.7718,
+          153.6512,
+          137.9551,
+          138.9741,
+          161.5084,
+          141.4895,
+          130.8181,
+          154.7137,
+          128.9775,
+          147.3358,
+          148.4377,
+          164.9916,
+          131.2658,
+          130.0102,
+          194.0936,
+          154.6395,
+          124.9691,
+          126.2537,
+          138.0048,
+          125.8308,
+          128.8683,
+          123.4635,
+          141.5371,
+          135.5005,
+          144.2199,
+          131.6068,
+          206.59,
+          140.0864,
+          127.98,
+          125.8039,
+          143.0667,
+          151.384,
+          165.8297,
+          176.5376,
+          127.6808,
+          136.8334,
+          160.2303,
+          145.6814,
+          205.4076,
+          196.9441,
+          122.7303,
+          153.4449,
+          221.0136,
+          144.371,
+          142.5544,
+          146.8044,
+          160.3906,
+          135.3092,
+          129.8899,
+          147.8164,
+          143.7854,
+          143.546,
+          134.8774
+        ],
+        "managedBytesPerOperation": 8453550.533333333,
+        "cpuMilliseconds": 7484.375,
+        "collections": [
+          41,
+          1,
+          1
+        ],
+        "PeakWorkingSet64": 162844672,
+        "framework": ".NET 11.0.0-rc.3.26522.148",
+        "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+      }
+    },
+    "after-final": {
+      "traceSha256": "7a17ca6218a59a53c4c85058db3a0930581bfdaae2e3f4f5dd5cf852d5dd0fcb",
+      "allocationSummary": {
+        "description": "Sampled GC allocation ticks, including startup/warmup; not exact byte totals or per-operation allocations.",
+        "types": [
+          {
+            "type": "System.String",
+            "sampledBytes": 150901544,
+            "events": 1393
+          },
+          {
+            "type": "NavigationText",
+            "sampledBytes": 20452232,
+            "events": 197
+          },
+          {
+            "type": "System.Byte[]",
+            "sampledBytes": 10502840,
+            "events": 101
+          },
+          {
+            "type": "System.Char[]",
+            "sampledBytes": 3497600,
+            "events": 33
+          },
+          {
+            "type": "Entry[]",
+            "sampledBytes": 1267352,
+            "events": 10
+          },
+          {
+            "type": "System.Text.StringBuilder",
+            "sampledBytes": 1259888,
+            "events": 12
+          },
+          {
+            "type": "System.ValueTuple`2[System.Int32,Roslyn.Utilities.TextKeyedCache`1+SharedEntryValue[Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken]][]",
+            "sampledBytes": 1048600,
+            "events": 1
+          },
+          {
+            "type": "System.ValueTuple`2[System.Int32,Roslyn.Utilities.TextKeyedCache`1+SharedEntryValue[Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxTrivia]][]",
+            "sampledBytes": 1048600,
+            "events": 1
+          },
+          {
+            "type": "System.String[]",
+            "sampledBytes": 853032,
+            "events": 8
+          },
+          {
+            "type": "Entry[System.String,System.ValueTuple`2[System.Int32,System.Int32]][]",
+            "sampledBytes": 543384,
+            "events": 5
+          },
+          {
+            "type": "System.Int32[]",
+            "sampledBytes": 533960,
+            "events": 5
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.GreenNode[]",
+            "sampledBytes": 524312,
+            "events": 1
+          },
+          {
+            "type": "System.RuntimeMethodInfoStub",
+            "sampledBytes": 318800,
+            "events": 3
+          },
+          {
+            "type": "System.Reflection.Metadata.MetadataReader",
+            "sampledBytes": 318776,
+            "events": 3
+          },
+          {
+            "type": "AsyncStateMachineBox`1[Workbench.Tools.WorkspaceService+NavigationText,Workbench.Tools.WorkspaceService+<ReadNavigationTextAsync>d__42]",
+            "sampledBytes": 318648,
+            "events": 3
+          },
+          {
+            "type": "Bucket[]",
+            "sampledBytes": 314680,
+            "events": 3
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.ArrayElement`1[Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken][]",
+            "sampledBytes": 288416,
+            "events": 2
+          },
+          {
+            "type": "System.Reflection.Metadata.TypeDefinitionHandle[]",
+            "sampledBytes": 215368,
+            "events": 2
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.CSharp.Symbols.AssemblySymbol[]",
+            "sampledBytes": 213304,
+            "events": 2
+          },
+          {
+            "type": "PENamedTypeSymbolNonGeneric",
+            "sampledBytes": 213200,
+            "events": 2
+          },
+          {
+            "type": "System.Reflection.Internal.ExternalMemoryBlock",
+            "sampledBytes": 212176,
+            "events": 2
+          },
+          {
+            "type": "System.Lazy`1[Microsoft.CodeAnalysis.IdentifierCollection]",
+            "sampledBytes": 210296,
+            "events": 2
+          },
+          {
+            "type": "System.Threading.CompleteWaitThreadPoolWorkItem",
+            "sampledBytes": 206176,
+            "events": 2
+          },
+          {
+            "type": "System.Object",
+            "sampledBytes": 109848,
+            "events": 1
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.PooledObjects.ArrayBuilder`1[Microsoft.CodeAnalysis.CSharp.Symbols.Metadata.PE.PENamedTypeSymbol]",
+            "sampledBytes": 109720,
+            "events": 1
+          },
+          {
+            "type": "System.Linq.IGrouping`2[System.String,System.Reflection.Metadata.TypeDefinitionHandle][]",
+            "sampledBytes": 108768,
+            "events": 1
+          },
+          {
+            "type": "System.IO.FileNotFoundException",
+            "sampledBytes": 108688,
+            "events": 1
+          },
+          {
+            "type": "Entry[System.String,System.String][]",
+            "sampledBytes": 108256,
+            "events": 1
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.CSharp.Syntax.ParameterListSyntax",
+            "sampledBytes": 106696,
+            "events": 1
+          },
+          {
+            "type": "Microsoft.CodeAnalysis.CSharp.Symbols.SourceNamedTypeSymbol",
+            "sampledBytes": 106600,
+            "events": 1
+          }
+        ]
+      },
+      "workload": {
+        "operation": "literal",
+        "iterations": 60,
+        "milliseconds": [
+          181.071,
+          170.5099,
+          175.137,
+          183.2041,
+          171.9116,
+          174.6626,
+          180.536,
+          190.4224,
+          181.6564,
+          186.0029,
+          171.0254,
+          173.0757,
+          168.1128,
+          167.5386,
+          173.2202,
+          160.9683,
+          152.7841,
+          156.228,
+          156.2101,
+          157.4474,
+          157.081,
+          160.1441,
+          159.5991,
+          155.7119,
+          146.4402,
+          145.4335,
+          149.523,
+          152.7654,
+          161.6918,
+          162.3779,
+          151.8074,
+          153.5527,
+          146.5659,
+          148.3017,
+          152.7249,
+          149.9778,
+          154.2322,
+          150.9147,
+          150.0457,
+          147.3733,
+          154.4913,
+          147.9026,
+          146.4591,
+          145.8317,
+          150.9584,
+          145.9435,
+          151.9725,
+          151.7163,
+          147.0427,
+          147.8292,
+          155.8952,
+          147.1989,
+          150.4573,
+          151.2181,
+          145.3363,
+          143.5685,
+          143.4702,
+          144.7057,
+          156.9515,
+          156.8176
+        ],
+        "managedBytesPerOperation": 2717348.2666666666,
+        "cpuMilliseconds": 8484.375,
+        "collections": [
+          13,
+          1,
+          1
+        ],
+        "PeakWorkingSet64": 162390016,
+        "framework": ".NET 11.0.0-rc.3.26522.148",
+        "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+      }
+    }
+  },
+  "interpretation": "Repeatable managed-allocation reductions in reads/search. Wall latency variable including unchanged syntax control; no general latency win, retained-memory reduction or agent solve-rate claim. Trace ticks are sampled and include startup; thread-time is not CPU percentage.",
+  "sourceDigestFormat": "SHA-256 of raw measured Windows worktree bytes; checkout line endings may differ from canonical Git blobs.",
+  "baselineHarnessSha256": "cd12d5196957d35511f465c8a76ef81f572ecc4c9f96d3c9de640a33c22f142a",
+  "harnessScope": "Same generated fixture, BDN job and measured methods. Current harness additionally has the semantic-series CLI and a default-true semantic warmup guard; no measured method changed.",
+  "finalLiteralDiagnosticRecheck": {
+    "reason": "Investigate final BDN literal spike; after,before,before,after with final source; not a replacement for original BDN output",
+    "records": [
+      {
+        "order": 0,
+        "variant": "after",
+        "rawSha256": "1b36d84715a5e7383e025226affece52cdf9a9f0c754c709e5ad1c2b87faddd1",
+        "operation": "literal",
+        "iterations": 24,
+        "milliseconds": [
+          202.8169,
+          182.1248,
+          174.0233,
+          210.6013,
+          181.5923,
+          183.4009,
+          162.4207,
+          171.6588,
+          261.5674,
+          147.0542,
+          152.6372,
+          239.707,
+          174.9511,
+          174.2308,
+          187.5279,
+          155.7089,
+          163.4875,
+          165.0285,
+          157.354,
+          185.964,
+          165.2469,
+          271.6183,
+          144.269,
+          138.1522
+        ],
+        "managedBytesPerOperation": 2720287.6666666665,
+        "cpuMilliseconds": 4031.25,
+        "collections": [
+          5,
+          1,
+          1
+        ],
+        "PeakWorkingSet64": 161714176,
+        "framework": ".NET 11.0.0-rc.3.26522.148",
+        "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+      },
+      {
+        "order": 1,
+        "variant": "before",
+        "rawSha256": "ddfd1b02bb1c05d53727713b1ece60e0c0b5e114c78b3ee75ff5f274d0d526a2",
+        "operation": "literal",
+        "iterations": 24,
+        "milliseconds": [
+          190.4769,
+          151.3472,
+          175.7176,
+          186.9405,
+          182.2207,
+          190.337,
+          175.6079,
+          163.2808,
+          166.9042,
+          149.2104,
+          173.3763,
+          146.5877,
+          140.3603,
+          144.156,
+          149.5066,
+          184.8855,
+          176.2895,
+          172.3836,
+          163.0808,
+          163.6396,
+          165.6601,
+          209.8282,
+          172.9975,
+          147.5228
+        ],
+        "managedBytesPerOperation": 8455788,
+        "cpuMilliseconds": 3593.75,
+        "collections": [
+          16,
+          1,
+          1
+        ],
+        "PeakWorkingSet64": 159465472,
+        "framework": ".NET 11.0.0-rc.3.26522.148",
+        "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+      },
+      {
+        "order": 2,
+        "variant": "before",
+        "rawSha256": "dc8952c310c405470d3109535a83466439061aed63401887bcfbf98bb5d49fc3",
+        "operation": "literal",
+        "iterations": 24,
+        "milliseconds": [
+          222.6255,
+          189.408,
+          166.5479,
+          149.3953,
+          150.7856,
+          146.2153,
+          170.4695,
+          198.938,
+          217.3881,
+          212.615,
+          144.11,
+          142.6206,
+          150.7989,
+          233.8302,
+          164.2594,
+          164.4149,
+          159.5828,
+          162.1378,
+          173.8174,
+          164.8028,
+          186.3998,
+          154.8329,
+          131.5924,
+          152.0704
+        ],
+        "managedBytesPerOperation": 8455981,
+        "cpuMilliseconds": 3687.5,
+        "collections": [
+          16,
+          1,
+          1
+        ],
+        "PeakWorkingSet64": 159592448,
+        "framework": ".NET 11.0.0-rc.3.26522.148",
+        "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+      },
+      {
+        "order": 3,
+        "variant": "after",
+        "rawSha256": "c62b221cbf0bc04cbe2dfeb2cf9f5b9532c82a429cba08bd96c887f8f857ff52",
+        "operation": "literal",
+        "iterations": 24,
+        "milliseconds": [
+          160.7886,
+          201.258,
+          197.3469,
+          183.6685,
+          145.7112,
+          180.4147,
+          162.3315,
+          186.4263,
+          163.5301,
+          145.3066,
+          152.1215,
+          168.0737,
+          159.2724,
+          162.2918,
+          178.719,
+          158.4007,
+          147.1846,
+          165.0356,
+          148.6317,
+          217.8608,
+          173.2538,
+          169.4329,
+          132.4301,
+          141.4913
+        ],
+        "managedBytesPerOperation": 2721271,
+        "cpuMilliseconds": 3531.25,
+        "collections": [
+          5,
+          2,
+          1
+        ],
+        "PeakWorkingSet64": 162021376,
+        "framework": ".NET 11.0.0-rc.3.26522.148",
+        "description": "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+      }
+    ]
+  },
+  "validation": {
+    "releaseBuild": "locked restore;warnings-as-errors;zero warnings/errors",
+    "releaseUnitTests": {
+      "passed": 569,
+      "failed": 0,
+      "skipped": 0,
+      "trxSha256": "d0b16bcd3e9860b7fd17b6860c70b9ec17a464d0b6a8867fad78ae71e3bbe63b"
+    },
+    "debugBuild": "locked restore;warnings-as-errors;zero warnings/errors",
+    "localFixtures": [
+      {
+        "fixture": "verify-host",
+        "exitCode": 0
+      },
+      {
+        "fixture": "verify-lifecycle",
+        "exitCode": 0
+      },
+      {
+        "fixture": "verify-responses",
+        "exitCode": 0
+      },
+      {
+        "fixture": "verify-continuity",
+        "exitCode": 0
+      },
+      {
+        "fixture": "verify-tools-upgrade",
+        "exitCode": 0
+      },
+      {
+        "fixture": "verify-research",
+        "exitCode": 0
+      },
+      {
+        "fixture": "verify-integrations",
+        "exitCode": 0
+      }
+    ],
+    "desktopOpened": false,
+    "paidModelsUsed": false
+  }
+}

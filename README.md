@@ -70,7 +70,7 @@ python scripts/verify-research.py
 python scripts/module-map.py --check
 ```
 
-Run SDK commands and Host integration fixtures serially to avoid Windows DLL locks. Default tests use generated repositories and local protocol/model fixtures; they do not open the desktop or call paid models. [Current integration and performance results](docs/integrations-performance.md) separate actual measurements from unverified claims. [Benchmark instructions](benchmarks/Workbench.Benchmarks/README.md) use BenchmarkDotNet and BCL process diagnostics.
+Run SDK commands and Host integration fixtures serially to avoid Windows DLL locks. Default tests use generated repositories and local protocol/model fixtures; they do not open the desktop or call paid models. [Current integration and performance results](docs/integrations-performance.md) separate actual measurements from unverified claims. [Measured allocation tuning](docs/performance-tuning.md) records matched sources, variable latency and withdrawn cache experiments. [Cross-domain tool designs](research/cross-domain-agent-optimization.md) distinguish proposed mechanisms from production capabilities. [Benchmark instructions](benchmarks/Workbench.Benchmarks/README.md) use BenchmarkDotNet and native .NET diagnostics.
 
 ## Documentation and contributions
 

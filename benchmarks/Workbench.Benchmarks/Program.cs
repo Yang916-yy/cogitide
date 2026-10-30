@@ -8,6 +8,103 @@ using BenchmarkDotNet.Toolchains.InProcess.Emit;
 using Workbench.Protocol;
 using Workbench.Tools;
 
+if (args is ["--semantic-series", var seriesCount, var seriesReport])
+{
+    if (!int.TryParse(seriesCount, out var count) || count is < 2 or > 50) throw new ArgumentException("Use 2..50 calls.");
+    var fixture = new ToolBenchmarks { WarmSemantic = false };
+    fixture.Setup();
+    var samples = new List<object>();
+    try
+    {
+        using var process = Process.GetCurrentProcess();
+        for (var i = 0; i < count; i++)
+        {
+            var bytes = GC.GetTotalAllocatedBytes(true);
+            var watch = Stopwatch.StartNew();
+            var result = await fixture.SemanticReferences();
+            var elapsed = watch.Elapsed.TotalMilliseconds;
+            var allocated = GC.GetTotalAllocatedBytes(true) - bytes;
+            if (result.IsError) throw new InvalidDataException(result.Content);
+            process.Refresh();
+            samples.Add(new { sample = i, firstSemanticCall = i == 0, milliseconds = elapsed,
+                managedBytes = allocated, workingSetBytes = process.WorkingSet64, privateBytes = process.PrivateMemorySize64 });
+        }
+        await File.WriteAllTextAsync(seriesReport, JsonSerializer.Serialize(new
+        {
+            description = "First semantic call plus repeats in one fresh process; setup did not warm semantics. OS caches are not cleared. Process-wide allocations and resident memory include Roslyn/runtime state.",
+            samples
+        }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    finally { fixture.Cleanup(); }
+    return;
+}
+
+if (args is ["--allocation-summary", var tracePath, var summaryPath])
+{
+    // TraceEvent is already a BenchmarkDotNet dependency. Use its EventPipe parser, not a custom trace format.
+    var types = new Dictionary<string, (long SampledBytes, long Events)>(StringComparer.Ordinal);
+    using var source = new Microsoft.Diagnostics.Tracing.EventPipeEventSource(tracePath);
+    source.Clr.GCAllocationTick += data =>
+    {
+        var name = data.TypeName ?? "unknown";
+        types.TryGetValue(name, out var old);
+        types[name] = (checked(old.SampledBytes + data.AllocationAmount64), old.Events + 1);
+    };
+    source.Process();
+    await File.WriteAllTextAsync(summaryPath, JsonSerializer.Serialize(new
+    {
+        description = "Sampled GC allocation ticks, including startup/warmup; not exact byte totals or per-operation allocations.",
+        types = types.OrderByDescending(pair => pair.Value.SampledBytes).Take(30)
+            .Select(pair => new { type = pair.Key, sampledBytes = pair.Value.SampledBytes, events = pair.Value.Events })
+    }, new JsonSerializerOptions { WriteIndented = true }));
+    return;
+}
+
+if (args is ["--workload", var operation, var countText, var report])
+{
+    if (!int.TryParse(countText, out var count) || count is < 1 or > 500)
+        throw new ArgumentException("Workload iterations must be 1..500.");
+    var fixture = new ToolBenchmarks();
+    fixture.Setup();
+    try
+    {
+        Func<Task<ToolResult>> run = operation switch
+        {
+            "read" => fixture.ReadPage, "literal" => fixture.LiteralSearch,
+            "regex" => fixture.RegexSearch, "syntax" => fixture.SyntaxOutline,
+            "semantic" => fixture.SemanticReferences,
+            _ => throw new ArgumentException("Use read, literal, regex, syntax or semantic.")
+        };
+        for (var warmup = 0; warmup < 3; warmup++) _ = await run();
+        var samples = new List<double>();
+        var allocated = GC.GetTotalAllocatedBytes(true);
+        var generations = Enumerable.Range(0, 3).Select(GC.CollectionCount).ToArray();
+        using var process = Process.GetCurrentProcess();
+        var cpu = process.TotalProcessorTime;
+        for (var i = 0; i < count; i++)
+        {
+            var watch = Stopwatch.StartNew();
+            var result = await run();
+            samples.Add(watch.Elapsed.TotalMilliseconds);
+            if (result.IsError) throw new InvalidDataException("Measured workload failed: " + result.Content);
+        }
+        var bytes = GC.GetTotalAllocatedBytes(true) - allocated;
+        process.Refresh();
+        await File.WriteAllTextAsync(report, JsonSerializer.Serialize(new
+        {
+            operation, iterations = count, milliseconds = samples,
+            managedBytesPerOperation = (double)bytes / count,
+            cpuMilliseconds = (process.TotalProcessorTime - cpu).TotalMilliseconds,
+            collections = Enumerable.Range(0, 3).Select(i => GC.CollectionCount(i) - generations[i]).ToArray(),
+            process.PeakWorkingSet64,
+            framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+            description = "Actual tool calls after three warmups; process-wide managed allocation. Not BDN or a model benchmark."
+        }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    finally { fixture.Cleanup(); }
+    return;
+}
+
 if (args is ["--host-startup", var dotnet, var hostDll, var output])
 {
     var measurements = new List<object>();
@@ -70,6 +167,7 @@ public class ToolBenchmarks
 {
     private readonly WorkspaceService _workspace = new();
     private string _root = "";
+    public bool WarmSemantic { get; set; } = true;
 
     [GlobalSetup]
     public void Setup()
@@ -89,7 +187,7 @@ public class ToolBenchmarks
             File.WriteAllText(Path.Combine(_root, "semantic", $"Caller{file}.cs"), $"public class Caller{file} {{ public int Run() => Arithmetic.Add({file}, 2); }}\n");
         // Validate the fixture once outside timed operations. Semantic binding and textual matching have different jobs.
         Require(_workspace.ReadFilePageAsync(_root, "data/file000.txt", limit: 20).GetAwaiter().GetResult());
-        Require(_workspace.CSharpSemanticAsync(_root, "references", "semantic/Service.cs", 3, 23).GetAwaiter().GetResult());
+        if (WarmSemantic) Require(_workspace.CSharpSemanticAsync(_root, "references", "semantic/Service.cs", 3, 23).GetAwaiter().GetResult());
     }
 
     [Benchmark] public Task<ToolResult> ReadPage() => _workspace.ReadFilePageAsync(_root, "data/file000.txt", limit: 20);
