@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Workbench.Core/Workbench.Core.csproj" />
+    <ProjectReference Include="../Workbench.Tools/Workbench.Tools.csproj" />
+    <ProjectReference Include="../Workbench.Auth/Workbench.Auth.csproj" />
+    <InternalsVisibleTo Include="Workbench.Tests" />
+  </ItemGroup>
+</Project>

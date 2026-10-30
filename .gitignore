@@ -1,0 +1,17 @@
+.tools/
+**/bin/
+**/obj/
+.vs/
+.idea/
+artifacts/
+.workbench/
+.env
+.env.*
+*.user
+*.db
+*.db-shm
+*.db-wal
+TestResults/
+*.log
+__pycache__/
+*.pyc

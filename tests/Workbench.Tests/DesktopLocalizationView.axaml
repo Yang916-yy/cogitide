@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Workbench.Desktop"
+             x:Class="Workbench.Tests.DesktopLocalizationView">
+  <StackPanel>
+    <TextBlock x:Name="LocalizedText" Text="{local:Loc SettingsTitle}" />
+    <Button x:Name="LocalizedButton" Content="{local:Loc SaveSettings}" />
+    <TabControl>
+      <TabItem x:Name="LocalizedTab">
+        <TabItem.Header><TextBlock Text="{local:Loc General}" /></TabItem.Header>
+      </TabItem>
+    </TabControl>
+    <ComboBox x:Name="LocalizedCombo" SelectedIndex="0">
+      <ComboBox.SelectionBoxItemTemplate>
+        <DataTemplate><TextBlock Text="{ReflectionBinding SelectedItem.Content, RelativeSource={RelativeSource AncestorType=ComboBox}}" /></DataTemplate>
+      </ComboBox.SelectionBoxItemTemplate>
+      <ComboBoxItem Content="{local:Loc ApiBackend}" />
+      <ComboBoxItem Content="ChatGPT" />
+    </ComboBox>
+    <TextBox x:Name="UserDraft" Text="用户 draft / do not translate" />
+    <SelectableTextBlock x:Name="ModelReply" Text="model 原始回复 / keep verbatim" />
+  </StackPanel>
+</UserControl>

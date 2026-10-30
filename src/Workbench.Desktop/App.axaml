@@ -1,0 +1,83 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Workbench.Desktop.App" RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <SolidColorBrush x:Key="CanvasBrush" Color="#202123" />
+    <SolidColorBrush x:Key="SidebarBrush" Color="#18191B" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#292B2F" />
+    <SolidColorBrush x:Key="TextBrush" Color="#ECEDEF" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#989DA7" />
+    <SolidColorBrush x:Key="FocusBrush" Color="#A6B5CC" />
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme>
+      <FluentTheme.Palettes><ColorPaletteResources x:Key="Dark" Accent="#8C98AB" /></FluentTheme.Palettes>
+    </FluentTheme>
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource CanvasBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="FontFamily" Value="Inter, Segoe UI, PingFang SC, Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,7" />
+      <Setter Property="MinHeight" Value="32" />
+    </Style>
+    <Style Selector="Button.primary, Button.send">
+      <Setter Property="Background" Value="#E1E3E7" />
+      <Setter Property="Foreground" Value="#202123" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.send">
+      <Setter Property="Width" Value="34" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.quiet, Button.toolbar, Button.nav">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="#BDC1C8" />
+    </Style>
+    <Style Selector="Button.toolbar"><Setter Property="FontSize" Value="12" /><Setter Property="Padding" Value="10,6" /></Style>
+    <Style Selector="Button.toolbar.active"><Setter Property="Background" Value="#34363B" /><Setter Property="Foreground" Value="#E8E9ED" /></Style>
+    <Style Selector="Button.toolbar:pointerover, Button.nav:pointerover, Button.quiet:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button:focus-visible, ComboBox:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.nav">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="MinHeight" Value="36" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="#25272B" />
+      <Setter Property="BorderBrush" Value="#3D4047" />
+      <Setter Property="Padding" Value="10,9" />
+    </Style>
+    <Style Selector="TextBox.composer:focus /template/ Border#PART_BorderElement, TextBox.composer:pointerover /template/ Border#PART_BorderElement"><Setter Property="BorderThickness" Value="0" /><Setter Property="Background" Value="Transparent" /></Style>
+    <Style Selector="ComboBox.backend"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="MinHeight" Value="30" /><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="TabItem"><Setter Property="FontSize" Value="12" /><Setter Property="FontWeight" Value="Medium" /></Style>
+    <Style Selector="ListBox.sessions ListBoxItem, ListBox.files ListBoxItem"><Setter Property="CornerRadius" Value="8" /></Style>
+    <Style Selector="ListBox.sessions ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.files ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#303238" /></Style>
+    <Style Selector="ListBox.conversation ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MaxWidth" Value="830" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ListBox.conversation ListBoxItem /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
+    <Style Selector="ListBox.conversation ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.conversation ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
+    <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
+  </Application.Styles>
+</Application>

@@ -1,0 +1,183 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Workbench.Desktop"
+        xmlns:editor="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        x:Class="Workbench.Desktop.MainWindow"
+        Title="{x:Static local:ProductIdentity.WindowTitle}"
+        Width="1440" Height="940" MinWidth="1000" MinHeight="650"
+        WindowStartupLocation="CenterScreen">
+  <Grid x:Name="WorkspaceLayout" ColumnDefinitions="220,*,0,0">
+    <Border Background="{DynamicResource SidebarBrush}" Padding="12,0">
+      <Grid RowDefinitions="64,Auto,Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="12,0" VerticalAlignment="Center">
+          <TextBlock Text="{x:Static local:ProductIdentity.DisplayName}" FontSize="17" FontWeight="SemiBold" />
+          <TextBlock Text="{local:Loc PreviewLabel}" FontSize="10" Foreground="#707278" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Spacing="5">
+          <Button x:Name="NewSessionButton" Classes="nav" Click="NewSessionClick" AutomationProperties.Name="{local:Loc NewSession}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="plus" VerticalAlignment="Center" /><TextBlock Text="{local:Loc NewSession}" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button x:Name="OpenProjectButton" Classes="nav" Click="OpenProjectClick" AutomationProperties.Name="{local:Loc OpenProject}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="folder" VerticalAlignment="Center" /><TextBlock Text="{local:Loc OpenProject}" VerticalAlignment="Center" /></StackPanel></Button>
+          <TextBlock x:Name="WorkspaceLabel" Foreground="#777A81" FontSize="11" Margin="12,7,10,0" TextTrimming="CharacterEllipsis" ToolTip.Tip="{local:Loc CurrentProject}" />
+        </StackPanel>
+        <TextBlock Grid.Row="2" Text="{local:Loc RecentSessions}" FontSize="11" Foreground="#74777E" Margin="12,30,0,10" />
+        <ListBox Grid.Row="3" x:Name="SessionList" Classes="sessions" Background="Transparent" BorderThickness="0" SelectionChanged="SessionSelectionChanged">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="13" Margin="3,7" ToolTip.Tip="{Binding WorkspacePath}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Grid.Row="4" x:Name="ConnectionsButton" Classes="nav" Click="ConnectionsClick" Margin="0,16,0,14" AutomationProperties.Name="{local:Loc Connections}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="settings" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Connections}" VerticalAlignment="Center" /></StackPanel></Button>
+      </Grid>
+    </Border>
+    <Grid Grid.Column="1" RowDefinitions="64,*">
+      <Grid ColumnDefinitions="*,Auto" Margin="28,0,22,0">
+        <StackPanel Spacing="3" VerticalAlignment="Center">
+          <TextBlock x:Name="SessionTitle" Text="{local:Loc NewSession}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock x:Name="HeaderWorkspace" Text="{local:Loc ChooseProject}" FontSize="11" Foreground="#777A81" />
+            <TextBlock x:Name="RunStateLabel" FontSize="11" Foreground="#777A81" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+          <Button x:Name="FilesButton" Classes="toolbar" Click="FilesClick" ToolTip.Tip="{local:Loc FilesTooltip}" AutomationProperties.Name="{local:Loc Files}"><StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="files" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Files}" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button x:Name="ChangesButton" Classes="toolbar" Click="ChangesClick" ToolTip.Tip="{local:Loc ChangesTooltip}" AutomationProperties.Name="{local:Loc Changes}"><StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="changes" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Changes}" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="toolbar" Click="OpenTerminalClick" AutomationProperties.Name="{local:Loc TerminalAction}"><StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="terminal" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock Text="{local:Loc TerminalAction}" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+      </Grid>
+      <Grid Grid.Row="1" RowDefinitions="*,Auto,Auto">
+        <Grid>
+          <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="14" Margin="30,0,30,48">
+            <TextBlock Text="{local:Loc EmptyTitle}" FontSize="28" FontWeight="Medium" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Text="{local:Loc EmptyDescription}" FontSize="14" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="480" LineHeight="23" />
+            <TextBlock Text="{x:Static local:ProductIdentity.Tagline}" FontSize="12" FontStyle="Italic" Foreground="#5E6269" HorizontalAlignment="Center" Margin="0,13,0,0" />
+          </StackPanel>
+          <ListBox x:Name="Timeline" Classes="conversation" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="26,2,26,0">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel MaxWidth="830" HorizontalAlignment="Stretch" Margin="0,6,0,12">
+                  <Border IsVisible="{Binding IsUser}" Background="#2A2B2E" CornerRadius="15" Padding="16,12" HorizontalAlignment="Right" MaxWidth="670" Margin="60,4,0,8">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{Binding DisplayLabel}" IsVisible="{Binding HasUserLabel}" FontSize="11" Foreground="#92969E" />
+                      <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="14" LineHeight="23" Foreground="#E2E3E6" />
+                    </StackPanel>
+                  </Border>
+                  <local:MarkdownMessage Markdown="{Binding Text}" IsVisible="{Binding IsAssistant}" Margin="0,6,0,8" />
+                  <Expander IsVisible="{Binding IsTool}" IsExpanded="{Binding IsFailure, Mode=OneWay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                    <Expander.Header>
+                      <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="{Binding DisplayLabel}" FontSize="12" Foreground="{Binding StatusForeground}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Margin="9,0,0,0" Text="{Binding ToolSummary}" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="11" Foreground="#777D86" MaxWidth="430" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      </Grid>
+                    </Expander.Header>
+                    <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="20,8,0,6">
+                      <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" LineHeight="19" Foreground="#B1B5BD" TextWrapping="NoWrap" />
+                    </ScrollViewer>
+                  </Expander>
+                  <TextBlock IsVisible="{Binding IsUsage}" Text="{Binding Text}" FontSize="11" Foreground="#777D86" TextWrapping="Wrap" />
+                  <Border IsVisible="{Binding IsNotice}" BorderBrush="{Binding StatusForeground}" BorderThickness="2,0,0,0" Padding="13,3,0,3" Margin="0,3">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="{Binding DisplayLabel}" FontSize="12" FontWeight="Medium" Foreground="{Binding StatusForeground}" />
+                      <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="#B9BDC5" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+        <Border Grid.Row="1" x:Name="ApprovalPanel" IsVisible="False" MaxWidth="850" HorizontalAlignment="Stretch" Background="#2A261F" BorderBrush="#6D5940" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="30,10,30,0">
+          <Grid RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Text="{local:Loc ApprovalTitle}" Foreground="#E5C394" FontSize="14" FontWeight="SemiBold" />
+            <ScrollViewer Grid.Row="1" MaxHeight="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,12">
+              <SelectableTextBlock x:Name="ApprovalLabel" Foreground="#D0C4B3" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" LineHeight="20" TextWrapping="Wrap" />
+            </ScrollViewer>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button x:Name="DeclineButton" Classes="quiet" Content="{local:Loc Decline}" Click="DeclineClick" />
+              <Button x:Name="ApproveButton" Classes="primary" Content="{local:Loc ApproveOnce}" Click="ApproveClick" />
+            </StackPanel>
+          </Grid>
+        </Border>
+        <StackPanel Grid.Row="2" MaxWidth="850" HorizontalAlignment="Stretch" Spacing="9" Margin="30,16,30,19">
+          <Border Background="#28292C" BorderBrush="#3D3F44" BorderThickness="1" CornerRadius="16" Padding="7,5">
+            <Grid RowDefinitions="Auto,*,Auto">
+              <ItemsControl x:Name="AttachmentList" IsVisible="False" Margin="9,7,9,2">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="#34363B" CornerRadius="7" Padding="9,3,3,3" Margin="0,0,6,5">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <local:UiGlyph Symbol="image" Width="14" Height="14" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Name}" MaxWidth="180" TextTrimming="CharacterEllipsis" FontSize="11" VerticalAlignment="Center" />
+                        <Button Content="×" Classes="toolbar" Padding="5,1" Click="RemoveImageClick" ToolTip.Tip="{local:Loc RemoveImage}" AutomationProperties.Name="{local:Loc RemoveImage}" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBox Grid.Row="1" x:Name="PromptBox" Classes="composer" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" MaxHeight="170" BorderThickness="0" Background="Transparent" FontSize="14" PlaceholderText="{local:Loc PromptPlaceholder}" />
+              <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="4,3,4,4">
+                <WrapPanel x:Name="ComposerOptions" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Button x:Name="AttachButton" Classes="toolbar" Click="AttachImagesClick" ToolTip.Tip="{local:Loc AttachImages}" AutomationProperties.Name="{local:Loc AttachImages}" Padding="9,6"><local:UiGlyph Symbol="plus" Width="17" Height="17" /></Button>
+                  <Button x:Name="ExecutionModeButton" Classes="toolbar" Click="ExecutionModeClick" Padding="8,6" AutomationProperties.Name="{local:Loc ExecutionMode}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="shield" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock x:Name="ExecutionModeLabel" VerticalAlignment="Center" /><local:UiGlyph Symbol="chevron" Width="10" Height="10" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button x:Name="ModelButton" Classes="toolbar" Click="ModelClick" Padding="8,6" ToolTip.Tip="{local:Loc ChooseModel}" AutomationProperties.Name="{local:Loc ChooseModel}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock x:Name="ModelLabel" MaxWidth="195" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" /><local:UiGlyph Symbol="chevron" Width="10" Height="10" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button x:Name="ReasoningButton" Classes="toolbar" Click="ReasoningClick" Padding="8,6" ToolTip.Tip="{local:Loc ReasoningEffort}" AutomationProperties.Name="{local:Loc ReasoningEffort}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock x:Name="ReasoningLabel" VerticalAlignment="Center" /><local:UiGlyph Symbol="chevron" Width="10" Height="10" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </WrapPanel>
+                <Button Grid.Column="1" x:Name="SendButton" Classes="send" Click="SendClick" Margin="5,0,0,0" VerticalAlignment="Bottom" ToolTip.Tip="{local:Loc SendTooltip}" AutomationProperties.Name="{local:Loc SendTooltip}"><local:UiGlyph x:Name="SendGlyph" Symbol="send" Width="19" Height="19" /></Button>
+              </Grid>
+            </Grid>
+          </Border>
+          <Grid ColumnDefinitions="*,Auto" Margin="5,0">
+            <TextBlock x:Name="StatusLabel" Text="{local:Loc Connecting}" FontSize="10" Foreground="#696E78" TextTrimming="CharacterEllipsis" />
+            <TextBlock Grid.Column="1" x:Name="ComposerHint" Text="{local:Loc SendShortcut}" FontSize="10" Foreground="#696E78" />
+          </Grid>
+        </StackPanel>
+      </Grid>
+    </Grid>
+    <GridSplitter Grid.Column="2" x:Name="InspectorSplitter" IsVisible="False" Background="#303238" ResizeDirection="Columns" />
+    <Border Grid.Column="3" x:Name="InspectorPanel" IsVisible="False" Background="#1C1D20">
+      <Grid RowDefinitions="64,*">
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="18,0,12,0">
+          <TextBlock Text="{local:Loc Project}" Foreground="#B9BDC5" FontSize="13" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="toolbar" Content="{local:Loc Refresh}" VerticalAlignment="Center" Click="RefreshWorkspaceClick" />
+          <Button Grid.Column="2" Classes="toolbar" Content="×" VerticalAlignment="Center" Click="CloseInspectorClick" ToolTip.Tip="{local:Loc CloseSidebar}" />
+        </Grid>
+        <TabControl Grid.Row="1" x:Name="InspectorTabs" Margin="10,0" SelectionChanged="InspectorSelectionChanged">
+          <TabItem>
+            <TabItem.Header><TextBlock Text="{local:Loc Files}" /></TabItem.Header>
+            <Grid RowDefinitions="Auto,170,5,Auto,*" Margin="4,10,4,10">
+              <TextBox x:Name="FileFilter" PlaceholderText="{local:Loc FilterFiles}" TextChanged="FileFilterChanged" Margin="0,0,0,9" />
+              <ListBox Grid.Row="1" x:Name="FileList" Classes="files" Background="Transparent" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="11" SelectionChanged="FileSelectionChanged" />
+              <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="#32353B" HorizontalAlignment="Stretch" />
+              <TextBlock Grid.Row="3" x:Name="PreviewPath" Text="{local:Loc SelectFile}" Foreground="#8F949E" FontSize="10" Margin="3,10" TextTrimming="CharacterEllipsis" />
+              <editor:TextEditor Grid.Row="4" x:Name="FilePreview" IsReadOnly="True" ShowLineNumbers="True" WordWrap="False" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" Background="Transparent" Foreground="#D5D8DE" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+            </Grid>
+          </TabItem>
+          <TabItem>
+            <TabItem.Header><TextBlock Text="{local:Loc Changes}" /></TabItem.Header>
+            <Grid RowDefinitions="Auto,*" Margin="4,12,4,10">
+              <TextBlock Text="{local:Loc GitScope}" Foreground="#8F949E" FontSize="11" Margin="3,0,3,12" />
+              <TextBox Grid.Row="1" x:Name="DiffPreview" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+            </Grid>
+          </TabItem>
+          <TabItem>
+            <TabItem.Header><TextBlock Text="{local:Loc Output}" /></TabItem.Header>
+            <Grid RowDefinitions="Auto,*,Auto" Margin="4,12,4,10">
+              <TextBlock Text="{local:Loc NonInteractiveOutput}" Foreground="#8F949E" FontSize="11" Margin="3,0,3,12" />
+              <TextBox Grid.Row="1" x:Name="CommandOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+              <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                <TextBox x:Name="CommandBox" PlaceholderText="{local:Loc CommandHint}" KeyDown="CommandKeyDown" />
+                <Button Grid.Column="1" x:Name="RunCommandButton" Content="{local:Loc Run}" Classes="quiet" Margin="7,0,0,0" Click="RunCommandClick" />
+              </Grid>
+            </Grid>
+          </TabItem>
+        </TabControl>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

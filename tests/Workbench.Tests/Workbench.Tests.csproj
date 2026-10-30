@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Workbench.Core/Workbench.Core.csproj" />
+    <ProjectReference Include="../../src/Workbench.Tools/Workbench.Tools.csproj" />
+    <ProjectReference Include="../../src/Workbench.Auth/Workbench.Auth.csproj" />
+    <ProjectReference Include="../../src/Workbench.Host/Workbench.Host.csproj" />
+    <ProjectReference Include="../../src/Workbench.Desktop/Workbench.Desktop.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="Avalonia.Headless" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
+  </ItemGroup>
+</Project>

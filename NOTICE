@@ -1,0 +1,15 @@
+Cogitide
+Copyright 2026 Cogitide contributors
+
+Original contributions to this project are licensed under the Apache License,
+Version 2.0. Third-party portions retain their original licenses and notices.
+
+Focused adaptations and behavioral references include Pi (MIT, Mario Zechner),
+OpenCode (MIT, opencode), and OpenAI Codex (Apache-2.0, OpenAI). Exact source
+revisions, adaptation boundaries, and unmodified upstream notices are retained
+under src/Workbench.Core/Licenses, src/Workbench.Tools/Licenses and
+src/Workbench.Auth/Licenses. See THIRD_PARTY_NOTICES.md for the index.
+
+Research-inspired modules are independent implementations of selected published
+ideas. Paper citations do not imply endorsement, code authorship or reproduced
+benchmark results. Workbench remains the internal assembly and storage name.

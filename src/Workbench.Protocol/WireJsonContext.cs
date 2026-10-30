@@ -1,0 +1,42 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Workbench.Protocol;
+
+/// <summary>Generated metadata for stable protocol and persisted session contracts.</summary>
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, GenerationMode = JsonSourceGenerationMode.Metadata)]
+[JsonSerializable(typeof(RpcRequest))]
+[JsonSerializable(typeof(RpcReply))]
+[JsonSerializable(typeof(RpcNotification))]
+[JsonSerializable(typeof(ToolCall))]
+[JsonSerializable(typeof(ChatMessage))]
+[JsonSerializable(typeof(ImageAttachment))]
+[JsonSerializable(typeof(ImageAttachment[]))]
+[JsonSerializable(typeof(ModelContinuationState))]
+[JsonSerializable(typeof(ToolDefinition))]
+[JsonSerializable(typeof(ToolResult))]
+[JsonSerializable(typeof(SessionInfo))]
+[JsonSerializable(typeof(AgentSession))]
+[JsonSerializable(typeof(CompactionCheckpoint))]
+[JsonSerializable(typeof(AgentEvent))]
+[JsonSerializable(typeof(ApprovalRequest))]
+[JsonSerializable(typeof(RunOptions))]
+[JsonSerializable(typeof(ResearchOptions))]
+[JsonSerializable(typeof(ProviderSettings))]
+[JsonSerializable(typeof(ModelUpdate))]
+[JsonSerializable(typeof(AccountState))]
+[JsonSerializable(typeof(AccountProfile))]
+[JsonSerializable(typeof(AccountProfile[]))]
+[JsonSerializable(typeof(IReadOnlyList<AccountProfile>))]
+[JsonSerializable(typeof(LoginInfo))]
+[JsonSerializable(typeof(ModelInfo))]
+[JsonSerializable(typeof(IReadOnlyList<SessionInfo>))]
+[JsonSerializable(typeof(IReadOnlyList<AgentEvent>))]
+[JsonSerializable(typeof(IReadOnlyList<ModelInfo>))]
+[JsonSerializable(typeof(List<SessionInfo>))]
+[JsonSerializable(typeof(List<AgentEvent>))]
+[JsonSerializable(typeof(List<ModelInfo>))]
+[JsonSerializable(typeof(SessionInfo[]))]
+[JsonSerializable(typeof(AgentEvent[]))]
+[JsonSerializable(typeof(ModelInfo[]))]
+internal partial class WireJsonContext : JsonSerializerContext;

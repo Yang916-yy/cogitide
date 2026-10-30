@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>15.0</LangVersion>
+    <Deterministic>true</Deterministic>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Yang916-yy/cogitide</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

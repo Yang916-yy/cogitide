@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Anthropic" Version="13.3.0" />
+    <ProjectReference Include="../Workbench.Protocol/Workbench.Protocol.csproj" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageReference Include="OpenAI" Version="2.14.0" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Licenses/Anthropic/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Licenses/Compaction/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Licenses/Responses/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Licenses/ProjectReuse/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="PROJECT-REUSE.md" TargetPath="Licenses/ProjectReuse/PROVENANCE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="DEPENDENCIES.md" TargetPath="Licenses/ModelAdapters.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="ANTHROPIC.md" TargetPath="Licenses/Anthropic/PROVENANCE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <InternalsVisibleTo Include="Workbench.Tests" />
+  </ItemGroup>
+</Project>

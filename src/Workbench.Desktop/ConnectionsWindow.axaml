@@ -1,0 +1,139 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Workbench.Desktop"
+        x:Class="Workbench.Desktop.ConnectionsWindow"
+        Title="{x:Static local:ProductIdentity.WindowTitle}" Width="680" Height="760" MinWidth="580" MinHeight="650"
+        WindowStartupLocation="CenterOwner" CanResize="True">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="28">
+    <StackPanel Spacing="8" Margin="0,0,0,20">
+      <TextBlock Text="{local:Loc SettingsTitle}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{local:Loc SettingsDescription}" Foreground="#969FB3" />
+    </StackPanel>
+    <TabControl x:Name="SettingsTabs" Grid.Row="1">
+      <TabItem>
+        <TabItem.Header><TextBlock Text="{local:Loc General}" /></TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="12" Margin="3,24,3,12">
+            <TextBlock Text="{local:Loc Language}" FontWeight="SemiBold" />
+            <ComboBox x:Name="LanguagePicker" HorizontalAlignment="Stretch" SelectionChanged="LanguageSelectionChanged">
+              <ComboBox.SelectionBoxItemTemplate>
+                <DataTemplate><TextBlock Text="{ReflectionBinding SelectedItem.Content, RelativeSource={RelativeSource AncestorType=ComboBox}}" /></DataTemplate>
+              </ComboBox.SelectionBoxItemTemplate>
+              <ComboBoxItem Content="{local:Loc SystemLanguage}" />
+              <ComboBoxItem Content="简体中文" />
+              <ComboBoxItem Content="English" />
+            </ComboBox>
+            <TextBlock Text="{local:Loc LanguageHint}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" LineHeight="20" />
+            <TextBlock Text="{local:Loc Appearance}" FontWeight="SemiBold" Margin="0,20,0,0" />
+            <TextBlock Text="{local:Loc AppearanceHint}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" />
+            <CheckBox x:Name="ReducedMotionToggle" Content="{local:Loc ReducedMotion}" IsCheckedChanged="ReducedMotionChanged" Margin="0,8,0,0" />
+            <TextBlock Text="{local:Loc ReducedMotionHint}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" LineHeight="20" />
+            <TextBlock Text="{local:Loc ResearchFeatures}" FontWeight="SemiBold" Margin="0,20,0,0" />
+            <TextBlock Text="{local:Loc ResearchFeaturesHint}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" LineHeight="20" />
+            <CheckBox x:Name="CompressionGuidanceToggle" Content="{local:Loc CompressionGuidanceFeature}" IsCheckedChanged="ResearchChanged" />
+            <CheckBox x:Name="RepositoryMemoryToggle" Content="{local:Loc RepositoryMemoryFeature}" IsCheckedChanged="ResearchChanged" />
+            <CheckBox x:Name="ReadOnlyPrefetchToggle" Content="{local:Loc ReadOnlyPrefetchFeature}" IsCheckedChanged="ResearchChanged" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem>
+        <TabItem.Header><TextBlock Text="{local:Loc ChatGptAccount}" /></TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="16" Margin="3,20,3,12">
+            <Border CornerRadius="10" Background="#1D2530" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{local:Loc OfficialAuth}" Foreground="#8EDBCD" FontWeight="SemiBold" />
+                <TextBlock Text="{local:Loc OfficialAuthDescription}" Foreground="#A7B3C6" TextWrapping="Wrap" LineHeight="21" />
+              </StackPanel>
+            </Border>
+            <TextBlock x:Name="AccountStatus" Text="{local:Loc AccountLoading}" TextWrapping="Wrap" Foreground="#B8C4D6" />
+            <ComboBox x:Name="AccountPicker" HorizontalAlignment="Stretch" PlaceholderText="{local:Loc SavedAccounts}" SelectionChanged="AccountSelectionChanged" />
+            <WrapPanel Orientation="Horizontal">
+              <Button x:Name="LoginButton" Classes="primary" Content="{local:Loc ContinueWithChatGpt}" Click="LoginClick" Margin="0,0,9,8" />
+              <Button x:Name="AddAccountButton" Classes="quiet" Content="{local:Loc AddAccount}" Click="AddAccountClick" Margin="0,0,9,8" />
+              <Button x:Name="RefreshAccountButton" Classes="quiet" Content="{local:Loc RefreshAccount}" Click="RefreshClick" Margin="0,0,9,8" />
+              <Button x:Name="LogoutButton" Classes="quiet" Content="{local:Loc Logout}" Click="LogoutClick" Margin="0,0,0,8" />
+            </WrapPanel>
+            <Button x:Name="ManageUsageButton" Classes="quiet" Content="{local:Loc ManageChatGptUsage}" Click="ManageUsageClick" HorizontalAlignment="Left" />
+            <Border x:Name="LoginPanel" IsVisible="False" Background="#242033" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="8">
+                <TextBlock x:Name="LoginHint" Text="{local:Loc LoginRefreshHint}" Foreground="#B7A9E8" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="{local:Loc ContinueLogin}" Classes="quiet" Click="OpenLoginClick" />
+                  <Button x:Name="CancelLoginButton" Content="{local:Loc CancelLogin}" Classes="quiet" Click="CancelLoginClick" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{local:Loc Model}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <ComboBox x:Name="CodexModels" HorizontalAlignment="Stretch" PlaceholderText="{local:Loc ModelsPlaceholder}" SelectionChanged="ModelSelectionChanged">
+              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBox x:Name="CodexModelBox" PlaceholderText="{local:Loc DefaultModelPlaceholder}" />
+            <TextBlock Text="{local:Loc TokenPrivacy}" Foreground="#77859D" FontSize="11" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem>
+        <TabItem.Header><TextBlock Text="{local:Loc ApiBackend}" /></TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="10" Margin="3,20,3,12">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2">
+              <TextBlock Text="{local:Loc Provider}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Content="{local:Loc ProviderDefaults}" Classes="quiet" Click="ProviderDefaultsClick" Padding="8,4" />
+            </Grid>
+            <ComboBox x:Name="ProviderPicker" HorizontalAlignment="Stretch" SelectionChanged="ProviderSelectionChanged">
+              <ComboBox.SelectionBoxItemTemplate>
+                <DataTemplate><TextBlock Text="{ReflectionBinding SelectedItem.Content, RelativeSource={RelativeSource AncestorType=ComboBox}}" /></DataTemplate>
+              </ComboBox.SelectionBoxItemTemplate>
+              <ComboBoxItem Tag="Auto" Content="{local:Loc ProviderAuto}" />
+              <ComboBoxItem Tag="DeepSeek" Content="DeepSeek" />
+              <ComboBoxItem Tag="Anthropic" Content="Anthropic / Claude" />
+              <ComboBoxItem Tag="OpenAiCompatible" Content="{local:Loc ProviderCompatible}" />
+              <ComboBoxItem Tag="OpenAiResponses" Content="OpenAI Responses API" />
+            </ComboBox>
+            <TextBlock Text="{local:Loc Endpoint}" FontWeight="SemiBold" />
+            <TextBox x:Name="EndpointBox" PlaceholderText="https://api.deepseek.com" TextChanged="EndpointChanged" />
+            <TextBlock Text="{local:Loc ProviderEndpointHint}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" />
+            <TextBlock Text="{local:Loc ModelId}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBox x:Name="ApiModelBox" PlaceholderText="deepseek-flash" />
+            <TextBlock Text="{local:Loc KeyVariable}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBox x:Name="KeyVariableBox" PlaceholderText="DEEPSEEK_API_KEY" TextChanged="KeyVariableChanged" />
+            <TextBlock x:Name="KeyStatus" Foreground="#8EDBCD" FontSize="11" TextWrapping="Wrap" />
+            <Border CornerRadius="9" Background="#1B2330" Padding="13" Margin="0,7,0,0">
+              <TextBlock Text="{local:Loc KeyPrivacy}" Foreground="#99A8C0" TextWrapping="Wrap" LineHeight="20" FontSize="12" />
+            </Border>
+            <TextBlock Text="{local:Loc MaxOutputTokens}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <NumericUpDown x:Name="MaxTokensBox" Minimum="1" Maximum="1000000" Increment="256" Value="4096" FormatString="0" />
+            <StackPanel x:Name="ProviderOptionsPanel" Spacing="10" Margin="0,14,0,0">
+              <TextBlock Text="{local:Loc ReasoningEffort}" FontWeight="SemiBold" />
+              <ComboBox x:Name="ReasoningPicker" HorizontalAlignment="Stretch">
+                <ComboBox.SelectionBoxItemTemplate>
+                  <DataTemplate><TextBlock Text="{ReflectionBinding SelectedItem.Content, RelativeSource={RelativeSource AncestorType=ComboBox}}" /></DataTemplate>
+                </ComboBox.SelectionBoxItemTemplate>
+              </ComboBox>
+              <TextBlock x:Name="ReasoningHint" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" LineHeight="18" />
+              <StackPanel x:Name="LegacyThinkingPanel" Spacing="8" IsVisible="False">
+                <CheckBox x:Name="LegacyThinkingToggle" Content="{local:Loc LegacyThinking}" IsCheckedChanged="LegacyThinkingChanged" />
+                <StackPanel x:Name="LegacyBudgetPanel" Spacing="6" IsVisible="False">
+                  <NumericUpDown x:Name="ThinkingBudgetBox" Minimum="1024" Maximum="999999" Increment="1024" Value="2048" FormatString="0" />
+                  <TextBlock Text="{local:Loc LegacyThinkingHint}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" LineHeight="18" />
+                </StackPanel>
+              </StackPanel>
+              <StackPanel x:Name="ImageCapabilityPanel" Spacing="5" IsVisible="False">
+                <CheckBox x:Name="ImageCapabilityToggle" Content="{local:Loc ModelSupportsImages}" />
+                <TextBlock Text="{local:Loc ModelImagesHint}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" LineHeight="18" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+    <StackPanel Grid.Row="2" Spacing="12" Margin="0,18,0,0">
+      <TextBlock x:Name="NoticeLabel" TextWrapping="Wrap" Foreground="#E6B798" FontSize="12" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="9">
+        <Button Content="{local:Loc Cancel}" Classes="quiet" Click="CancelClick" />
+        <Button x:Name="SaveButton" Content="{local:Loc SaveSettings}" Classes="primary" Click="SaveClick" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="PreviewLabel" xml:space="preserve"><value>Preview</value></data>
+  <data name="NewSession" xml:space="preserve"><value>New chat</value></data>
+  <data name="NewSessionAction" xml:space="preserve"><value>New chat</value></data>
+  <data name="OpenProject" xml:space="preserve"><value>Open project…</value></data>
+  <data name="CurrentProject" xml:space="preserve"><value>Current project</value></data>
+  <data name="RecentSessions" xml:space="preserve"><value>Recent chats</value></data>
+  <data name="Connections" xml:space="preserve"><value>Settings</value></data>
+  <data name="ChooseProject" xml:space="preserve"><value>Choose a project</value></data>
+  <data name="Files" xml:space="preserve"><value>Files</value></data>
+  <data name="Changes" xml:space="preserve"><value>Changes</value></data>
+  <data name="FilesTooltip" xml:space="preserve"><value>Show or hide project files</value></data>
+  <data name="ChangesTooltip" xml:space="preserve"><value>Review Git changes</value></data>
+  <data name="TerminalAction" xml:space="preserve"><value>Terminal</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>Start with an idea</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>What would you like to understand, change, or build?</value></data>
+  <data name="ApprovalTitle" xml:space="preserve"><value>Review this action</value></data>
+  <data name="Decline" xml:space="preserve"><value>Decline</value></data>
+  <data name="ApproveOnce" xml:space="preserve"><value>Allow once</value></data>
+  <data name="PromptPlaceholder" xml:space="preserve"><value>Describe a task, or add the next step…</value></data>
+  <data name="ApiBackend" xml:space="preserve"><value>API</value></data>
+  <data name="Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="StopTooltip" xml:space="preserve"><value>Stop current task · Esc</value></data>
+  <data name="SendTooltip" xml:space="preserve"><value>Send · Ctrl+Enter</value></data>
+  <data name="SteerTooltip" xml:space="preserve"><value>Add an instruction · Ctrl+Enter</value></data>
+  <data name="Connecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="SendShortcut" xml:space="preserve"><value>Ctrl+Enter to send</value></data>
+  <data name="Project" xml:space="preserve"><value>Project</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="CloseSidebar" xml:space="preserve"><value>Close sidebar</value></data>
+  <data name="FilterFiles" xml:space="preserve"><value>Filter files…</value></data>
+  <data name="SelectFile" xml:space="preserve"><value>Select a file to preview</value></data>
+  <data name="Output" xml:space="preserve"><value>Output</value></data>
+  <data name="CommandHint" xml:space="preserve"><value>e.g. git status --short</value></data>
+  <data name="Run" xml:space="preserve"><value>Run</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsDescription" xml:space="preserve"><value>Choose your language, appearance, and model connection.</value></data>
+  <data name="ChatGptAccount" xml:space="preserve"><value>ChatGPT account</value></data>
+  <data name="OfficialAuth" xml:space="preserve"><value>Sign in with ChatGPT</value></data>
+  <data name="OfficialAuthDescription" xml:space="preserve"><value>Authorize model access with your ChatGPT account. Cogitide runs the task, tools, summaries and project memory. Available models and usage depend on your account.</value></data>
+  <data name="AccountLoading" xml:space="preserve"><value>Checking account…</value></data>
+  <data name="Login" xml:space="preserve"><value>Sign in to ChatGPT</value></data>
+  <data name="RefreshAccount" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Logout" xml:space="preserve"><value>Sign out</value></data>
+  <data name="LoginRefreshHint" xml:space="preserve"><value>Complete authorization in your browser, then refresh.</value></data>
+  <data name="ContinueLogin" xml:space="preserve"><value>Continue in browser</value></data>
+  <data name="Model" xml:space="preserve"><value>Model</value></data>
+  <data name="ModelsPlaceholder" xml:space="preserve"><value>Sign in to load available models</value></data>
+  <data name="DefaultModelPlaceholder" xml:space="preserve"><value>Leave blank for the account default</value></data>
+  <data name="TokenPrivacy" xml:space="preserve"><value>Authorization tokens are never displayed here.</value></data>
+  <data name="Endpoint" xml:space="preserve"><value>API endpoint</value></data>
+  <data name="ApiCompatibility" xml:space="preserve"><value>Supports OpenAI Chat Completions compatible endpoints.</value></data>
+  <data name="ModelId" xml:space="preserve"><value>Model ID</value></data>
+  <data name="KeyVariable" xml:space="preserve"><value>API key environment variable</value></data>
+  <data name="KeyPrivacy" xml:space="preserve"><value>Only the variable name is saved. Keys are never stored in projects, chats, or UI settings. Restart the app after adding a system environment variable.</value></data>
+  <data name="MaxOutputTokens" xml:space="preserve"><value>Maximum output tokens</value></data>
+  <data name="DeepSeekDefaults" xml:space="preserve"><value>Use DeepSeek defaults</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="SaveSettings" xml:space="preserve"><value>Save settings</value></data>
+  <data name="General" xml:space="preserve"><value>General</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="LanguageHint" xml:space="preserve"><value>Changes apply immediately. Model replies and project content keep their original language.</value></data>
+  <data name="SystemLanguage" xml:space="preserve"><value>System default</value></data>
+  <data name="ReducedMotion" xml:space="preserve"><value>Reduce motion</value></data>
+  <data name="ReducedMotionHint" xml:space="preserve"><value>Disable panel transitions and control animations for a calmer experience.</value></data>
+  <data name="Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="AppearanceHint" xml:space="preserve"><value>A quiet dark interface that puts your work first.</value></data>
+  <data name="ReadyNoProject" xml:space="preserve"><value>Open a project and describe your task to begin</value></data>
+  <data name="ReadyProject" xml:space="preserve"><value>Project ready. Describe your task to begin</value></data>
+  <data name="SessionRestored" xml:space="preserve"><value>Chat restored · {0}</value></data>
+  <data name="ChooseFolder" xml:space="preserve"><value>Choose a project folder</value></data>
+  <data name="Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="ProjectOpened" xml:space="preserve"><value>Project opened. Describe your task to begin</value></data>
+  <data name="SessionReady" xml:space="preserve"><value>New chat ready</value></data>
+  <data name="RecoveredInput" xml:space="preserve"><value>Recovered instruction · unconfirmed</value></data>
+  <data name="RecoveredInputText" xml:space="preserve"><value>{0}
+
+This instruction was received during the previous run, but no processing confirmation was found. It will not be replayed automatically. Review it and send it again if still needed.</value></data>
+  <data name="SteerSubmitted" xml:space="preserve"><value>Instruction queued for the next execution boundary</value></data>
+  <data name="RunSubmitted" xml:space="preserve"><value>Task submitted · you can stop at any time</value></data>
+  <data name="UnsentInput" xml:space="preserve"><value>Unsent input</value></data>
+  <data name="UnsentInputText" xml:space="preserve"><value>{0}
+
+Submission failed. The new draft in the composer has been preserved.</value></data>
+  <data name="Stopping" xml:space="preserve"><value>Stopping…</value></data>
+  <data name="StopRequested" xml:space="preserve"><value>Stop requested. Waiting for the run to end</value></data>
+  <data name="AwaitingApproval" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="AccountConnected" xml:space="preserve"><value>ChatGPT connected · {0}</value></data>
+  <data name="Account" xml:space="preserve"><value>Account</value></data>
+  <data name="AccountUpdated" xml:space="preserve"><value>ChatGPT account updated</value></data>
+  <data name="ToolRunning" xml:space="preserve"><value>Running tool…</value></data>
+  <data name="Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="ContextTrimmed" xml:space="preserve"><value>Context was compacted.</value></data>
+  <data name="SteerQueued" xml:space="preserve"><value>Instruction queued</value></data>
+  <data name="SteerApplied" xml:space="preserve"><value>Instruction added to context</value></data>
+  <data name="SteerAccepted" xml:space="preserve"><value>Instruction received</value></data>
+  <data name="UnconfirmedInput" xml:space="preserve"><value>Instruction · unconfirmed</value></data>
+  <data name="UnconfirmedInputText" xml:space="preserve"><value>{0}
+
+The run ended without a processing confirmation. This instruction will not be replayed automatically. Review it and send it again if still needed.</value></data>
+  <data name="Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="UnknownEvent" xml:space="preserve"><value>An unrecognized execution event was received.</value></data>
+  <data name="Resuming" xml:space="preserve"><value>Resuming…</value></data>
+  <data name="OperationDeclined" xml:space="preserve"><value>Action declined</value></data>
+  <data name="NoChanges" xml:space="preserve"><value>No changes to tracked files in this workspace.</value></data>
+  <data name="CommandRunning" xml:space="preserve"><value>Running command…</value></data>
+  <data name="CommandFailed" xml:space="preserve"><value>Command failed. See output for details</value></data>
+  <data name="CommandCompleted" xml:space="preserve"><value>Command completed</value></data>
+  <data name="AccountDefaultModel" xml:space="preserve"><value>Account default</value></data>
+  <data name="ChooseLocalFolder" xml:space="preserve"><value>Choose a local folder</value></data>
+  <data name="HostNotConnected" xml:space="preserve"><value>The local agent host is not connected.</value></data>
+  <data name="WorkspaceRequired" xml:space="preserve"><value>Choose an existing local folder using Open project in the sidebar.</value></data>
+  <data name="Running" xml:space="preserve"><value>Running…</value></data>
+  <data name="CancelledOrTimeout" xml:space="preserve"><value>The action was cancelled or timed out.</value></data>
+  <data name="OperationFailed" xml:space="preserve"><value>Action failed</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>Could not save UI settings.</value></data>
+  <data name="ExitCode" xml:space="preserve"><value>exit code: {0}</value></data>
+  <data name="Timeout" xml:space="preserve"><value>timeout</value></data>
+  <data name="OutputTruncated" xml:space="preserve"><value>output truncated</value></data>
+  <data name="LastCharacters" xml:space="preserve"><value>[Showing the last {0} characters]
+</value></data>
+  <data name="AccountUpdateUnavailable" xml:space="preserve"><value>Account updates are unavailable. Please refresh.</value></data>
+  <data name="AccountUnavailable" xml:space="preserve"><value>Account service unavailable: {0}</value></data>
+  <data name="OfficialAuthUnavailable" xml:space="preserve"><value>ChatGPT sign-in is unavailable. Check the connection details below.</value></data>
+  <data name="SignedIn" xml:space="preserve"><value>Signed in · {0}{1}</value></data>
+  <data name="NotSignedIn" xml:space="preserve"><value>Not signed in to ChatGPT. API mode works independently.</value></data>
+  <data name="ModelsUnavailable" xml:space="preserve"><value>Could not load models. You can keep the default model. {0}</value></data>
+  <data name="CompleteAuthorization" xml:space="preserve"><value>Complete official authorization in your browser. Your account status will update here.</value></data>
+  <data name="AuthorizationCode" xml:space="preserve"><value>Enter this code on the official authorization page: {0}</value></data>
+  <data name="InvalidAuthorizationUrl" xml:space="preserve"><value>The account service did not return a valid HTTPS authorization URL.</value></data>
+  <data name="KeyDetected" xml:space="preserve"><value>Environment variable detected · key hidden</value></data>
+  <data name="KeyMissing" xml:space="preserve"><value>This process cannot find the environment variable. Configure it and restart the app.</value></data>
+  <data name="InvalidEndpoint" xml:space="preserve"><value>Use HTTPS or a local HTTP endpoint without credentials, a query string, or a fragment.</value></data>
+  <data name="ModelRequired" xml:space="preserve"><value>Enter an API model ID.</value></data>
+  <data name="VariableRequired" xml:space="preserve"><value>Enter the environment variable name, not the API key itself.</value></data>
+  <data name="Notice" xml:space="preserve"><value>Notice</value></data>
+  <data name="ExecutionFailed" xml:space="preserve"><value>Run failed</value></data>
+  <data name="ConnectionStatus" xml:space="preserve"><value>Connection</value></data>
+  <data name="Context" xml:space="preserve"><value>Context</value></data>
+  <data name="Progress" xml:space="preserve"><value>Progress</value></data>
+  <data name="FailedPrefix" xml:space="preserve"><value>Failed · </value></data>
+  <data name="CompletedPrefix" xml:space="preserve"><value>Done · </value></data>
+  <data name="ViewDetails" xml:space="preserve"><value>View details</value></data>
+  <data name="ToolReadFile" xml:space="preserve"><value>Read file</value></data>
+  <data name="ToolListFiles" xml:space="preserve"><value>Browse files</value></data>
+  <data name="ToolSearchFiles" xml:space="preserve"><value>Search files</value></data>
+  <data name="ToolEditFile" xml:space="preserve"><value>Edit file</value></data>
+  <data name="ToolCommand" xml:space="preserve"><value>Run command</value></data>
+  <data name="ToolDiff" xml:space="preserve"><value>Review changes</value></data>
+  <data name="ToolWeb" xml:space="preserve"><value>Read webpage</value></data>
+  <data name="ToolExecution" xml:space="preserve"><value>Tool execution</value></data>
+  <data name="ToolResult" xml:space="preserve"><value>Tool result</value></data>
+  <data name="Interrupted" xml:space="preserve"><value>Interrupted</value></data>
+  <data name="RunningStatus" xml:space="preserve"><value>Running</value></data>
+  <data name="Unknown" xml:space="preserve"><value>unknown</value></data>
+  <data name="ModelUsage" xml:space="preserve"><value>Model call · {0} input tokens · {1} output tokens</value></data>
+  <data name="CompactionUsage" xml:space="preserve"><value>Conversation summary · {0} input tokens · {1} output tokens</value></data>
+  <data name="UsageUnavailable" xml:space="preserve"><value>Model usage is unavailable.</value></data>
+  <data name="TerminalTitle" xml:space="preserve"><value>Terminal · {0}</value></data>
+  <data name="Interrupt" xml:space="preserve"><value>Interrupt Ctrl+C</value></data>
+  <data name="TerminalEnded" xml:space="preserve"><value>The terminal has ended; interrupt is unavailable.</value></data>
+  <data name="CloseTerminal" xml:space="preserve"><value>Close terminal</value></data>
+  <data name="TerminalHint" xml:space="preserve"><value>Interactive local shell · Ctrl+Shift+C copy · Ctrl+Shift+V paste · closing this window ends the terminal</value></data>
+  <data name="ProcessEnded" xml:space="preserve"><value>Process ended · exit {0}</value></data>
+  <data name="TerminalStartFailed" xml:space="preserve"><value>Could not start terminal: {0}</value></data>
+  <data name="MarkdownLong" xml:space="preserve"><value>Long content is displayed as plain text.</value></data>
+  <data name="MarkdownComplex" xml:space="preserve"><value>Complex content is displayed as plain text.</value></data>
+  <data name="MarkdownUnavailable" xml:space="preserve"><value>Markdown rendering is unavailable; showing plain text.</value></data>
+  <data name="MarkdownTruncated" xml:space="preserve"><value> Only the first {0:N0} characters are shown here.</value></data>
+  <data name="ImagePlaceholder" xml:space="preserve"><value>[Image] </value></data>
+  <data name="Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Copied" xml:space="preserve"><value>Copied</value></data>
+  <data name="CopyFailed" xml:space="preserve"><value>Copy failed</value></data>
+  <data name="HostStartFailed" xml:space="preserve"><value>The local agent host could not start.</value></data>
+  <data name="HostDisconnected" xml:space="preserve"><value>The local agent host is not connected. Restart {0} to reconnect.</value></data>
+  <data name="DuplicateRequest" xml:space="preserve"><value>Duplicate request identifier.</value></data>
+  <data name="HostEmptyResponse" xml:space="preserve"><value>Host returned an empty response for {0}.</value></data>
+  <data name="HostRequestFailed" xml:space="preserve"><value>Host request failed.</value></data>
+  <data name="HostStopped" xml:space="preserve"><value>The local agent host stopped. Saved chats remain available after restarting {0}.</value></data>
+  <data name="HostClosed" xml:space="preserve"><value>Host connection closed.</value></data>
+  <data name="HostMissing" xml:space="preserve"><value>Workbench.Host was not found. Build the solution, or set WORKBENCH_HOST_PATH to its executable or DLL.</value></data>
+  <data name="Passthrough" xml:space="preserve"><value>{0}</value></data>
+  <data name="GitScope" xml:space="preserve"><value>Git workspace and staging area</value></data>
+  <data name="NonInteractiveOutput" xml:space="preserve"><value>Command output · non-interactive</value></data>
+  <data name="Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="ProviderAuto" xml:space="preserve"><value>Detect from endpoint</value></data>
+  <data name="ProviderCompatible" xml:space="preserve"><value>OpenAI-compatible Chat Completions</value></data>
+  <data name="ProviderDefaults" xml:space="preserve"><value>Use provider defaults</value></data>
+  <data name="ProviderEndpointHint" xml:space="preserve"><value>Choose a provider for custom endpoints. Applying defaults also updates the model and key variable.</value></data>
+  <data name="ReasoningEffort" xml:space="preserve"><value>Thinking effort</value></data>
+  <data name="ReasoningProviderDefault" xml:space="preserve"><value>Provider default</value></data>
+  <data name="ReasoningOff" xml:space="preserve"><value>Off</value></data>
+  <data name="ReasoningMinimal" xml:space="preserve"><value>Minimal</value></data>
+  <data name="ReasoningLow" xml:space="preserve"><value>Low</value></data>
+  <data name="ReasoningMedium" xml:space="preserve"><value>Medium</value></data>
+  <data name="ReasoningHigh" xml:space="preserve"><value>High</value></data>
+  <data name="ReasoningExtraHigh" xml:space="preserve"><value>Extra high</value></data>
+  <data name="ReasoningMaximum" xml:space="preserve"><value>Maximum</value></data>
+  <data name="DeepSeekReasoningHint" xml:space="preserve"><value>More thinking can help with difficult work, with more time and tokens. Thinking state is preserved between tool calls and kept out of the answer.</value></data>
+  <data name="ClaudeReasoningHint" xml:space="preserve"><value>Uses adaptive thinking. Available effort levels depend on your Claude model; high is a useful starting point.</value></data>
+  <data name="CompatibleReasoningHint" xml:space="preserve"><value>Select an effort only if your model supports it. Provider default leaves the service's own setting unchanged.</value></data>
+  <data name="LegacyThinking" xml:space="preserve"><value>Use a manual thinking budget</value></data>
+  <data name="LegacyThinkingHint" xml:space="preserve"><value>For compatible older Claude models only. At least 1,024 tokens, and below the output limit. This replaces adaptive thinking.</value></data>
+  <data name="InvalidThinkingBudget" xml:space="preserve"><value>The thinking budget must be at least 1,024 tokens and below the output token limit.</value></data>
+  <data name="ModelSupportsImages" xml:space="preserve"><value>This model accepts images</value></data>
+  <data name="ModelImagesHint" xml:space="preserve"><value>Enable only when your compatible API and selected model support image input.</value></data>
+  <data name="AttachImages" xml:space="preserve"><value>Attach images</value></data>
+  <data name="ChooseImages" xml:space="preserve"><value>Choose images</value></data>
+  <data name="RemoveImage" xml:space="preserve"><value>Remove image</value></data>
+  <data name="ImagesNextTurn" xml:space="preserve"><value>Send images after the current run finishes.</value></data>
+  <data name="ImageLimit" xml:space="preserve"><value>Up to 4 images, 4 MiB each and 8 MiB total.</value></data>
+  <data name="AttachedImages" xml:space="preserve"><value>Images: {0}</value></data>
+  <data name="UnsupportedImage" xml:space="preserve"><value>Choose a PNG, JPEG, GIF or WebP image.</value></data>
+  <data name="CachedUsage" xml:space="preserve"><value>cache read {0}</value></data>
+  <data name="CacheWriteUsage" xml:space="preserve"><value>cache write {0}</value></data>
+  <data name="ReasoningUsage" xml:space="preserve"><value>reasoning {0}</value></data>
+  <data name="ExecutionMode" xml:space="preserve"><value>Execution mode</value></data>
+  <data name="ModeReadOnly" xml:space="preserve"><value>Read only</value></data>
+  <data name="ModeWorkspaceWrite" xml:space="preserve"><value>Workspace edits</value></data>
+  <data name="ModeFullAccess" xml:space="preserve"><value>Full access</value></data>
+  <data name="ApiExecutionHint" xml:space="preserve"><value>Read only disables commands and edits; workspace edits require approval; full access approves actions automatically. These controls apply to every model. No operating-system sandbox is active.</value></data>
+  <data name="ChooseModel" xml:space="preserve"><value>Choose a model</value></data>
+  <data name="ConfiguredApiModels" xml:space="preserve"><value>Configured API models</value></data>
+  <data name="ConfigureModels" xml:space="preserve"><value>Model and connection settings…</value></data>
+  <data name="AccountModelsUnavailable" xml:space="preserve"><value>Connect your account in Settings to load models.</value></data>
+  <data name="ModelChangedNewChat" xml:space="preserve"><value>Started a new chat for this model. The previous chat is kept.</value></data>
+  <data name="AccountChangedNewChat" xml:space="preserve"><value>The ChatGPT account changed. Your next message starts a new chat; this account's earlier history is kept.</value></data>
+  <data name="LegacyCodexSession" xml:space="preserve"><value>This chat was run by the earlier Codex integration and is available for review. Your next message starts a new Cogitide chat using your ChatGPT account; old tool actions and partial context are not replayed.</value></data>
+  <data name="ResponsesReasoningHint" xml:space="preserve"><value>Use a model that supports the Responses API. Select the service default unless the model supports a specific reasoning level.</value></data>
+  <data name="CancelLogin" xml:space="preserve"><value>Cancel sign-in</value></data>
+  <data name="ContinueWithChatGpt" xml:space="preserve"><value>Continue with ChatGPT</value></data>
+  <data name="SavedAccounts" xml:space="preserve"><value>Saved ChatGPT accounts</value></data>
+  <data name="AddAccount" xml:space="preserve"><value>Add account</value></data>
+  <data name="SignInRequired" xml:space="preserve"><value>Sign-in required</value></data>
+  <data name="AccountsUnavailable" xml:space="preserve"><value>Could not load saved accounts: {0}</value></data>
+  <data name="ManageChatGptUsage" xml:space="preserve"><value>Manage ChatGPT usage ↗</value></data>
+  <data name="LoginCancelled" xml:space="preserve"><value>Sign-in cancelled. You can start again when ready.</value></data>
+  <data name="ReasoningManual" xml:space="preserve"><value>Manual budget</value></data>
+  <data name="ReasoningManualBudget" xml:space="preserve"><value>Manual budget: {0} tokens</value></data>
+  <data name="SteerShortcut" xml:space="preserve"><value>Ctrl+Enter to add instructions · Esc to stop</value></data>
+  <data name="CompactingContext" xml:space="preserve"><value>Summarizing the conversation…</value></data>
+  <data name="ContextCompacted" xml:space="preserve"><value>Earlier work was summarized. Continuing with the latest steps; original history is retained.</value></data>
+  <data name="ContextCompactionFailed" xml:space="preserve"><value>The summary was not saved. Original history is retained.</value></data>
+  <data name="ResearchFeatures" xml:space="preserve"><value>Experimental capabilities</value></data>
+  <data name="ResearchFeaturesHint" xml:space="preserve"><value>Optional features apply to the next task. Repository history needs a Git workspace. Results remain subject to verification.</value></data>
+  <data name="CompressionGuidanceFeature" xml:space="preserve"><value>Preserve key context during compression</value></data>
+  <data name="RepositoryMemoryFeature" xml:space="preserve"><value>Use repository history for code localization</value></data>
+  <data name="ReadOnlyPrefetchFeature" xml:space="preserve"><value>Prefetch related files (read only)</value></data>
+</root>

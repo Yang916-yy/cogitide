@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="PreviewLabel" xml:space="preserve"><value>开发预览</value></data>
+  <data name="NewSession" xml:space="preserve"><value>新会话</value></data>
+  <data name="NewSessionAction" xml:space="preserve"><value>＋  新会话</value></data>
+  <data name="OpenProject" xml:space="preserve"><value>打开项目…</value></data>
+  <data name="CurrentProject" xml:space="preserve"><value>当前项目</value></data>
+  <data name="RecentSessions" xml:space="preserve"><value>最近会话</value></data>
+  <data name="Connections" xml:space="preserve"><value>设置</value></data>
+  <data name="ChooseProject" xml:space="preserve"><value>选择项目</value></data>
+  <data name="Files" xml:space="preserve"><value>文件</value></data>
+  <data name="Changes" xml:space="preserve"><value>变更</value></data>
+  <data name="FilesTooltip" xml:space="preserve"><value>打开或收起项目文件</value></data>
+  <data name="ChangesTooltip" xml:space="preserve"><value>查看 Git 变更</value></data>
+  <data name="TerminalAction" xml:space="preserve"><value>终端 ↗</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>从一个想法开始</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>描述你想理解、修改或构建的内容。</value></data>
+  <data name="ApprovalTitle" xml:space="preserve"><value>需要确认此操作</value></data>
+  <data name="Decline" xml:space="preserve"><value>拒绝</value></data>
+  <data name="ApproveOnce" xml:space="preserve"><value>允许本次</value></data>
+  <data name="PromptPlaceholder" xml:space="preserve"><value>描述任务，或补充下一步…</value></data>
+  <data name="ApiBackend" xml:space="preserve"><value>API 接口</value></data>
+  <data name="Stop" xml:space="preserve"><value>停止</value></data>
+  <data name="StopTooltip" xml:space="preserve"><value>停止当前任务 · Esc</value></data>
+  <data name="SendTooltip" xml:space="preserve"><value>发送 · Ctrl+Enter</value></data>
+  <data name="SteerTooltip" xml:space="preserve"><value>补充指令 · Ctrl+Enter</value></data>
+  <data name="Connecting" xml:space="preserve"><value>正在连接…</value></data>
+  <data name="SendShortcut" xml:space="preserve"><value>Ctrl+Enter 发送</value></data>
+  <data name="Project" xml:space="preserve"><value>项目</value></data>
+  <data name="Refresh" xml:space="preserve"><value>刷新</value></data>
+  <data name="CloseSidebar" xml:space="preserve"><value>收起侧栏</value></data>
+  <data name="FilterFiles" xml:space="preserve"><value>筛选文件…</value></data>
+  <data name="SelectFile" xml:space="preserve"><value>选择文件以预览</value></data>
+  <data name="Output" xml:space="preserve"><value>输出</value></data>
+  <data name="CommandHint" xml:space="preserve"><value>如 git status --short</value></data>
+  <data name="Run" xml:space="preserve"><value>运行</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>设置</value></data>
+  <data name="SettingsDescription" xml:space="preserve"><value>选择语言、界面偏好与模型连接。</value></data>
+  <data name="ChatGptAccount" xml:space="preserve"><value>ChatGPT 账号</value></data>
+  <data name="OfficialAuth" xml:space="preserve"><value>使用 ChatGPT 官方登录</value></data>
+  <data name="OfficialAuthDescription" xml:space="preserve"><value>通过 ChatGPT 账号授权模型调用。任务、工具、摘要和项目经验统一由 Cogitide 执行；可用模型与用量取决于你的账号。</value></data>
+  <data name="AccountLoading" xml:space="preserve"><value>正在读取账号状态…</value></data>
+  <data name="Login" xml:space="preserve"><value>登录 ChatGPT</value></data>
+  <data name="RefreshAccount" xml:space="preserve"><value>刷新状态</value></data>
+  <data name="Logout" xml:space="preserve"><value>退出账号</value></data>
+  <data name="LoginRefreshHint" xml:space="preserve"><value>在浏览器中完成授权后，点击刷新状态。</value></data>
+  <data name="ContinueLogin" xml:space="preserve"><value>在浏览器继续登录</value></data>
+  <data name="Model" xml:space="preserve"><value>模型</value></data>
+  <data name="ModelsPlaceholder" xml:space="preserve"><value>登录后可加载账号支持的模型</value></data>
+  <data name="DefaultModelPlaceholder" xml:space="preserve"><value>留空使用账号默认模型</value></data>
+  <data name="TokenPrivacy" xml:space="preserve"><value>本页不会读取或显示授权令牌。</value></data>
+  <data name="Endpoint" xml:space="preserve"><value>API 地址</value></data>
+  <data name="ApiCompatibility" xml:space="preserve"><value>支持 OpenAI Chat Completions 兼容接口。</value></data>
+  <data name="ModelId" xml:space="preserve"><value>模型 ID</value></data>
+  <data name="KeyVariable" xml:space="preserve"><value>密钥环境变量名称</value></data>
+  <data name="KeyPrivacy" xml:space="preserve"><value>这里只保存环境变量的名称。密钥不会写入项目、聊天记录或界面设置。新增系统环境变量后，需要重新启动应用。</value></data>
+  <data name="MaxOutputTokens" xml:space="preserve"><value>单次最大输出 token</value></data>
+  <data name="DeepSeekDefaults" xml:space="preserve"><value>使用 DeepSeek 默认配置</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="SaveSettings" xml:space="preserve"><value>保存设置</value></data>
+  <data name="General" xml:space="preserve"><value>通用</value></data>
+  <data name="Language" xml:space="preserve"><value>语言</value></data>
+  <data name="LanguageHint" xml:space="preserve"><value>切换后立即生效。模型回复和项目内容保持原文。</value></data>
+  <data name="SystemLanguage" xml:space="preserve"><value>跟随系统</value></data>
+  <data name="ReducedMotion" xml:space="preserve"><value>减少动画</value></data>
+  <data name="ReducedMotionHint" xml:space="preserve"><value>关闭面板过渡与控件动画，便于专注阅读。</value></data>
+  <data name="Appearance" xml:space="preserve"><value>界面</value></data>
+  <data name="AppearanceHint" xml:space="preserve"><value>柔和深色界面，专注于任务与内容。</value></data>
+  <data name="ReadyNoProject" xml:space="preserve"><value>打开项目，描述任务即可开始</value></data>
+  <data name="ReadyProject" xml:space="preserve"><value>项目已准备好，描述任务即可开始</value></data>
+  <data name="SessionRestored" xml:space="preserve"><value>已恢复会话 · {0}</value></data>
+  <data name="ChooseFolder" xml:space="preserve"><value>选择项目文件夹</value></data>
+  <data name="Ready" xml:space="preserve"><value>准备就绪</value></data>
+  <data name="ProjectOpened" xml:space="preserve"><value>项目已打开，描述任务即可开始</value></data>
+  <data name="SessionReady" xml:space="preserve"><value>新会话已准备好</value></data>
+  <data name="RecoveredInput" xml:space="preserve"><value>恢复的补充指令 · 未确认处理</value></data>
+  <data name="RecoveredInputText" xml:space="preserve"><value>{0}
+
+上次执行中已接收此指令，但没有找到对应的处理确认记录。不会自动重放；如仍需执行，请确认后重新发送。</value></data>
+  <data name="SteerSubmitted" xml:space="preserve"><value>补充指令已提交，将在下一个执行边界处理</value></data>
+  <data name="RunSubmitted" xml:space="preserve"><value>任务已提交 · 可以随时停止</value></data>
+  <data name="UnsentInput" xml:space="preserve"><value>未发送的输入</value></data>
+  <data name="UnsentInputText" xml:space="preserve"><value>{0}
+
+提交失败；输入框内的新草稿已保留。</value></data>
+  <data name="Stopping" xml:space="preserve"><value>正在停止…</value></data>
+  <data name="StopRequested" xml:space="preserve"><value>已请求停止，正在等待执行结束</value></data>
+  <data name="AwaitingApproval" xml:space="preserve"><value>等待确认</value></data>
+  <data name="AccountConnected" xml:space="preserve"><value>ChatGPT 已连接 · {0}</value></data>
+  <data name="Account" xml:space="preserve"><value>账号</value></data>
+  <data name="AccountUpdated" xml:space="preserve"><value>ChatGPT 账号状态已更新</value></data>
+  <data name="ToolRunning" xml:space="preserve"><value>执行工具…</value></data>
+  <data name="Completed" xml:space="preserve"><value>已完成</value></data>
+  <data name="ContextTrimmed" xml:space="preserve"><value>上下文已压缩。</value></data>
+  <data name="SteerQueued" xml:space="preserve"><value>补充指令已排队</value></data>
+  <data name="SteerApplied" xml:space="preserve"><value>补充指令已加入上下文</value></data>
+  <data name="SteerAccepted" xml:space="preserve"><value>补充指令已接收</value></data>
+  <data name="UnconfirmedInput" xml:space="preserve"><value>补充指令 · 未确认处理</value></data>
+  <data name="UnconfirmedInputText" xml:space="preserve"><value>{0}
+
+本次执行已结束，未找到处理确认。不会自动重放；如仍需执行，请确认后重新发送。</value></data>
+  <data name="Failed" xml:space="preserve"><value>失败</value></data>
+  <data name="Stopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="UnknownEvent" xml:space="preserve"><value>收到无法识别的执行事件。</value></data>
+  <data name="Resuming" xml:space="preserve"><value>继续执行…</value></data>
+  <data name="OperationDeclined" xml:space="preserve"><value>已拒绝操作</value></data>
+  <data name="NoChanges" xml:space="preserve"><value>工作区没有已跟踪文件的变更。</value></data>
+  <data name="CommandRunning" xml:space="preserve"><value>正在执行命令…</value></data>
+  <data name="CommandFailed" xml:space="preserve"><value>命令执行失败，详情见输出</value></data>
+  <data name="CommandCompleted" xml:space="preserve"><value>命令执行完成</value></data>
+  <data name="AccountDefaultModel" xml:space="preserve"><value>账号默认模型</value></data>
+  <data name="ChooseLocalFolder" xml:space="preserve"><value>选择本地文件夹</value></data>
+  <data name="HostNotConnected" xml:space="preserve"><value>本地执行核心尚未连接。</value></data>
+  <data name="WorkspaceRequired" xml:space="preserve"><value>请先通过左侧“打开项目”选择有效的本地文件夹。</value></data>
+  <data name="Running" xml:space="preserve"><value>运行中…</value></data>
+  <data name="CancelledOrTimeout" xml:space="preserve"><value>操作已取消或超时。</value></data>
+  <data name="OperationFailed" xml:space="preserve"><value>操作失败</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>无法保存界面设置。</value></data>
+  <data name="ExitCode" xml:space="preserve"><value>退出码：{0}</value></data>
+  <data name="Timeout" xml:space="preserve"><value>超时</value></data>
+  <data name="OutputTruncated" xml:space="preserve"><value>输出已截断</value></data>
+  <data name="LastCharacters" xml:space="preserve"><value>[显示最后 {0} 个字符]
+</value></data>
+  <data name="AccountUpdateUnavailable" xml:space="preserve"><value>账号状态更新暂不可用，请刷新。</value></data>
+  <data name="AccountUnavailable" xml:space="preserve"><value>账号服务暂不可用：{0}</value></data>
+  <data name="OfficialAuthUnavailable" xml:space="preserve"><value>ChatGPT 登录暂不可用，请检查下方连接信息。</value></data>
+  <data name="SignedIn" xml:space="preserve"><value>已登录 · {0}{1}</value></data>
+  <data name="NotSignedIn" xml:space="preserve"><value>尚未登录 ChatGPT。API 接口可以独立使用。</value></data>
+  <data name="ModelsUnavailable" xml:space="preserve"><value>无法加载模型列表，可以保留默认模型。{0}</value></data>
+  <data name="CompleteAuthorization" xml:space="preserve"><value>请在浏览器完成官方授权。完成后这里会更新账号状态。</value></data>
+  <data name="AuthorizationCode" xml:space="preserve"><value>在官方授权页面输入代码：{0}</value></data>
+  <data name="InvalidAuthorizationUrl" xml:space="preserve"><value>账号服务没有返回有效的 HTTPS 授权地址。</value></data>
+  <data name="KeyDetected" xml:space="preserve"><value>已检测到此环境变量 · 密钥内容已隐藏</value></data>
+  <data name="KeyMissing" xml:space="preserve"><value>当前进程未检测到此环境变量。配置后重启应用即可使用。</value></data>
+  <data name="InvalidEndpoint" xml:space="preserve"><value>API 地址必须使用 HTTPS，或本机 HTTP 地址，且不能包含账号密码、查询参数或片段标识。</value></data>
+  <data name="ModelRequired" xml:space="preserve"><value>请填写 API 模型 ID。</value></data>
+  <data name="VariableRequired" xml:space="preserve"><value>请填写环境变量名称，而不是 API 密钥本身。</value></data>
+  <data name="Notice" xml:space="preserve"><value>提示</value></data>
+  <data name="ExecutionFailed" xml:space="preserve"><value>执行失败</value></data>
+  <data name="ConnectionStatus" xml:space="preserve"><value>连接状态</value></data>
+  <data name="Context" xml:space="preserve"><value>上下文</value></data>
+  <data name="Progress" xml:space="preserve"><value>执行进度</value></data>
+  <data name="FailedPrefix" xml:space="preserve"><value>失败 · </value></data>
+  <data name="CompletedPrefix" xml:space="preserve"><value>完成 · </value></data>
+  <data name="ViewDetails" xml:space="preserve"><value>查看详情</value></data>
+  <data name="ToolReadFile" xml:space="preserve"><value>读取文件</value></data>
+  <data name="ToolListFiles" xml:space="preserve"><value>浏览文件</value></data>
+  <data name="ToolSearchFiles" xml:space="preserve"><value>搜索文件</value></data>
+  <data name="ToolEditFile" xml:space="preserve"><value>修改文件</value></data>
+  <data name="ToolCommand" xml:space="preserve"><value>执行命令</value></data>
+  <data name="ToolDiff" xml:space="preserve"><value>检查变更</value></data>
+  <data name="ToolWeb" xml:space="preserve"><value>读取网页</value></data>
+  <data name="ToolExecution" xml:space="preserve"><value>工具执行</value></data>
+  <data name="ToolResult" xml:space="preserve"><value>工具结果</value></data>
+  <data name="Interrupted" xml:space="preserve"><value>执行中断</value></data>
+  <data name="RunningStatus" xml:space="preserve"><value>运行中</value></data>
+  <data name="Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="ModelUsage" xml:space="preserve"><value>本次模型调用 · 输入 {0} tokens · 输出 {1} tokens</value></data>
+  <data name="CompactionUsage" xml:space="preserve"><value>会话摘要 · 输入 {0} tokens · 输出 {1} tokens</value></data>
+  <data name="UsageUnavailable" xml:space="preserve"><value>模型用量统计暂不可用。</value></data>
+  <data name="TerminalTitle" xml:space="preserve"><value>终端 · {0}</value></data>
+  <data name="Interrupt" xml:space="preserve"><value>中断 Ctrl+C</value></data>
+  <data name="TerminalEnded" xml:space="preserve"><value>终端已结束，无法发送中断。</value></data>
+  <data name="CloseTerminal" xml:space="preserve"><value>关闭终端</value></data>
+  <data name="TerminalHint" xml:space="preserve"><value>交互式本地 shell · Ctrl+Shift+C 复制 · Ctrl+Shift+V 粘贴 · 关闭窗口结束此终端</value></data>
+  <data name="ProcessEnded" xml:space="preserve"><value>进程已结束 · 退出码 {0}</value></data>
+  <data name="TerminalStartFailed" xml:space="preserve"><value>无法启动终端：{0}</value></data>
+  <data name="MarkdownLong" xml:space="preserve"><value>内容较长，按纯文本显示。</value></data>
+  <data name="MarkdownComplex" xml:space="preserve"><value>内容结构较复杂，按纯文本显示。</value></data>
+  <data name="MarkdownUnavailable" xml:space="preserve"><value>Markdown 显示不可用，已切换为纯文本。</value></data>
+  <data name="MarkdownTruncated" xml:space="preserve"><value> 以下仅显示前 {0:N0} 个字符，其余未在此处显示。</value></data>
+  <data name="ImagePlaceholder" xml:space="preserve"><value>[图片] </value></data>
+  <data name="Copy" xml:space="preserve"><value>复制</value></data>
+  <data name="Copied" xml:space="preserve"><value>已复制</value></data>
+  <data name="CopyFailed" xml:space="preserve"><value>复制失败</value></data>
+  <data name="HostStartFailed" xml:space="preserve"><value>无法启动本地执行核心。</value></data>
+  <data name="HostDisconnected" xml:space="preserve"><value>本地执行核心未连接。请重新启动 {0}。</value></data>
+  <data name="DuplicateRequest" xml:space="preserve"><value>请求标识重复。</value></data>
+  <data name="HostEmptyResponse" xml:space="preserve"><value>本地执行核心返回了空响应：{0}。</value></data>
+  <data name="HostRequestFailed" xml:space="preserve"><value>本地执行核心请求失败。</value></data>
+  <data name="HostStopped" xml:space="preserve"><value>本地执行核心已停止。重新启动 {0} 后可恢复已保存的会话。</value></data>
+  <data name="HostClosed" xml:space="preserve"><value>执行核心连接已关闭。</value></data>
+  <data name="HostMissing" xml:space="preserve"><value>未找到 Workbench.Host。请构建解决方案，或将 WORKBENCH_HOST_PATH 设置为可执行文件或 DLL 路径。</value></data>
+  <data name="Passthrough" xml:space="preserve"><value>{0}</value></data>
+  <data name="GitScope" xml:space="preserve"><value>Git 工作区与暂存区</value></data>
+  <data name="NonInteractiveOutput" xml:space="preserve"><value>命令输出 · 非交互执行</value></data>
+  <data name="Provider" xml:space="preserve"><value>模型服务</value></data>
+  <data name="ProviderAuto" xml:space="preserve"><value>根据地址自动识别</value></data>
+  <data name="ProviderCompatible" xml:space="preserve"><value>OpenAI 兼容 Chat Completions</value></data>
+  <data name="ProviderDefaults" xml:space="preserve"><value>使用服务预设</value></data>
+  <data name="ProviderEndpointHint" xml:space="preserve"><value>使用自定义地址时可指定服务类型。应用预设会同时更新模型和密钥变量名。</value></data>
+  <data name="ReasoningEffort" xml:space="preserve"><value>思考强度</value></data>
+  <data name="ReasoningProviderDefault" xml:space="preserve"><value>服务默认值</value></data>
+  <data name="ReasoningOff" xml:space="preserve"><value>关闭</value></data>
+  <data name="ReasoningMinimal" xml:space="preserve"><value>极低</value></data>
+  <data name="ReasoningLow" xml:space="preserve"><value>低</value></data>
+  <data name="ReasoningMedium" xml:space="preserve"><value>中</value></data>
+  <data name="ReasoningHigh" xml:space="preserve"><value>高</value></data>
+  <data name="ReasoningExtraHigh" xml:space="preserve"><value>很高</value></data>
+  <data name="ReasoningMaximum" xml:space="preserve"><value>最高</value></data>
+  <data name="DeepSeekReasoningHint" xml:space="preserve"><value>更多思考有助于处理复杂任务，也会增加耗时和用量。思考状态会随工具调用保留，不显示在回答中。</value></data>
+  <data name="ClaudeReasoningHint" xml:space="preserve"><value>使用自适应思考。可用强度取决于 Claude 型号，可以先从“高”开始。</value></data>
+  <data name="CompatibleReasoningHint" xml:space="preserve"><value>请确认模型支持后再指定强度。选择“服务默认值”会沿用服务自身的设置。</value></data>
+  <data name="LegacyThinking" xml:space="preserve"><value>手动指定思考预算</value></data>
+  <data name="LegacyThinkingHint" xml:space="preserve"><value>仅适用于支持此功能的较早 Claude 型号。至少 1,024 tokens，且必须小于输出上限；启用后取代自适应思考。</value></data>
+  <data name="InvalidThinkingBudget" xml:space="preserve"><value>思考预算至少为 1,024 tokens，且必须小于输出 token 上限。</value></data>
+  <data name="ModelSupportsImages" xml:space="preserve"><value>此模型支持图片输入</value></data>
+  <data name="ModelImagesHint" xml:space="preserve"><value>请确认所用兼容接口和当前模型支持图片后再启用。</value></data>
+  <data name="AttachImages" xml:space="preserve"><value>添加图片</value></data>
+  <data name="ChooseImages" xml:space="preserve"><value>选择图片</value></data>
+  <data name="RemoveImage" xml:space="preserve"><value>移除图片</value></data>
+  <data name="ImagesNextTurn" xml:space="preserve"><value>请在当前任务结束后发送图片。</value></data>
+  <data name="ImageLimit" xml:space="preserve"><value>最多 4 张图片，单张 4 MiB，总计 8 MiB。</value></data>
+  <data name="AttachedImages" xml:space="preserve"><value>图片：{0}</value></data>
+  <data name="UnsupportedImage" xml:space="preserve"><value>请选择 PNG、JPEG、GIF 或 WebP 图片。</value></data>
+  <data name="CachedUsage" xml:space="preserve"><value>缓存读取 {0}</value></data>
+  <data name="CacheWriteUsage" xml:space="preserve"><value>缓存写入 {0}</value></data>
+  <data name="ReasoningUsage" xml:space="preserve"><value>推理 {0}</value></data>
+  <data name="ExecutionMode" xml:space="preserve"><value>执行模式</value></data>
+  <data name="ModeReadOnly" xml:space="preserve"><value>只读</value></data>
+  <data name="ModeWorkspaceWrite" xml:space="preserve"><value>工作区编辑</value></data>
+  <data name="ModeFullAccess" xml:space="preserve"><value>完全访问</value></data>
+  <data name="ApiExecutionHint" xml:space="preserve"><value>只读禁用命令与修改；工作区编辑逐次审批；完全访问自动批准。所有模型都使用这套权限控制，当前没有系统级沙箱。</value></data>
+  <data name="ChooseModel" xml:space="preserve"><value>选择模型</value></data>
+  <data name="ConfiguredApiModels" xml:space="preserve"><value>已配置的 API 模型</value></data>
+  <data name="ConfigureModels" xml:space="preserve"><value>模型与连接设置…</value></data>
+  <data name="AccountModelsUnavailable" xml:space="preserve"><value>在设置中连接账号以获取模型列表。</value></data>
+  <data name="ModelChangedNewChat" xml:space="preserve"><value>已为新模型创建会话，原会话保留。</value></data>
+  <data name="AccountChangedNewChat" xml:space="preserve"><value>ChatGPT 账号已变化。下一条消息将创建新会话，当前账号的历史记录保留。</value></data>
+  <data name="LegacyCodexSession" xml:space="preserve"><value>这是由旧版 Codex 接入执行的历史会话，可继续查看。下一条消息将使用你的 ChatGPT 账号创建 Cogitide 新会话，旧工具操作和不完整上下文不会重放。</value></data>
+  <data name="ResponsesReasoningHint" xml:space="preserve"><value>请选择支持 Responses API 的模型。模型支持指定思考档位时再调整，否则保留服务默认值。</value></data>
+  <data name="CancelLogin" xml:space="preserve"><value>取消登录</value></data>
+  <data name="ContinueWithChatGpt" xml:space="preserve"><value>继续使用 ChatGPT</value></data>
+  <data name="SavedAccounts" xml:space="preserve"><value>已保存的 ChatGPT 账号</value></data>
+  <data name="AddAccount" xml:space="preserve"><value>添加账号</value></data>
+  <data name="SignInRequired" xml:space="preserve"><value>需要登录</value></data>
+  <data name="AccountsUnavailable" xml:space="preserve"><value>无法加载已保存的账号：{0}</value></data>
+  <data name="ManageChatGptUsage" xml:space="preserve"><value>管理 ChatGPT 用量 ↗</value></data>
+  <data name="LoginCancelled" xml:space="preserve"><value>已取消登录，可以随时重新开始。</value></data>
+  <data name="ReasoningManual" xml:space="preserve"><value>手动预算</value></data>
+  <data name="ReasoningManualBudget" xml:space="preserve"><value>手动预算：{0} token</value></data>
+  <data name="SteerShortcut" xml:space="preserve"><value>Ctrl+Enter 追加指令 · Esc 停止</value></data>
+  <data name="CompactingContext" xml:space="preserve"><value>正在整理会话摘要…</value></data>
+  <data name="ContextCompacted" xml:space="preserve"><value>早期工作已整理为摘要，继续处理最近步骤；原始记录保留。</value></data>
+  <data name="ContextCompactionFailed" xml:space="preserve"><value>摘要未保存，原始记录保留。</value></data>
+  <data name="ResearchFeatures" xml:space="preserve"><value>实验能力</value></data>
+  <data name="ResearchFeaturesHint" xml:space="preserve"><value>可选能力从下一次任务生效。历史检索需要 Git 工作区，结果仍需核验。</value></data>
+  <data name="CompressionGuidanceFeature" xml:space="preserve"><value>压缩时保留关键上下文</value></data>
+  <data name="RepositoryMemoryFeature" xml:space="preserve"><value>参考项目历史定位代码</value></data>
+  <data name="ReadOnlyPrefetchFeature" xml:space="preserve"><value>预读相关文件（只读）</value></data>
+</root>

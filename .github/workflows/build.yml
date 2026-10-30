@@ -1,0 +1,71 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      WORKBENCH_CODEX_SMOKE: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Bootstrap pinned SDK
+        run: |
+          $dotnet = & ./scripts/bootstrap.ps1
+          $root = Split-Path -Parent $dotnet
+          $root | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          "DOTNET_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "DOTNET_HOST_PATH=$dotnet" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Locked restore, build and unit tests
+        run: ./scripts/build.ps1 -Configuration Debug
+      - name: Host integration with local SSE fixture
+        run: python scripts/verify-host.py
+      - name: Host lifecycle and concurrency integration
+        run: python scripts/verify-lifecycle.py
+      - name: Unified Responses and continuity integration
+        run: |
+          python scripts/verify-responses.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/verify-continuity.py
+      - name: Paged tools and background command ownership integration
+        run: python scripts/verify-tools-upgrade.py
+      - name: Research mechanisms and frozen evaluation integration
+        run: python scripts/verify-research.py
+      - name: Module inventory
+        run: python scripts/module-map.py --check
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-evidence-${{ matrix.os }}
+          path: |
+            artifacts/test-results/**/*.trx
+            artifacts/**/result.json
+          if-no-files-found: warn
+          retention-days: 14
+      # Headless build and host checks do not certify native GUI behavior on these platforms.
