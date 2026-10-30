@@ -208,7 +208,9 @@ public sealed class PatchTests : IDisposable
     [Fact]
     public async Task OversizedChangeMetadataIsRejectedBeforeCreatingDirectories()
     {
-        var prefix = string.Concat(Enumerable.Repeat("长目录/", 100));
+        // Keep the UTF-8 path below macOS PATH_MAX while escaped JSON across 64 operations
+        // still exceeds the 80,000-character metadata budget on every supported platform.
+        var prefix = string.Concat(Enumerable.Repeat("长目录/", 72));
         var body = string.Join('\n', Enumerable.Range(0, 64).Select(index => "*** Add File: " + prefix + index + ".txt\n+new"));
         var result = await _service.ApplyPatchAsync(_root, Patch(body), new Dictionary<string, string>());
         Assert.True(result.IsError);

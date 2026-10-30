@@ -344,7 +344,7 @@ public sealed class SkillOptimizer
         private readonly FileStream _lock;
         internal OptimizationArtifacts(string directory)
         {
-            _directory = Path.GetFullPath(directory);
+            _directory = NormalizePlatformArtifactPath(directory);
             for (var cursor = new DirectoryInfo(_directory); cursor is not null; cursor = cursor.Parent)
                 if (cursor.Exists && (cursor.Attributes & FileAttributes.ReparsePoint) != 0)
                     throw new IOException("Optimization artifacts must not traverse symbolic links or junctions.");
@@ -352,6 +352,20 @@ public sealed class SkillOptimizer
                 throw new IOException("Use a new empty artifact directory; existing runs are never overwritten or resumed implicitly.");
             Directory.CreateDirectory(_directory);
             _lock = new FileStream(Path.Combine(_directory, ".run.lock"), FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        }
+        private static string NormalizePlatformArtifactPath(string directory)
+        {
+            var full = Path.GetFullPath(directory);
+            if (!OperatingSystem.IsMacOS()) return full;
+            // macOS owns these standard root aliases. Resolve only their known system targets;
+            // user-supplied links anywhere below the prefix still fail the ancestry check above.
+            foreach (var alias in new[] { "/var", "/tmp" })
+            {
+                if (full != alias && !full.StartsWith(alias + "/", StringComparison.Ordinal)) continue;
+                var target = new DirectoryInfo(alias).ResolveLinkTarget(true)?.FullName;
+                if (target == "/private" + alias) return target + full[alias.Length..];
+            }
+            return full;
         }
         internal async Task CreateManifestAsync(string manifest, SkillCandidate baseline)
         {

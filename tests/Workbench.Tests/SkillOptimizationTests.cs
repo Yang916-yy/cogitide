@@ -13,6 +13,24 @@ public sealed class SkillOptimizationTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), "skill-opt-" + Guid.NewGuid().ToString("N"));
     public SkillOptimizationTests() => Directory.CreateDirectory(_root);
     private string Output() => Path.Combine(_root, Guid.NewGuid().ToString("N"));
+
+    [Fact]
+    public async Task UserSuppliedArtifactDirectoryLinksRemainRejected()
+    {
+        var target = Path.Combine(_root, "physical");
+        var link = Path.Combine(_root, "user-link");
+        Directory.CreateDirectory(target);
+        try { Directory.CreateSymbolicLink(link, target); }
+        catch (UnauthorizedAccessException) when (OperatingSystem.IsWindows()) { return; }
+        catch (IOException) when (OperatingSystem.IsWindows()) { return; }
+        try
+        {
+            await Assert.ThrowsAsync<IOException>(() => new SkillOptimizer().OptimizeAsync("baseline", Tasks(),
+                new QueueProposer(), new DelegateEvaluator((_, task, _, _) => Task.FromResult(Result(task, 1))),
+                new(MaxProposals: 0), Path.Combine(link, "new-run")));
+        }
+        finally { Directory.Delete(link); }
+    }
     private static SkillOptimizationTask[] Tasks() =>
     [
         new("train", "training-family", SkillTaskPartition.Train, Wire.Element(new { prompt = "Fix a training failure" })),
