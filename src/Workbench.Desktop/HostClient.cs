@@ -265,6 +265,14 @@ internal sealed class HostClient : IAsyncDisposable
             }
             catch (OperationCanceledException) { ProcessShutdown.Terminate(process); }
             catch (Exception ex) when (ProcessShutdown.IsShutdownRace(ex)) { ProcessShutdown.Terminate(process); }
+            try
+            {
+                // Process exit can precede the redirected readers' continuations.
+                // Drain even after a broken-pipe close, using the same grace deadline.
+                if (_reader is not null) await _reader.WaitAsync(timeout.Token).ConfigureAwait(false);
+                if (_diagnostics is not null) await _diagnostics.WaitAsync(timeout.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { }
         }
         _lifetime.Cancel();
         try { if (_reader is not null) await _reader.ConfigureAwait(false); } catch (OperationCanceledException) { }

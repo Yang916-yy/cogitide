@@ -184,6 +184,7 @@ public sealed class RemoteConnectionTests
     [InlineData("malformed", "valid Host protocol")]
     [InlineData("auth-failure", "authentication failed")]
     [InlineData("changed-key", "host key changed")]
+    [InlineData("changed-key-buffered", "host key changed")]
     [InlineData("missing-host", "path does not exist")]
     public async Task StartupFailureIsClearRedactedAndDisposesTheTransport(string mode, string expected)
     {
@@ -289,6 +290,11 @@ public sealed class RemoteConnectionTests
             }
             if ($Mode -eq 'auth-failure') { [Console]::Error.WriteLine('Permission denied (publickey). SECRET_FIXTURE_DO_NOT_SHOW'); exit 255 }
             if ($Mode -eq 'changed-key') { [Console]::Error.WriteLine('REMOTE HOST IDENTIFICATION HAS CHANGED! SECRET_FIXTURE_DO_NOT_SHOW'); exit 255 }
+            if ($Mode -eq 'changed-key-buffered') {
+                [Console]::Error.Write(('x' * 12288))
+                [Console]::Error.WriteLine('REMOTE HOST IDENTIFICATION HAS CHANGED! SECRET_FIXTURE_DO_NOT_SHOW')
+                exit 255
+            }
             if ($Mode -eq 'missing-host') { [Console]::Error.WriteLine('No such file or directory SECRET_FIXTURE_DO_NOT_SHOW'); exit 127 }
             $line = [Console]::ReadLine()
             if ($null -eq $line) { exit 1 }
@@ -318,6 +324,7 @@ public sealed class RemoteConnectionTests
               wsl-discovery) printf 'U\000b\000u\000n\000t\000u\000\r\000\n\000D\000e\000b\000i\000a\000n\000\r\000\n\000'; exit 0;;
               auth-failure) printf '%s\n' 'Permission denied (publickey). SECRET_FIXTURE_DO_NOT_SHOW' >&2; exit 255;;
               changed-key) printf '%s\n' 'REMOTE HOST IDENTIFICATION HAS CHANGED! SECRET_FIXTURE_DO_NOT_SHOW' >&2; exit 255;;
+              changed-key-buffered) printf '%12288s' '' >&2; printf '%s\n' 'REMOTE HOST IDENTIFICATION HAS CHANGED! SECRET_FIXTURE_DO_NOT_SHOW' >&2; exit 255;;
               missing-host) printf '%s\n' 'No such file or directory SECRET_FIXTURE_DO_NOT_SHOW' >&2; exit 127;;
             esac
             IFS= read -r line || exit 1

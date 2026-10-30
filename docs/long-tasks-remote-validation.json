@@ -339,6 +339,56 @@
       "tests/Workbench.Tests/RemoteConnectionTests.cs": "f329ad1a76b4837900ce2983d4cf186cf0854da4b9737e3530311f9952449f98",
       "scripts/verify-remote.py": "3507ea5da98f532e9e9d4cc37b2142c44622d9ce73fc9f59ee282e5aaf3496e7"
     },
-    "ciScope": "Use the GitHub check associated with the published commit containing these source hashes for final three-platform results."
+    "ciScope": "Use the GitHub check associated with the published commit containing these source hashes for final three-platform results.",
+    "commit": "2c790be18254c9911f1b012432c02516e12129c3"
+  },
+  "diagnosticDrainFollowUp": {
+    "priorCiRun": "https://github.com/Yang916-yy/cogitide/actions/runs/41104159559",
+    "priorCiResults": {
+      "windows": "success",
+      "linux": "success",
+      "macos": "one failure: changed-key startup diagnostic omitted; 640 passed, one failed and one skipped"
+    },
+    "causeAndFix": "A fast process exit could precede stderr-reader continuation; await existing protocol/diagnostic tasks before cancelling lifetime, including broken-pipe close paths, using the same two-second grace deadline.",
+    "regression": "Existing eight startup-error/redaction cases now include a host-key warning after 12 KiB harmless stderr padding inside the 16 KiB classification window. The observed macOS failure is retained; no deterministic-red claim for this scheduler-dependent case.",
+    "strictReleaseBuild": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "releaseTests": {
+      "passed": 641,
+      "failed": 0,
+      "skipped": 2,
+      "total": 643,
+      "trxSha256": "32e313bd724d4b54d530eec9d01de734e3412c4cb3746051b801ff8bffeee645"
+    },
+    "actualClientAcceptance": {
+      "wsl": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "total": 1,
+        "trxSha256": "de0899f4a7a63be6deb137f29afd4dd45af7726b2162d604e0d0115c35d74ada"
+      },
+      "loopbackSsh": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "total": 1,
+        "trxSha256": "18110811a8f34bf5ef53e2234a7ead3f243b21bc5d137d99de8735bc15f13563"
+      },
+      "loopbackCleanupVerified": true,
+      "remotePackageScope": "Same feature-validated Linux Host package identified above; current-source native Host packaging is checked separately in CI."
+    },
+    "testedDesktopReleaseAssemblySha256": "ff448041631241621ebeeca5bca819380f61f151f8fae691c58bc637ef50a839",
+    "sourceSha256Lf": {
+      "src/Workbench.Desktop/HostClient.cs": "5ef63855ddbb9c01f29d73d3f228c8b54e6c8f88d2aaad8dfbe2785a2bd8f513",
+      "src/Workbench.Desktop/Remote/README.md": "cb08964d83f38523314d308cb8c9691a0fee10d7e2ad9ab00dc4d7721962e477",
+      "tests/Workbench.Tests/RemoteConnectionTests.cs": "bd91025e341dd6e08ef19011d5abfe4af5a4be4c05f37c2131aafceffea82792"
+    },
+    "kernelAndNativeHostImplementationChanged": false,
+    "paidModelCalls": 0,
+    "visibleDesktopOpened": false,
+    "ciScope": "Final three-platform result is the check attached to the published commit containing these source hashes."
   }
 }
