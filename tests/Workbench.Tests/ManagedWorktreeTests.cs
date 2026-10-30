@@ -12,7 +12,7 @@ public sealed class ManagedWorktreeGitEnvironmentCollection { }
 [Collection("Managed worktree Git environment")]
 public sealed class ManagedWorktreeTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "cogitide-worktrees-" + Guid.NewGuid().ToString("N"));
+    private readonly string _root = Path.Combine(PhysicalTemporaryDirectory(), "cogitide-worktrees-" + Guid.NewGuid().ToString("N"));
     private string Repository => Path.Combine(_root, "repository with spaces");
     private readonly WorkspaceService _service = new();
     public ManagedWorktreeTests() => Directory.CreateDirectory(Repository);
@@ -205,6 +205,47 @@ public sealed class ManagedWorktreeTests : IDisposable
         await _service.RemoveWorktreeAsync(Repository, "owner-chat", id);
     }
 
+    [MacOsWorktreeFact]
+    public async Task MacOsSystemAliasAndPhysicalPathShareOwnershipWhileCustomAncestorLinksRemainRejected()
+    {
+        Assert.Equal("/private/var", Path.TrimEndingDirectorySeparator(new DirectoryInfo("/var").ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? ""));
+        var name = "cogitide-worktrees-mac-alias-" + Guid.NewGuid().ToString("N");
+        var aliasRoot = Path.Combine("/var/tmp", name);
+        var physicalRoot = Path.Combine("/private/var/tmp", name);
+        var aliasRepository = Path.Combine(aliasRoot, "repository");
+        var physicalRepository = Path.Combine(physicalRoot, "repository");
+        Directory.CreateDirectory(aliasRepository);
+        try
+        {
+            await Initialize(aliasRepository);
+            var created = await _service.CreateWorktreeAsync(aliasRepository, "mac-alias-owner");
+            Assert.False(created.IsError, created.Content);
+            var record = Json(created);
+            var id = record.GetProperty("worktreeId").GetString()!;
+            var path = record.GetProperty("path").GetString()!;
+            Assert.StartsWith(Path.Combine(physicalRoot, ".cogitide-worktrees") + "/", path, StringComparison.Ordinal);
+            var physicalList = Json(await _service.ListWorktreesAsync(physicalRepository));
+            Assert.Equal(physicalRepository, physicalList.GetProperty("repository").GetString());
+            var physicalEntry = Assert.Single(physicalList.GetProperty("worktrees").EnumerateArray());
+            var aliasEntry = Assert.Single(Json(await _service.ListWorktreesAsync(aliasRepository)).GetProperty("worktrees").EnumerateArray());
+            Assert.Equal(id, physicalEntry.GetProperty("worktreeId").GetString());
+            Assert.Equal(id, aliasEntry.GetProperty("worktreeId").GetString());
+            Assert.Equal(path, physicalEntry.GetProperty("path").GetString());
+            Directory.CreateDirectory(Path.Combine(physicalRepository, "source-subdirectory"));
+            var customLink = Path.Combine(physicalRoot, "custom-link");
+            Directory.CreateSymbolicLink(customLink, physicalRepository);
+            try
+            {
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.CreateWorktreeAsync(
+                    Path.Combine(aliasRoot, "custom-link", "source-subdirectory"), "mac-alias-owner"));
+            }
+            finally { Directory.Delete(customLink); }
+            await _service.RemoveWorktreeAsync(physicalRepository, "mac-alias-owner", id);
+            Assert.False(Directory.Exists(path));
+        }
+        finally { DeleteFixtureDirectory(physicalRoot, "/private/var/tmp"); }
+    }
+
     private static async Task CreateDirectoryLinkAsync(string link, string target)
     {
         if (!OperatingSystem.IsWindows()) { Directory.CreateSymbolicLink(link, target); return; }
@@ -222,15 +263,16 @@ public sealed class ManagedWorktreeTests : IDisposable
         Assert.True(process.ExitCode == 0, await error);
     }
 
-    private async Task Initialize()
+    private async Task Initialize(string? repository = null)
     {
-        await Git(Repository, "init");
-        await Git(Repository, "config", "user.name", "Deterministic fixture");
-        await Git(Repository, "config", "user.email", "fixture@example.invalid");
-        await File.WriteAllTextAsync(Path.Combine(Repository, "source.txt"), "initial");
-        await File.WriteAllTextAsync(Path.Combine(Repository, ".gitignore"), "ignored.txt\n");
-        await Git(Repository, "add", "source.txt", ".gitignore");
-        await Git(Repository, "-c", "commit.gpgsign=false", "commit", "-m", "fixture");
+        repository ??= Repository;
+        await Git(repository, "init");
+        await Git(repository, "config", "user.name", "Deterministic fixture");
+        await Git(repository, "config", "user.email", "fixture@example.invalid");
+        await File.WriteAllTextAsync(Path.Combine(repository, "source.txt"), "initial");
+        await File.WriteAllTextAsync(Path.Combine(repository, ".gitignore"), "ignored.txt\n");
+        await Git(repository, "add", "source.txt", ".gitignore");
+        await Git(repository, "-c", "commit.gpgsign=false", "commit", "-m", "fixture");
     }
     private async Task Git(string workspace, params string[] arguments)
     {
@@ -238,10 +280,23 @@ public sealed class ManagedWorktreeTests : IDisposable
         Assert.False(result.IsError, result.Content);
     }
     private static JsonElement Json(ToolResult result) { using var document = JsonDocument.Parse(result.Content); return document.RootElement.Clone(); }
-    public void Dispose()
+    private static string PhysicalTemporaryDirectory()
     {
-        var full = Path.GetFullPath(_root);
-        var parent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar;
+        var temporary = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+        if (!OperatingSystem.IsMacOS()) return temporary;
+        foreach (var (alias, expected) in new[] { ("/var", "/private/var"), ("/tmp", "/private/tmp"), ("/etc", "/private/etc") })
+        {
+            if (!temporary.Equals(alias, StringComparison.Ordinal) && !temporary.StartsWith(alias + "/", StringComparison.Ordinal)) continue;
+            Assert.Equal(expected, Path.TrimEndingDirectorySeparator(new DirectoryInfo(alias).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? ""));
+            return Path.GetFullPath(expected + temporary[alias.Length..]);
+        }
+        return temporary;
+    }
+    public void Dispose() => DeleteFixtureDirectory(_root, PhysicalTemporaryDirectory());
+    private static void DeleteFixtureDirectory(string directory, string temporaryRoot)
+    {
+        var full = Path.GetFullPath(directory);
+        var parent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(temporaryRoot)) + Path.DirectorySeparatorChar;
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!full.StartsWith(parent, comparison) || !Path.GetFileName(full).StartsWith("cogitide-worktrees-", StringComparison.Ordinal))
             throw new InvalidOperationException("Unexpected fixture cleanup path.");
@@ -249,5 +304,13 @@ public sealed class ManagedWorktreeTests : IDisposable
         foreach (var file in Directory.EnumerateFiles(full, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }))
             File.SetAttributes(file, File.GetAttributes(file) & ~FileAttributes.ReadOnly);
         Directory.Delete(full, true);
+    }
+}
+
+internal sealed class MacOsWorktreeFactAttribute : FactAttribute
+{
+    public MacOsWorktreeFactAttribute()
+    {
+        if (!OperatingSystem.IsMacOS()) Skip = "Requires the real macOS system /var alias and physical /private/var path.";
     }
 }

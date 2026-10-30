@@ -84,6 +84,7 @@ jobs:
           path: |
             artifacts/test-results/**/*.trx
             artifacts/**/result.json
+            artifacts/ci-headless-host-check.json
           if-no-files-found: warn
           retention-days: 14
       # Headless build and host checks do not certify native GUI behavior on these platforms.

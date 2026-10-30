@@ -195,5 +195,39 @@
     "src/Workbench.Tools/packages.lock.json": "7bcc442307956730b1ede9e9ff290fb1fb2223fb06913054e3090ea109e39a3d",
     "tests/Workbench.Tests/packages.lock.json": "3f9ac0518830570d320baefa972f12f964f85a302c7eb994987a82760dee3936",
     "benchmarks/Workbench.Benchmarks/packages.lock.json": "283980d18f8eeae50c025f0a5b45088de8b9ad8d6cdf3366406caa0706ed0c75"
+  },
+  "featureValidationCommit": "4ea69b3016616982a68b9a867d9fbf3385730732",
+  "sourceHashScope": "sourceSha256Lf and the feature test/package records refer to featureValidationCommit; portability follow-up evidence is recorded separately below",
+  "portabilityFollowUp": {
+    "firstCiRun": "https://github.com/Yang916-yy/cogitide/actions/runs/41097027475",
+    "retainedFindings": [
+      "Linux headless publish could not remove a hidden incomplete marker; marker removal now uses Force and package hashes include hidden files.",
+      "macOS worktree preflight rejected the system /var ancestor alias; only verified system aliases now normalize, with custom ancestor links still rejected.",
+      "Windows fake-transport test observed a created but empty EOF marker; fixture now waits for its complete expected payload without changing production behavior."
+    ],
+    "strictDebugBuild": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "focusedTests": {
+      "passed": 37,
+      "failed": 0,
+      "skipped": 2,
+      "total": 39,
+      "trxSha256": "dc7300d6600e1d69ba1496aefe89c0ebbc5ceb082c76eed202520554a045df41",
+      "skipReasons": [
+        "Real transport fixture requires an explicitly selected isolated endpoint.",
+        "macOS system-alias regression runs only on macOS."
+      ]
+    },
+    "nativeCi": "Each published commit runs the full suite, seven Host fixtures and a native headless publish/smoke on Windows, Linux and macOS; use the GitHub check attached to that exact commit for its result.",
+    "sourceSha256Lf": {
+      "scripts/publish.ps1": "b9d98138e59d3d38f0ad869db58feb47fd0e15bc0bfa8c47d7a2d39f2428df64",
+      "scripts/write-release-metadata.ps1": "0cdcd754e19ca9d7586f148d1218606cccd46f6ddc882226e1e6ff7a3a84547f",
+      "src/Workbench.Tools/Worktrees/ManagedWorktrees.cs": "c92f7df9ba510c1e73c7e2a82673eb27b836e823e19e66627f426defecbe1990",
+      "tests/Workbench.Tests/ManagedWorktreeTests.cs": "7b2065b066f1f447bf77a88b81760e670c0355a51afaad71da7a6e65540f2b1a",
+      "tests/Workbench.Tests/RemoteConnectionTests.cs": "819705df08e7f07649e0503ad56c461a3e45e6e89919a7e4f6516d240c2ee416",
+      ".github/workflows/build.yml": "786e5563bb9be1316c2f2959f541425241759f02e80660ca7fcee6f57717df66"
+    }
   }
 }

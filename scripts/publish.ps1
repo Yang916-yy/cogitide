@@ -73,7 +73,8 @@ try {
         guiVerification = 'Not performed by the publish script; verify on the target operating system.'
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'publish-info.json') -Encoding utf8
     & (Join-Path $PSScriptRoot 'write-release-metadata.ps1') -PublishDirectory $output
-    Remove-Item -LiteralPath $marker
+    # PowerShell treats dot-prefixed Unix files as hidden, even when their owner can delete them.
+    Remove-Item -LiteralPath $marker -Force
     Write-Host "Published portable Workbench to $output"
     Write-Output $output
 }

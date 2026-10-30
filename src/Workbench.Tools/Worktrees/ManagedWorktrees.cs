@@ -127,7 +127,7 @@ public sealed partial class WorkspaceService
     private static async Task<WorktreeRepository> WorktreeRepositoryAsync(string workspace, CancellationToken ct)
     {
         ValidateWorktreePathText(workspace);
-        var root = Root(workspace);
+        var root = Root(NormalizeWorktreePath(workspace));
         CheckPhysicalPath(root);
         // --show-toplevel rejects bare repositories and selections inside .git. Git configuration
         // must not redirect an unrelated selected directory into a different checkout's authority.
@@ -160,7 +160,7 @@ public sealed partial class WorkspaceService
                 var path = field[9..];
                 ValidateWorktreePathText(path);
                 if (!Path.IsPathFullyQualified(path)) throw new InvalidDataException("Git returned a nonabsolute worktree directory.");
-                paths.Add(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)));
+                paths.Add(NormalizeWorktreePath(path));
             }
         return paths.ToArray();
     }
@@ -175,7 +175,7 @@ public sealed partial class WorkspaceService
         if (OperatingSystem.IsWindows() && path.EndsWith('\r')) path = path[..^1];
         ValidateWorktreePathText(path);
         if (!Path.IsPathFullyQualified(path) || !Directory.Exists(path)) throw new InvalidDataException("Git directory is unavailable.");
-        return Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        return NormalizeWorktreePath(path);
     }
 
     private static void ValidateWorktreePathText(string path)
@@ -249,7 +249,7 @@ public sealed partial class WorkspaceService
     }
     private static void CheckPhysicalPath(string path)
     {
-        var full = Path.GetFullPath(path);
+        var full = NormalizeWorktreePath(path);
         var current = Path.GetPathRoot(full)!;
         foreach (var part in full[current.Length..].Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
         {
@@ -262,6 +262,24 @@ public sealed partial class WorkspaceService
             catch (FileNotFoundException) { }
             catch (DirectoryNotFoundException) { }
         }
+    }
+
+    private static string NormalizeWorktreePath(string path)
+    {
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        if (!OperatingSystem.IsMacOS()) return full;
+        // macOS supplies these exact root aliases. Resolve only the known alias itself with BCL,
+        // verify Apple's expected physical target, then retain all descendant link checks below.
+        // Arbitrary user symlinks/junctions are never canonicalized into trusted workspace paths.
+        foreach (var (alias, expected) in new[] { ("/var", "/private/var"), ("/tmp", "/private/tmp"), ("/etc", "/private/etc") })
+        {
+            if (!full.Equals(alias, StringComparison.Ordinal) && !full.StartsWith(alias + "/", StringComparison.Ordinal)) continue;
+            var target = new DirectoryInfo(alias).ResolveLinkTarget(returnFinalTarget: true);
+            if (target is null || !Path.TrimEndingDirectorySeparator(Path.GetFullPath(target.FullName)).Equals(expected, StringComparison.Ordinal))
+                throw new UnauthorizedAccessException("The macOS system directory alias does not resolve to its expected physical target.");
+            return Path.GetFullPath(expected + full[alias.Length..]);
+        }
+        return full;
     }
 }
 

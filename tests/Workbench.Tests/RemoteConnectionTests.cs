@@ -173,7 +173,7 @@ public sealed class RemoteConnectionTests
         var launchArguments = JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(fixture.ArgumentsPath))!;
         Assert.Contains(kind == HostConnectionKind.Ssh ? "BatchMode=yes" : "--exec", launchArguments);
         await client.DisposeAsync();
-        Assert.Equal("eof", await File.ReadAllTextAsync(fixture.EofPath));
+        Assert.Equal("eof", await fixture.ReadEofMarkerAsync());
         Assert.False(client.Connected);
     }
 
@@ -204,7 +204,7 @@ public sealed class RemoteConnectionTests
         var pending = client.RequestAsync<JsonElement>("fixture.pending");
         await client.DisposeAsync();
         await Assert.ThrowsAnyAsync<Exception>(() => pending);
-        Assert.Equal("eof", await File.ReadAllTextAsync(fixture.EofPath));
+        Assert.Equal("eof", await fixture.ReadEofMarkerAsync());
         Assert.False(client.Connected);
     }
 
@@ -239,6 +239,25 @@ public sealed class RemoteConnectionTests
             start.ArgumentList.Add(ArgumentsPath);
             start.Environment["COGITIDE_FIXTURE_LAUNCH"] = JsonSerializer.Serialize(launchArguments);
             return start;
+        }
+
+        public async Task<string?> ReadEofMarkerAsync()
+        {
+            var elapsed = Stopwatch.StartNew();
+            string? observed = null;
+            while (elapsed.Elapsed < TimeSpan.FromSeconds(3))
+            {
+                try
+                {
+                    observed = await File.ReadAllTextAsync(EofPath);
+                    if (observed == "eof") return observed;
+                }
+                catch (IOException exception) when (exception is FileNotFoundException or DirectoryNotFoundException ||
+                    (exception.HResult & 0xffff) is 32 or 33) { }
+                // File creation is not the EOF observation: require its complete payload.
+                await Task.Delay(20);
+            }
+            return observed;
         }
 
         public void Dispose() => Directory.Delete(_directory, recursive: true);

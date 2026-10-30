@@ -85,7 +85,7 @@ Copy-Item -LiteralPath (Join-Path $repository $readme) -Destination (Join-Path $
 foreach ($notice in @('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md')) {
     Copy-Item -LiteralPath (Join-Path $repository $notice) -Destination (Join-Path $package $notice)
 }
-$hashes = Get-ChildItem -LiteralPath $package -File -Recurse | Where-Object { $_.FullName -ne (Join-Path $package 'SHA256SUMS') -and $_.Name -ne '.publish-incomplete' } | Sort-Object FullName | ForEach-Object {
+$hashes = Get-ChildItem -LiteralPath $package -File -Recurse -Force | Where-Object { $_.FullName -ne (Join-Path $package 'SHA256SUMS') -and $_.Name -ne '.publish-incomplete' } | Sort-Object FullName | ForEach-Object {
     $relative = [IO.Path]::GetRelativePath($package, $_.FullName).Replace('\', '/')
     (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $relative
 }
