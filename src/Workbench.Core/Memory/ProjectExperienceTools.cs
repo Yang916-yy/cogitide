@@ -38,6 +38,7 @@ public sealed class ProjectExperienceTools
     private readonly string _sessionId;
     private readonly string _runId;
     private readonly ProjectRules _rules;
+    private readonly Func<string, int, CancellationToken, Task<byte[]>>? _readBytes;
 
     public static ToolDefinition RememberDescriptor { get; } = new(RememberName,
         "Save a small project procedure candidate grounded in this session's actual tool evidence. Provide preconditions, a reusable procedure and source event sequences from inspect_evidence. " +
@@ -49,13 +50,14 @@ public sealed class ProjectExperienceTools
         """{"type":"object","properties":{"query":{"type":"string","maxLength":256},"limit":{"type":"integer","minimum":1,"maximum":8}},"required":["query"],"additionalProperties":false}""");
 
     public ProjectExperienceTools(ISessionStore store, string sessionId, string runId, string workspace,
-        Func<string, string, bool, string> pathResolver)
+        Func<string, string, bool, string> pathResolver, Func<string, int, CancellationToken, Task<byte[]>>? readBytes = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         _store = store;
         _sessionId = sessionId;
         _runId = runId;
-        _rules = new(workspace, pathResolver);
+        _readBytes = readBytes;
+        _rules = new(workspace, pathResolver, readBytes);
     }
 
     public IReadOnlyList<IAgentTool> CreateTools() => [new MemoryTool(this, RememberDescriptor), new MemoryTool(this, RecallDescriptor)];
@@ -248,6 +250,12 @@ public sealed class ProjectExperienceTools
                     continue;
                 }
                 if (!File.Exists(path)) return ("Intact", "ChangedOrUnavailable");
+                if (_readBytes is not null)
+                {
+                    var isolated = await _readBytes(artifact.WorkspaceRelativePath, 4 * 1024 * 1024, ct);
+                    if (Hash(isolated) != artifact.ReportedSha256) return ("Intact", "ChangedOrUnavailable");
+                    continue;
+                }
                 await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                 if (await EvidenceFileHash.ComputeAsync(stream, cancellationToken: ct) != artifact.ReportedSha256)
                     return ("Intact", "ChangedOrUnavailable");

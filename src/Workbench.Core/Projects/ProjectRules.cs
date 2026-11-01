@@ -24,12 +24,15 @@ public sealed partial class ProjectRules
     private const int MaxRulesCharacters = 64 * 1024;
     private static readonly string[] SkillRoots = [".agents/skills", ".cogito/skills", ".pi/skills", ".opencode/skills"];
     private readonly Func<string, string, bool, string> _resolve;
+    private readonly Func<string, int, CancellationToken, Task<byte[]>>? _readBytes;
     public string Workspace { get; }
 
-    public ProjectRules(string workspace, Func<string, string, bool, string> pathResolver)
+    public ProjectRules(string workspace, Func<string, string, bool, string> pathResolver,
+        Func<string, int, CancellationToken, Task<byte[]>>? readBytes = null)
     {
         ArgumentNullException.ThrowIfNull(pathResolver);
         _resolve = pathResolver;
+        _readBytes = readBytes;
         Workspace = pathResolver(workspace, "", true);
     }
 
@@ -177,6 +180,14 @@ public sealed partial class ProjectRules
 
     private async Task<(string Text, string Hash)> ReadAsync(string relative, int limit, CancellationToken ct)
     {
+        if (_readBytes is not null)
+        {
+            var isolated = await _readBytes(relative, limit, ct);
+            if (isolated.Length > limit) throw new InvalidDataException("Project instruction or skill exceeds its file size limit.");
+            var bom = isolated.Length >= 3 && isolated.AsSpan(0, 3).SequenceEqual(new byte[] { 239, 187, 191 }) ? 3 : 0;
+            return (new UTF8Encoding(false, true).GetString(isolated, bom, isolated.Length - bom),
+                Convert.ToHexStringLower(SHA256.HashData(isolated)));
+        }
         var full = _resolve(Workspace, relative, false);
         await using var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
             4096, FileOptions.Asynchronous | FileOptions.SequentialScan);

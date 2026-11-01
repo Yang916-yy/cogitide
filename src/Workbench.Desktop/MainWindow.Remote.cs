@@ -24,10 +24,7 @@ public partial class MainWindow
         host.Disconnected += message => Dispatcher.UIThread.Post(() =>
         {
             if (host != _host) return;
-            _ready = false;
-            SetRunState(false);
-            StatusLabel.Text = message;
-            AddEntry("CONNECTION", message, "#F0B5A7");
+            PresentHostDisconnect(host.Connection, message);
         });
     }
 
@@ -41,11 +38,14 @@ public partial class MainWindow
         ++_loadGeneration; ++_filesGeneration; ++_previewGeneration;
         _ready = false;
         var old = _host;
+        var preserveSession = CanRecoverRemoteConnection(old.Connection, profile);
+        var savedWorkspace = preserveSession ? _session?.Info.WorkspacePath ?? _settings.LastWorkspace : null;
+        var savedSession = preserveSession ? _session?.Info.Id ?? _settings.LastSessionId : null;
         _host = new();
         BindHost(_host);
         foreach (var terminal in _terminals.ToArray()) terminal.Close();
         await old.DisposeAsync();
-        _settings = _settings.RememberConnection(profile) with { LastWorkspace = null, LastSessionId = null };
+        _settings = _settings.RememberConnection(profile) with { LastWorkspace = savedWorkspace, LastSessionId = savedSession };
         _workspace = ""; _session = null;
         _accountModels = []; _accountBinding = null; _accountKnown = false; _modelsLoaded = false;
         _entries.Clear(); _sessions.Clear(); _toolEntries.Clear(); _steeringEntries.Clear(); _files = [];

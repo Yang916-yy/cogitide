@@ -5,9 +5,11 @@ implementation. Keys/config/known_hosts are ephemeral and never touch ~/.ssh.
 """
 import asyncio
 import getpass
+import json
 import os
 from pathlib import Path
 import posixpath
+import re
 import shlex
 import subprocess
 import tempfile
@@ -23,6 +25,10 @@ class LoopbackSshFixture:
         self.version = asyncssh.__version__
         self.distribution, self.host_path, self.dotnet_path = distribution, host_path, dotnet_path
         self.allowed_root = posixpath.normpath(allowed_root)
+        fixture_name = posixpath.basename(self.allowed_root)
+        if not re.fullmatch(r"cogitide-remote-check-[0-9a-f]{32}", fixture_name):
+            raise ValueError("The loopback fixture requires its generated GUID root.")
+        self.native_service_root = "/tmp/" + fixture_name
         self._temporary = tempfile.TemporaryDirectory(prefix="cogitide-ssh-fixture-")
         self.directory = Path(self._temporary.name)
         self._principal = None
@@ -57,6 +63,7 @@ class LoopbackSshFixture:
         self._thread = None
         self._loop = self._stop_event = None
         self._connections, self._children = set(), set()
+        self._service_directories = set()
         self.failure = None
         self.port = None
 
@@ -75,11 +82,15 @@ class LoopbackSshFixture:
         ]), encoding="utf-8")
 
     def start(self):
+        # WSL startup is a bounded native prerequisite, not part of the SSH listener's
+        # thread/event-loop readiness window. Keep stdin detached just as for other fixture setup.
+        self._prepare_native_service_root()
         def run():
             try:
                 asyncio.run(self._serve())
             except Exception as error:
                 self.failure = type(error).__name__
+                print(json.dumps({"loopbackFixtureDiagnostic": "SshListenerStartup" + type(error).__name__}), flush=True)
                 self._ready.set()
         self._thread = threading.Thread(target=run, daemon=True)
         self._thread.start()
@@ -87,9 +98,27 @@ class LoopbackSshFixture:
             self.stop()
             raise RuntimeError("The isolated loopback SSH fixture could not start.")
 
+    def _prepare_native_service_root(self):
+        # DrvFS commonly reports 0777 for /mnt/<drive> paths. Service tokens require real
+        # owner-only POSIX permissions, so only service data uses this matching native GUID root.
+        path = shlex.quote(self.native_service_root)
+        script = ("umask 077; if test ! -e " + path + " && test ! -L " + path + "; then mkdir -- " + path + "; fi; "
+                  "test -d " + path + " && test ! -L " + path + " && test -O " + path +
+                  " && test \"$(stat -c '%a' " + path + ")\" = 700")
+        try:
+            parent = subprocess.run(["wsl.exe", "--distribution", self.distribution, "--exec", "/bin/sh", "-c", script],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            category = "NativeServiceParentTimeout" if isinstance(error, subprocess.TimeoutExpired) else "NativeServiceParentLaunchFailed"
+            print(json.dumps({"loopbackFixtureDiagnostic": category}), flush=True)
+            raise RuntimeError("The generated Linux-native service prerequisite failed.") from None
+        if parent.returncode:
+            print(json.dumps({"loopbackFixtureDiagnostic": "NativeServiceParentPermissionRejected"}), flush=True)
+            raise RuntimeError("The generated Linux-native service parent is not private or owned.")
+
     async def _serve(self):
         owner = self
-
         class FixtureServer(asyncssh.SSHServer):
             def connection_made(self, connection):
                 self.connection = connection
@@ -130,6 +159,35 @@ class LoopbackSshFixture:
             await asyncio.gather(*(connection.wait_closed() for connection in connections), return_exceptions=True)
             for child in list(self._children):
                 await self._stop_child(child)
+            # A daemon intentionally survives channel EOF. Only this explicit fixture teardown
+            # stops daemons launched inside its generated root; no personal data path is accepted.
+            for directory in self._service_directories:
+                await self._stop_fixture_service(directory)
+
+    async def _stop_fixture_service(self, directory):
+        try:
+            read = await asyncio.create_subprocess_exec("wsl.exe", "--distribution", self.distribution, "--exec",
+                "cat", directory + "/remote-service/identity", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            identity, _ = await asyncio.wait_for(read.communicate(), timeout=10)
+            identity = identity.decode("ascii").strip()
+            if read.returncode or not re.fullmatch(r"[0-9a-f]{32}", identity):
+                return
+            prefix = [self.dotnet_path, self.host_path] if self.host_path.lower().endswith(".dll") else [self.host_path]
+            stop = await asyncio.create_subprocess_exec("wsl.exe", "--distribution", self.distribution, "--exec", *prefix,
+                "--service-stop", "--data-dir", directory, "--expected-service-id", identity,
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            await asyncio.wait_for(stop.wait(), timeout=30)
+            absent = await asyncio.create_subprocess_exec("wsl.exe", "--distribution", self.distribution, "--exec",
+                "test", "!", "-e", directory + "/remote-service/endpoint.json",
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            await asyncio.wait_for(absent.wait(), timeout=10)
+            if absent.returncode:
+                self.failure = "UnverifiedDetachedFixtureCleanup"
+        except (OSError, UnicodeError, asyncio.TimeoutError):
+            self.failure = "UnverifiedDetachedFixtureCleanup"
 
     async def _stop_child(self, child):
         if child.returncode is None:
@@ -149,14 +207,23 @@ class LoopbackSshFixture:
             text = process.command.decode("utf-8") if isinstance(process.command, bytes) else process.command
             arguments = shlex.split(text or "")
             prefix = [self.dotnet_path, self.host_path] if self.host_path.lower().endswith(".dll") else [self.host_path]
-            valid = len(arguments) == len(prefix) + 4 and arguments[0] == "exec" and arguments[1:1 + len(prefix)] == prefix
-            valid = valid and arguments[1 + len(prefix):3 + len(prefix)] == ["--stdio", "--data-dir"]
-            directory = posixpath.normpath(arguments[-1]) if valid else ""
-            valid = valid and directory.startswith(self.allowed_root + "/") and not any(ord(c) < 32 for c in directory)
+            valid = bool(arguments) and arguments[0] == "exec" and arguments[1:1 + len(prefix)] == prefix
+            tail = arguments[1 + len(prefix):] if valid else []
+            directory, mode = "", tail[0] if tail else ""
+            if len(tail) == 3 and mode in ("--stdio", "--service-start") and tail[1] == "--data-dir":
+                directory = posixpath.normpath(tail[2])
+            elif len(tail) == 5 and mode == "--service-bridge" and tail[1] == "--expected-service-id" and re.fullmatch(r"[0-9a-f]{32}", tail[2]) and tail[3] == "--data-dir":
+                directory = posixpath.normpath(tail[4])
+            elif len(tail) == 5 and mode == "--service-stop" and tail[1] == "--data-dir" and tail[3] == "--expected-service-id" and re.fullmatch(r"[0-9a-f]{32}", tail[4]):
+                directory = posixpath.normpath(tail[2])
+            permitted_root = self.allowed_root if mode == "--stdio" else self.native_service_root
+            valid = valid and directory.startswith(permitted_root + "/") and not any(ord(c) < 32 for c in directory)
             if not valid:
                 process.stderr.write(b"Fixture rejected unexpected Host launch arguments.\n")
                 process.exit(126)
                 return
+            if mode == "--service-start":
+                self._service_directories.add(directory)
             child = await asyncio.create_subprocess_exec("wsl.exe", "--distribution", self.distribution, "--exec", *arguments[1:],
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)

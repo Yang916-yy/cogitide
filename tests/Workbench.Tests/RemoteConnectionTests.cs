@@ -224,6 +224,38 @@ public sealed class RemoteConnectionTests
         Assert.False(client.Connected);
     }
 
+    [Fact]
+    public async Task LostReviewMutationReplyPreservesAnExplicitUnknownOutcome()
+    {
+        using var fixture = new FakeTransport("pending");
+        await using var client = new HostClient(fixture.StartInfo);
+        await client.StartAsync(Ssh());
+        var pending = client.RequestAsync<JsonElement>("workspace.review.publish", new { action = "push" });
+        await client.DisposeAsync();
+        var error = await Assert.ThrowsAsync<IOException>(() => pending);
+        Assert.Contains("Git", error.Message);
+        Assert.NotNull(error.InnerException);
+        Assert.Equal("eof", await fixture.ReadEofMarkerAsync());
+        Assert.False(client.Connected);
+    }
+
+    [Fact]
+    public async Task GracefulUnexpectedEofSignalsDisconnectAndDoesNotReplayPendingWork()
+    {
+        using var fixture = new FakeTransport("graceful-eof");
+        await using var client = new HostClient(fixture.StartInfo);
+        var disconnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var notifications = 0;
+        client.Disconnected += _ => { Interlocked.Increment(ref notifications); disconnected.TrySetResult(); };
+        await client.StartAsync(Ssh());
+        var pending = client.RequestAsync<JsonElement>("fixture.pending");
+        await Assert.ThrowsAnyAsync<Exception>(() => pending);
+        await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(1, notifications);
+        await client.DisposeAsync();
+        Assert.False(client.Connected);
+    }
+
     private static HostConnectionProfile Ssh() => new() { Id = "fixture", Kind = HostConnectionKind.Ssh, Destination = "fixture-host", HostPath = "/opt/cogitide/Workbench.Host" };
 
     private sealed class FakeTransport : IDisposable
@@ -310,6 +342,7 @@ public sealed class RemoteConnectionTests
                 exit 0
             }
             while ($null -ne [Console]::ReadLine()) {
+                if ($Mode -eq 'graceful-eof') { exit 0 }
                 if ($Mode -ne 'pending') { [Console]::WriteLine('{"id":"2","result":{"ok":true}}') }
             }
             [IO.File]::WriteAllText($EofFile, 'eof')
@@ -342,6 +375,7 @@ public sealed class RemoteConnectionTests
               exit 0
             fi
             while IFS= read -r line; do
+              if [ "$mode" = 'graceful-eof' ]; then exit 0; fi
               if [ "$mode" != 'pending' ]; then printf '%s\n' '{"id":"2","result":{"ok":true}}'; fi
             done
             printf '%s' 'eof' > "$eof_file"

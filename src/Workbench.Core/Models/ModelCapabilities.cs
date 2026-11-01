@@ -14,6 +14,7 @@ public static class ModelCapabilities
         {
             "api.deepseek.com" => ProviderKind.DeepSeek,
             "api.anthropic.com" => ProviderKind.Anthropic,
+            "api.openai.com" => ProviderKind.OpenAiResponses,
             _ => ProviderKind.OpenAiCompatible
         };
     }

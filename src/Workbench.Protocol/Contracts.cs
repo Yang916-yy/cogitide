@@ -49,17 +49,20 @@ public sealed record PendingInputPage(IReadOnlyList<PendingRunInput> Items, int 
     bool Available = true, string? UnavailableReason = null, bool LegacyRecovery = false);
 public sealed record SessionView(SessionInfo Info, IReadOnlyList<ChatMessage> Messages, CompactionCheckpoint? Compaction,
     int TotalMessages, int FirstMessageIndex, bool HasEarlierMessages, RunCheckpoint? RunCheckpoint = null,
-    bool Available = true, string? UnavailableReason = null, PendingInputPage? PendingInputs = null, bool OmittedPayloads = false);
+    bool Available = true, string? UnavailableReason = null, PendingInputPage? PendingInputs = null, bool OmittedPayloads = false,
+    long? MessageEventSequence = null);
 public sealed record SessionMessagePage(IReadOnlyList<ChatMessage> Messages, int FirstMessageIndex, int TotalMessages,
     bool HasEarlierMessages, bool Available = true, string? UnavailableReason = null, bool OmittedPayloads = false);
 public sealed record SessionEventPage(IReadOnlyList<AgentEvent> Items, long? NextBeforeSequence, bool HasMore,
     bool Available = true, string? UnavailableReason = null);
+public sealed record SessionEventReplayPage(IReadOnlyList<AgentEvent> Items, long NextAfterSequence, long ThroughSequence,
+    bool HasMore, bool Available = true, string? UnavailableReason = null);
 public sealed record AgentEvent(string SessionId, string RunId, string Type, string? Text = null, ToolCall? Call = null, ToolResult? Result = null, string? ApprovalId = null, long Sequence = 0, DateTimeOffset? Timestamp = null);
 public sealed record ApprovalRequest(string Id, string SessionId, string RunId, string ToolName, string ArgumentsJson, string Reason);
 public enum ExecutionMode { ReadOnly, WorkspaceWrite, FullAccess }
 public sealed record RunOptions(int MaxIterations = 256, int TimeoutSeconds = 21600, bool AutoApproveWrites = false, int MaxContextCharacters = 100000, string? RunId = null,
     bool AutoCompact = true, ExecutionMode ExecutionMode = ExecutionMode.WorkspaceWrite, ResearchOptions? Research = null,
-    IReadOnlyList<string>? SecretEnvironmentVariables = null, long? MaxReportedTokens = null);
+    IReadOnlyList<string>? SecretEnvironmentVariables = null, long? MaxReportedTokens = null, bool RequireOsIsolation = false);
 public static class RunLimits
 {
     public const int MaximumIterations = 10_000;
@@ -96,11 +99,13 @@ public sealed record ResearchOptions(bool CompressionGuidance = false, bool Repo
     string? RepositoryBaseCommit = null, string? CompressionGuidancePath = null, int MaxPrefetches = 4);
 public enum ProviderKind { Auto, OpenAiCompatible, DeepSeek, Anthropic, OpenAiResponses }
 public sealed record ProviderSettings(string Endpoint = "https://api.deepseek.com", string Model = "deepseek-flash", string ApiKeyEnvironmentVariable = "DEEPSEEK_API_KEY", int MaxOutputTokens = 4096,
-    ProviderKind Provider = ProviderKind.Auto, string ReasoningEffort = "none", int? ThinkingBudgetTokens = null, bool SupportsImages = false);
+    ProviderKind Provider = ProviderKind.Auto, string ReasoningEffort = "none", int? ThinkingBudgetTokens = null, bool SupportsImages = false,
+    string? CredentialProfileId = null);
 public sealed record ModelUpdate(string? TextDelta = null, IReadOnlyList<ToolCall>? ToolCalls = null, long? InputTokens = null, long? OutputTokens = null,
     ModelContinuationState? Continuation = null, long? CachedInputTokens = null, long? CacheWriteTokens = null, long? ReasoningTokens = null);
 public sealed record ToolExecutionContext(string WorkspacePath, Func<string, CancellationToken, ValueTask>? OnOutput = null,
-    string? SessionId = null, string? RunId = null, IReadOnlyList<string>? ExcludedEnvironmentVariables = null);
+    string? SessionId = null, string? RunId = null, IReadOnlyList<string>? ExcludedEnvironmentVariables = null,
+    bool RequireOsIsolation = false, ExecutionMode ExecutionMode = ExecutionMode.WorkspaceWrite);
 public sealed record AccountState(bool Available, bool LoggedIn, string? Email = null, string? Plan = null, string? Error = null,
     string? AccountBinding = null);
 public sealed record AccountProfile(string AccountBinding, string? Email = null, string? Label = null, bool IsSelected = false, bool LoggedIn = false);

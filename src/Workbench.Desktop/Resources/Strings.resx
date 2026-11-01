@@ -56,8 +56,8 @@
   <data name="Endpoint" xml:space="preserve"><value>API endpoint</value></data>
   <data name="ApiCompatibility" xml:space="preserve"><value>Supports OpenAI Chat Completions compatible endpoints.</value></data>
   <data name="ModelId" xml:space="preserve"><value>Model ID</value></data>
-  <data name="KeyVariable" xml:space="preserve"><value>API key environment variable</value></data>
-  <data name="KeyPrivacy" xml:space="preserve"><value>Only the variable name is saved. Keys are never stored in projects, chats, or UI settings. Restart the app after adding a system environment variable.</value></data>
+  <data name="KeyVariable" xml:space="preserve"><value>Environment variable (optional alternative)</value></data>
+  <data name="KeyPrivacy" xml:space="preserve"><value>Saved API keys use the selected Host system vault. Settings contain only a credential reference or environment-variable name. Environment changes require restarting that Host.</value></data>
   <data name="MaxOutputTokens" xml:space="preserve"><value>Maximum output tokens</value></data>
   <data name="DeepSeekDefaults" xml:space="preserve"><value>Use DeepSeek defaults</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
@@ -134,7 +134,7 @@ The run ended without a processing confirmation. This instruction will not be re
   <data name="CompleteAuthorization" xml:space="preserve"><value>Complete official authorization in your browser. Your account status will update here.</value></data>
   <data name="AuthorizationCode" xml:space="preserve"><value>Enter this code on the official authorization page: {0}</value></data>
   <data name="InvalidAuthorizationUrl" xml:space="preserve"><value>The account service did not return a valid HTTPS authorization URL.</value></data>
-  <data name="KeyDetected" xml:space="preserve"><value>Environment variable detected · key hidden</value></data>
+  <data name="KeyDetected" xml:space="preserve"><value>The selected Host has this environment variable; key hidden</value></data>
   <data name="KeyMissing" xml:space="preserve"><value>This process cannot find the environment variable. Configure it and restart the app.</value></data>
   <data name="InvalidEndpoint" xml:space="preserve"><value>Use HTTPS or a local HTTP endpoint without credentials, a query string, or a fragment.</value></data>
   <data name="ModelRequired" xml:space="preserve"><value>Enter an API model ID.</value></data>
@@ -254,7 +254,7 @@ The run ended without a processing confirmation. This instruction will not be re
   <data name="ReadOnlyPrefetchFeature" xml:space="preserve"><value>Prefetch related files (read only)</value></data>
   <data name="RemoteLocal" xml:space="preserve"><value>Local</value></data>
   <data name="RemoteConnectionsTitle" xml:space="preserve"><value>Host connections</value></data>
-  <data name="RemoteConnectionsIntro" xml:space="preserve"><value>Choose where Cogitide runs the agent, tools and files. The matching Host must already be installed.</value></data>
+  <data name="RemoteConnectionsIntro" xml:space="preserve"><value>Choose where Cogitide runs the agent, tools and files. Connect to an installed foreground Host or a detached service; Deploy explicitly installs matching prebuilt assets.</value></data>
   <data name="RemoteSavedProfile" xml:space="preserve"><value>Saved connection</value></data>
   <data name="RemoteNewSsh" xml:space="preserve"><value>New SSH connection</value></data>
   <data name="RemoteNewWsl" xml:space="preserve"><value>New WSL connection</value></data>
@@ -267,8 +267,8 @@ The run ended without a processing confirmation. This instruction will not be re
   <data name="RemoteDataDirectory" xml:space="preserve"><value>Remote data directory (optional absolute path)</value></data>
   <data name="RemoteConnect" xml:space="preserve"><value>Save and connect</value></data>
   <data name="RemoteCredentialsNotice" xml:space="preserve"><value>Credentials and model requests stay on the selected Host. Cogitide does not copy local keys or accounts. Disconnecting stops this owned Host; offline continuation is not supported.</value></data>
-  <data name="RemoteSshNotice" xml:space="preserve"><value>Uses system OpenSSH configuration, keys, agent and known_hosts. Verify new or changed host keys outside Cogitide. No password prompts, agent or port forwarding. The remote account needs a POSIX shell.</value></data>
-  <data name="RemoteWslNotice" xml:space="preserve"><value>Starts Host directly with wsl.exe --exec. Paths and credentials belong to that distribution.</value></data>
+  <data name="RemoteSshNotice" xml:space="preserve"><value>Uses system OpenSSH with strict known-host verification and no password prompts or forwarding. Verify fingerprints outside Cogitide. Foreground Host work stops on disconnect; detached service work remains service-owned. The remote account needs a POSIX shell.</value></data>
+  <data name="RemoteWslNotice" xml:space="preserve"><value>Uses wsl.exe --exec in the selected distribution. Foreground Host work stops on disconnect; a detached service continues accepted work. Paths and credentials belong to that distribution.</value></data>
   <data name="RemoteWslDiscovered" xml:space="preserve"><value>Choose a distribution from the list or enter its exact name.</value></data>
   <data name="RemoteNoWsl" xml:space="preserve"><value>No WSL distributions were found.</value></data>
   <data name="RemoteWslDiscoveryFailed" xml:space="preserve"><value>Could not list WSL distributions. Check that WSL is installed and available.</value></data>
@@ -302,4 +302,127 @@ The run ended without a processing confirmation. This instruction will not be re
   <data name="NextPage" xml:space="preserve"><value>Next page</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="LiveHistoryWindow" xml:space="preserve"><value>Showing the latest {0} timeline entries; complete history is saved.</value></data>
+  <data name="ReviewTitle" xml:space="preserve"><value>Review changes</value></data>
+  <data name="ReviewRefresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="ReviewChangedFiles" xml:space="preserve"><value>Changed files</value></data>
+  <data name="ReviewChangedCount" xml:space="preserve"><value>Changed files ({0})</value></data>
+  <data name="ReviewArea" xml:space="preserve"><value>Change area</value></data>
+  <data name="ReviewWorkingChanges" xml:space="preserve"><value>Working changes</value></data>
+  <data name="ReviewStagedChanges" xml:space="preserve"><value>Staged changes</value></data>
+  <data name="ReviewStageFile" xml:space="preserve"><value>Stage file</value></data>
+  <data name="ReviewStageHunk" xml:space="preserve"><value>Stage hunk</value></data>
+  <data name="ReviewUnstageFile" xml:space="preserve"><value>Unstage file</value></data>
+  <data name="ReviewUnstageHunk" xml:space="preserve"><value>Unstage hunk</value></data>
+  <data name="ReviewHunk" xml:space="preserve"><value>Change hunk</value></data>
+  <data name="ReviewWholeFile" xml:space="preserve"><value>Whole file</value></data>
+  <data name="ReviewDiscardWorking" xml:space="preserve"><value>Discard working change…</value></data>
+  <data name="ReviewSelectedDiff" xml:space="preserve"><value>Selected Git diff</value></data>
+  <data name="ReviewFeedback" xml:space="preserve"><value>Feedback for the agent</value></data>
+  <data name="ReviewLine" xml:space="preserve"><value>Line</value></data>
+  <data name="ReviewFeedbackLine" xml:space="preserve"><value>Feedback line</value></data>
+  <data name="ReviewFeedbackPlaceholder" xml:space="preserve"><value>Describe the change you want…</value></data>
+  <data name="ReviewAddPrompt" xml:space="preserve"><value>Add to prompt</value></data>
+  <data name="ReviewFeedbackHint" xml:space="preserve"><value>Feedback is added to your draft prompt. Send it when you are ready.</value></data>
+  <data name="ReviewCommit" xml:space="preserve"><value>Commit staged changes</value></data>
+  <data name="ReviewCommitHint" xml:space="preserve"><value>Only the staged index is included. Working changes stay on disk.</value></data>
+  <data name="ReviewCommitMessage" xml:space="preserve"><value>Commit message</value></data>
+  <data name="ReviewPublish" xml:space="preserve"><value>Publish this branch</value></data>
+  <data name="ReviewPublishHint" xml:space="preserve"><value>Push uses the configured upstream. Push the branch before creating a pull request.</value></data>
+  <data name="ReviewPushEllipsis" xml:space="preserve"><value>Push branch…</value></data>
+  <data name="ReviewPrTitle" xml:space="preserve"><value>Pull request title</value></data>
+  <data name="ReviewPrBody" xml:space="preserve"><value>Pull request description</value></data>
+  <data name="ReviewPrBase" xml:space="preserve"><value>Base branch (repository default)</value></data>
+  <data name="ReviewCreatePrEllipsis" xml:space="preserve"><value>Create pull request…</value></data>
+  <data name="ReviewAuthHint" xml:space="preserve"><value>Uses Git and the existing GitHub CLI sign-in on this Host.</value></data>
+  <data name="ReviewOpenPr" xml:space="preserve"><value>Open pull request</value></data>
+  <data name="ReviewConnectHost" xml:space="preserve"><value>Connect the Host before reviewing changes.</value></data>
+  <data name="ReviewWorkspaceChanged" xml:space="preserve"><value>The active Host or workspace changed. Reopen review from the current project.</value></data>
+  <data name="ReviewScopeWarning" xml:space="preserve"><value>Review is scoped to this directory. Select the repository root to commit or publish the entire index.</value></data>
+  <data name="ReviewCleanWarning" xml:space="preserve"><value>Working tree is clean. Committed changes can still be pushed or proposed as a pull request.</value></data>
+  <data name="ReviewBeforeCommit" xml:space="preserve"><value>Review the working changes and staged changes before committing.</value></data>
+  <data name="ReviewNoSelection" xml:space="preserve"><value>No changed file selected</value></data>
+  <data name="ReviewNoAreaChanges" xml:space="preserve"><value>No changes in this area.</value></data>
+  <data name="ReviewBinaryHint" xml:space="preserve"><value>Binary change. Whole-file actions are available.</value></data>
+  <data name="ReviewHunkHint" xml:space="preserve"><value>Choose a hunk to act on that change. Other staged and working changes are preserved.</value></data>
+  <data name="ReviewWholeFileHint" xml:space="preserve"><value>This change uses whole-file actions. Renames appear as separate deleted and added paths.</value></data>
+  <data name="ReviewAllWorking" xml:space="preserve"><value>all working changes</value></data>
+  <data name="ReviewDiscardTitle" xml:space="preserve"><value>Discard working change?</value></data>
+  <data name="ReviewDiscardMessage" xml:space="preserve"><value>Discard {0} in {1}?
+
+Staged changes remain in the index. This working change cannot be recovered from this window.</value></data>
+  <data name="ReviewDiscardAction" xml:space="preserve"><value>Discard change</value></data>
+  <data name="ReviewFeedbackAdded" xml:space="preserve"><value>Feedback added to the draft prompt. Review it in the chat and send when ready.</value></data>
+  <data name="ReviewCommitted" xml:space="preserve"><value>Committed {0}. Working changes remain on disk.</value></data>
+  <data name="ReviewPushTitle" xml:space="preserve"><value>Push branch?</value></data>
+  <data name="ReviewPushMessage" xml:space="preserve"><value>Push committed changes on {0} to its configured upstream?</value></data>
+  <data name="ReviewPushAction" xml:space="preserve"><value>Push branch</value></data>
+  <data name="ReviewPrConfirmTitle" xml:space="preserve"><value>Create pull request?</value></data>
+  <data name="ReviewPrConfirmMessage" xml:space="preserve"><value>Create a pull request for {0}?
+
+{1}
+
+{2}</value></data>
+  <data name="ReviewCreatePrAction" xml:space="preserve"><value>Create pull request</value></data>
+  <data name="ReviewPushed" xml:space="preserve"><value>Push completed for the configured upstream.</value></data>
+  <data name="ReviewPrCheckRemote" xml:space="preserve"><value>Pull request command completed. Inspect the remote repository to confirm its URL.</value></data>
+  <data name="ReviewPrCreated" xml:space="preserve"><value>Pull request created.</value></data>
+  <data name="ConnectionChoice" xml:space="preserve"><value>Connect a model service</value></data>
+  <data name="ChooseConnection" xml:space="preserve"><value>Choose ChatGPT account or API key to continue.</value></data>
+  <data name="UseApiKey" xml:space="preserve"><value>Use an API key</value></data>
+  <data name="ProviderPreset" xml:space="preserve"><value>Service preset</value></data>
+  <data name="ProviderPresetPlaceholder" xml:space="preserve"><value>Choose a service, or enter a custom endpoint below</value></data>
+  <data name="ApiModelPlaceholder" xml:space="preserve"><value>Choose a listed model or enter its exact ID</value></data>
+  <data name="ApiModelCatalogPlaceholder" xml:space="preserve"><value>Available models</value></data>
+  <data name="FetchApiModels" xml:space="preserve"><value>Fetch models</value></data>
+  <data name="ApiModelCatalogHint" xml:space="preserve"><value>Fetch sends a metadata request to the selected endpoint. It does not run inference. Model capabilities may be unavailable; enter a model ID manually if listing is unsupported.</value></data>
+  <data name="ApiKeyLabel" xml:space="preserve"><value>API key</value></data>
+  <data name="ApiKeyPlaceholder" xml:space="preserve"><value>Paste a key for this endpoint</value></data>
+  <data name="SaveApiKey" xml:space="preserve"><value>Save key securely</value></data>
+  <data name="RemoveApiKey" xml:space="preserve"><value>Remove saved key</value></data>
+  <data name="ApiKeyStoreHint" xml:space="preserve"><value>The selected Host stores the key in its system credential vault, bound to this endpoint and protocol. It is never saved in desktop settings or forwarded to command workers. Remote Hosts require their own credential.</value></data>
+  <data name="ApiKeyStored" xml:space="preserve"><value>A protected key is saved for this endpoint on the selected Host.</value></data>
+  <data name="ApiKeyNotConfigured" xml:space="preserve"><value>No saved key or configured environment key was found on the selected Host.</value></data>
+  <data name="ApiCredentialRequired" xml:space="preserve"><value>Save a key for this endpoint, or configure its environment variable on the selected Host.</value></data>
+  <data name="AccountSignInRequired" xml:space="preserve"><value>Sign in to a ChatGPT account before choosing this connection.</value></data>
+  <data name="ProviderDetectionKnown" xml:space="preserve"><value>Address matches {0}. Confirm the selected protocol. API keys do not identify a service reliably.</value></data>
+  <data name="ProviderDetectionManual" xml:space="preserve"><value>Custom endpoint: select its protocol explicitly. Service identification uses the address, not the API key.</value></data>
+  <data name="ApiModelsLoaded" xml:space="preserve"><value>Loaded {0} model IDs. A listing does not verify inference access or every model capability.</value></data>
+  <data name="ApiModelsTruncated" xml:space="preserve"><value>Loaded {0} models; the catalog was truncated. You can enter another model ID manually.</value></data>
+  <data name="ConfigureModelService" xml:space="preserve"><value>Connect a model service</value></data>
+  <data name="RemoteServiceAttach" xml:space="preserve"><value>Attach to a detached Host service (runs survive disconnect)</value></data>
+  <data name="RemoteServiceIdentity" xml:space="preserve"><value>Verified service identity (nonsecret)</value></data>
+  <data name="RemoteServiceIdentityHint" xml:space="preserve"><value>Set by Deploy or Start service</value></data>
+  <data name="RemoteServiceDeploy" xml:space="preserve"><value>Deploy prebuilt Host…</value></data>
+  <data name="RemoteServiceStart" xml:space="preserve"><value>Start service</value></data>
+  <data name="RemoteServiceStop" xml:space="preserve"><value>Stop service and its runs</value></data>
+  <data name="RemoteServiceStarted" xml:space="preserve"><value>Detached service started. Save/connect to attach; closing the desktop leaves accepted runs alive.</value></data>
+  <data name="RemoteServiceStopped" xml:space="preserve"><value>The detached service exited after stopping its owned runs and processes.</value></data>
+  <data name="RemoteServiceBusy" xml:space="preserve"><value>Running the explicit remote service operation…</value></data>
+  <data name="RemoteServiceDeployTitle" xml:space="preserve"><value>Deploy a prebuilt remote Host</value></data>
+  <data name="RemoteServiceChoosePackage" xml:space="preserve"><value>Choose published folder…</value></data>
+  <data name="RemoteServiceChoosePackageTitle" xml:space="preserve"><value>Choose the matching complete prebuilt Host publish</value></data>
+  <data name="RemoteServiceEndpoint" xml:space="preserve"><value>Endpoint: {0}</value></data>
+  <data name="RemoteServiceDeployNotice" xml:space="preserve"><value>Select a complete self-contained publish from this desktop build. Deployment checks every SHA-256 and the endpoint RID, then creates new private installation and data directories. Existing paths are refused. Model keys and account stores are not transferred. SSH fingerprints must already be verified.</value></data>
+  <data name="RemoteServicePackageFolder" xml:space="preserve"><value>Local published folder (contains publish-info.json and SHA256SUMS)</value></data>
+  <data name="RemoteServiceNewInstall" xml:space="preserve"><value>New absolute remote installation directory (parent must exist)</value></data>
+  <data name="RemoteServiceNewData" xml:space="preserve"><value>New absolute remote data directory (parent must exist)</value></data>
+  <data name="RemoteServiceLifetimeNotice" xml:space="preserve"><value>The detached service retains accepted runs and pending approvals after the desktop disconnects. Explicit Stop service ends its owned work. OS execution isolation is configured separately.</value></data>
+  <data name="RemoteServiceDeployStart" xml:space="preserve"><value>Deploy and start detached Host</value></data>
+  <data name="RemoteServicePartialRetained" xml:space="preserve"><value>{0} Any partially created remote directory is retained for inspection.</value></data>
+  <data name="RemoteServiceVerifyPackage" xml:space="preserve"><value>Verifying the prebuilt package and matching desktop build…</value></data>
+  <data name="RemoteServiceCheckArchitecture" xml:space="preserve"><value>Checking the selected endpoint architecture…</value></data>
+  <data name="RemoteServiceCreateDirectories" xml:space="preserve"><value>Creating new private installation and data directories…</value></data>
+  <data name="RemoteServiceTransferAssets" xml:space="preserve"><value>Preparing and transferring verified Host assets…</value></data>
+  <data name="RemoteServiceVerifyTransfer" xml:space="preserve"><value>Verifying transferred hashes and enabling the installed Host…</value></data>
+  <data name="RemoteServiceStartDetached" xml:space="preserve"><value>Starting the detached Host service…</value></data>
+  <data name="RemoteServiceRecoveryLimited" xml:space="preserve"><value>Live activity exceeded the bounded recovery window. Persisted journal pages retain the source events; this presentation may omit activity.</value></data>
+  <data name="RemoteServiceApprovalRestored" xml:space="preserve"><value>The service is still waiting for your approval. Review the request and explicitly approve or decline.</value></data>
+  <data name="RemoteServiceDisconnected" xml:space="preserve"><value>Disconnected from the detached service. Accepted work and pending approvals may still be running; reconnect to inspect the recorded outcome.</value></data>
+  <data name="RemoteServiceForegroundDisconnected" xml:space="preserve"><value>The foreground Host connection was lost. Its owned work stops after transport closure is observed; the final outcome remains unknown until inspected.</value></data>
+  <data name="RemoteServiceLegacyReplayUnavailable" xml:space="preserve"><value>This legacy snapshot has no message/event boundary. Saved messages and pending approvals were restored; historical token deltas were not replayed. Original events remain available in journal pages.</value></data>
+  <data name="OsIsolationRequired" xml:space="preserve"><value>Require OS-isolated tools</value></data>
+  <data name="OsIsolationHint" xml:space="preserve"><value>Model credentials stay in the trusted Host. Isolated tools have network denied and scoped filesystem access. Unsupported native policies stop execution; they never fall back to ordinary processes.</value></data>
+  <data name="OsIsolationAvailable" xml:space="preserve"><value>Native backend: {0}. Each launch still validates its policy.</value></data>
+  <data name="OsIsolationUnavailable" xml:space="preserve"><value>Native isolation unavailable: {0}</value></data>
+  <data name="ReviewOutcomeUnknown" xml:space="preserve"><value>The review operation result was not observed. Its outcome is unknown; refresh Git or inspect the remote repository before retrying.</value></data>
 </root>

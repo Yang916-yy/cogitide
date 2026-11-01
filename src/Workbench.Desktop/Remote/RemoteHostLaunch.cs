@@ -7,6 +7,9 @@ namespace Workbench.Desktop.Remote;
 internal static class RemoteHostLaunch
 {
     public static ProcessStartInfo CreateStartInfo(HostConnectionProfile profile)
+        => CreateCommandStartInfo(profile, HostArguments(profile));
+
+    internal static ProcessStartInfo CreateCommandStartInfo(HostConnectionProfile profile, IReadOnlyList<string> hostArguments)
     {
         profile.Validate();
         if (!profile.IsRemote) throw new ArgumentException("Use the existing local Host locator for a local connection.", nameof(profile));
@@ -22,7 +25,6 @@ internal static class RemoteHostLaunch
             StandardErrorEncoding = Encoding.UTF8,
             CreateNoWindow = true
         };
-        var hostArguments = HostArguments(profile);
         if (profile.Kind == HostConnectionKind.Ssh)
         {
             foreach (var argument in new[] { "-T", "-x", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "ForwardAgent=no", "-o", "ClearAllForwardings=yes", "-o", "PermitLocalCommand=no", "-o", "RemoteCommand=none", "-o", "StdinNull=no", "-o", "ForkAfterAuthentication=no", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=2", "--", profile.Destination })
@@ -46,7 +48,12 @@ internal static class RemoteHostLaunch
         var arguments = new List<string>();
         if (profile.HostPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) arguments.Add(profile.DotnetPath);
         arguments.Add(profile.HostPath);
-        arguments.Add("--stdio");
+        arguments.Add(profile.DurableService ? "--service-bridge" : "--stdio");
+        if (profile.DurableService)
+        {
+            arguments.Add("--expected-service-id");
+            arguments.Add(profile.ServiceId!);
+        }
         if (!string.IsNullOrEmpty(profile.DataDirectory))
         {
             arguments.Add("--data-dir");

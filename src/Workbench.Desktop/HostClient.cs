@@ -25,7 +25,7 @@ internal sealed class HostClient : IAsyncDisposable
 
     public event Action<string, JsonElement>? Notification;
     public event Action<string>? Disconnected;
-    public bool Connected => !_disposed && _process is { HasExited: false };
+    public bool Connected => !_disposed && _process is { HasExited: false } && _reader?.IsCompleted != true;
     public HostConnectionProfile Connection { get; private set; } = HostConnectionProfile.Local;
     public bool IsRemote => Connection.IsRemote;
     public string DisplayLabel => Connection.DisplayLabel;
@@ -65,6 +65,9 @@ internal sealed class HostClient : IAsyncDisposable
             if (connection.IsRemote && (!initialized.TryGetProperty("capabilities", out var capabilities) || capabilities.ValueKind != JsonValueKind.Array ||
                 !RequiredRemoteCapabilities.All(required => capabilities.EnumerateArray().Any(capability => capability.ValueKind == JsonValueKind.String && capability.GetString() == required))))
                 throw new InvalidDataException("The remote Host is missing required capabilities (session.view, run.continue). Install the matching Cogitide Host on this endpoint.");
+            if (connection.DurableService && (!initialized.TryGetProperty("remoteService", out var service) ||
+                service.Deserialize<RemoteServiceIdentity>(Wire.Json) is not { } identity || identity.ServiceId != connection.ServiceId || identity.ProtocolVersion != Wire.Version))
+                throw new InvalidDataException("The detached service did not confirm its pinned identity and protocol version.");
         }
         catch (Exception exception)
         {
@@ -118,10 +121,13 @@ internal sealed class HostClient : IAsyncDisposable
         var id = Interlocked.Increment(ref _nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
         var completion = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_pending.TryAdd(id, completion)) throw new InvalidOperationException(L.Text("DuplicateRequest"));
+        var reviewMutation = method is "workspace.review.change" or "workspace.review.commit" or "workspace.review.publish";
+        var writingRequest = false;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
-            timeout.CancelAfter(method == "workspace.command" ? TimeSpan.FromMinutes(12) : TimeSpan.FromSeconds(45));
+            timeout.CancelAfter(method == "workspace.command" ? TimeSpan.FromMinutes(12) :
+                method.StartsWith("workspace.review", StringComparison.Ordinal) ? TimeSpan.FromMinutes(2) : TimeSpan.FromSeconds(45));
             using var registration = timeout.Token.Register(() => completion.TrySetCanceled(timeout.Token));
             var request = new RpcRequest(id, method, Wire.Element(parameters ?? new { }));
             var json = JsonSerializer.Serialize(request, Wire.Json);
@@ -130,6 +136,7 @@ internal sealed class HostClient : IAsyncDisposable
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 var input = _process!.StandardInput;
+                writingRequest = true;
                 await input.WriteLineAsync(json.AsMemory(), timeout.Token).ConfigureAwait(false);
                 await input.FlushAsync(timeout.Token).ConfigureAwait(false);
             }
@@ -137,6 +144,10 @@ internal sealed class HostClient : IAsyncDisposable
             var result = await completion.Task.ConfigureAwait(false);
             if (typeof(T) == typeof(JsonElement)) return (T)(object)result;
             return result.Deserialize<T>(Wire.Json) ?? throw new InvalidDataException(L.Format("HostEmptyResponse", method));
+        }
+        catch (Exception exception) when (reviewMutation && writingRequest && exception is OperationCanceledException or IOException or ObjectDisposedException)
+        {
+            throw new IOException(L.Text("ReviewOutcomeUnknown"), exception);
         }
         finally { _pending.TryRemove(id, out _); }
     }
@@ -175,7 +186,7 @@ internal sealed class HostClient : IAsyncDisposable
         {
             foreach (var pending in _pending.Values)
                 pending.TrySetException(failure ?? new OperationCanceledException(L.Text("HostClosed")));
-            if (!_disposed && failure is not null) Disconnected?.Invoke(failure.Message);
+            if (!_disposed) Disconnected?.Invoke(failure?.Message ?? L.Text("HostClosed"));
         }
     }
 
@@ -211,14 +222,14 @@ internal sealed class HostClient : IAsyncDisposable
         ("Could not resolve hostname", "SSH could not resolve the hostname or configuration alias."),
         ("Connection refused", "The SSH endpoint refused the connection."),
         ("Connection timed out", "The SSH endpoint timed out."),
-        ("not found", "The remote Host, dotnet runtime or WSL distribution was not found; deployment is manual."),
-        ("No such file", "The remote Host or runtime path does not exist; deployment is manual."),
+        ("not found", "The remote Host, runtime or WSL distribution was not found. Verify the endpoint prerequisites and deploy a matching Host package in Host connections."),
+        ("No such file", "The remote Host or runtime path does not exist. Verify the path or deploy a matching Host package in Host connections."),
         ("WSL_E_DISTRO_NOT_FOUND", "The selected WSL distribution is not installed.")
     ];
 
     private static readonly string[] RequiredRemoteCapabilities = ["session.view", "run.continue"];
 
-    private static (string HostPath, string DotnetPath) LocateHost()
+    internal static (string HostPath, string DotnetPath) LocateHost()
     {
         var explicitPath = Environment.GetEnvironmentVariable("WORKBENCH_HOST_PATH");
         var executableName = OperatingSystem.IsWindows() ? "Workbench.Host.exe" : "Workbench.Host";

@@ -22,3 +22,5 @@ This English page summarizes the preserved source. [The full Chinese record](REA
 - [Original reference 4](AnthropicModel.cs)
 - [Original reference 5](ModelCapabilities.cs)
 - [Original reference 6](ModelHttpTransport.cs)
+
+`ProviderCatalog` adds explicit metadata discovery through the existing BCL transport. [Provider configuration](PROVIDER-CONFIGURATION.md) documents fresh-install onboarding, endpoint-based presets, protected credential references, catalog bounds, primary API sources and deterministic/native-vault verification boundaries.

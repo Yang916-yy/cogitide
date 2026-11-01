@@ -29,6 +29,12 @@ internal partial class ConnectionsWindow : Window
     private bool _accountChanged;
     private IReadOnlyList<AccountProfile> _profiles = [];
     private AccountState? _account;
+    private string? _credentialProfileId;
+    private string _credentialEndpoint = "";
+    private ProviderKind _credentialFamily;
+    private int _keyStatusGeneration;
+    private IReadOnlyList<ProviderPreset> _providerPresets = [];
+    private readonly bool _requireInitialCredential;
 
     public ConnectionsWindow(HostClient host, DesktopSettings settings, Action<DesktopSettings> preferencesChanged)
     {
@@ -36,6 +42,18 @@ internal partial class ConnectionsWindow : Window
         _settings = settings;
         _preferencesChanged = preferencesChanged;
         InitializeComponent();
+        // TextChanged is dispatcher-posted. Clear an old endpoint's pending secret synchronously
+        // when the property changes, before any save/fetch action can read the new address.
+        EndpointBox.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == TextBox.TextProperty) ApiKeyBox.Text = "";
+        };
+        _requireInitialCredential = settings.Backend == "unconfigured" && string.IsNullOrWhiteSpace(settings.Provider.Endpoint);
+        BackendChoice.SelectedIndex = settings.Backend == "chatgpt" ? 0 : settings.Backend == "api" ||
+            !string.IsNullOrWhiteSpace(settings.Provider.Endpoint) && !string.IsNullOrWhiteSpace(settings.Provider.Model) ? 1 : -1;
+        _credentialProfileId = settings.Provider.CredentialProfileId;
+        _credentialEndpoint = settings.Provider.Endpoint;
+        _credentialFamily = ComposerChoices.ResolveProvider(settings.Provider);
         LanguagePicker.SelectedIndex = settings.Language switch { "zh-CN" => 1, "en-US" => 2, _ => 0 };
         ReducedMotionToggle.IsChecked = settings.ReducedMotion;
         CompressionGuidanceToggle.IsChecked = settings.Research.CompressionGuidance;
@@ -60,12 +78,13 @@ internal partial class ConnectionsWindow : Window
         Closed += (_, _) =>
         {
             _closed = true;
+            ApiKeyBox.Text = "";
             _host.Notification -= OnNotification;
             L.Changed -= RefreshLocalization;
             UiMotion.Changed -= RefreshMotion;
             _ = CancelPendingLoginAsync(showNotice: false);
         };
-        Opened += async (_, _) => { RefreshMotion(null, EventArgs.Empty); await RefreshAccountAsync(); };
+        Opened += async (_, _) => { RefreshMotion(null, EventArgs.Empty); await LoadProviderPresetsAsync(); await RefreshAccountAsync(); };
     }
 
     private void OnNotification(string method, JsonElement parameters)
@@ -279,9 +298,7 @@ internal partial class ConnectionsWindow : Window
     private void UpdateKeyStatus()
     {
         if (KeyStatus is null) return;
-        var variable = KeyVariableBox.Text?.Trim();
-        var present = !string.IsNullOrWhiteSpace(variable) && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(variable));
-        LocalizedControl.Text(KeyStatus, present ? "KeyDetected" : "KeyMissing");
+        _ = RefreshApiCredentialStatusAsync();
     }
     private ProviderKind SelectedProvider => (ProviderPicker.SelectedItem as ComboBoxItem)?.Tag?.ToString() switch
     {
@@ -292,27 +309,28 @@ internal partial class ConnectionsWindow : Window
         _ => ProviderKind.Auto
     };
 
-    private ProviderKind EffectiveProvider => SelectedProvider != ProviderKind.Auto ? SelectedProvider :
-        Uri.TryCreate(EndpointBox.Text, UriKind.Absolute, out var endpoint) ? endpoint.Host.ToLowerInvariant() switch
-        {
-            "api.deepseek.com" => ProviderKind.DeepSeek,
-            "api.anthropic.com" => ProviderKind.Anthropic,
-            _ => ProviderKind.OpenAiCompatible
-        } : ProviderKind.OpenAiCompatible;
+    private ProviderKind EffectiveProvider => ComposerChoices.ResolveProvider(new(Endpoint: EndpointBox.Text ?? "", Provider: SelectedProvider));
 
     private void ProviderSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_initializing || _updatingProvider) return;
+        ApiKeyBox.Text = "";
         if (EffectiveProvider != ProviderKind.Anthropic) LegacyThinkingToggle.IsChecked = false;
         ImageCapabilityToggle.IsChecked = false;
         UpdateProviderOptions();
+        UpdateProviderDetection();
+        UpdateKeyStatus();
         UiMotion.Reveal(ProviderOptionsPanel);
     }
 
     private void EndpointChanged(object? sender, TextChangedEventArgs e)
     {
-        if (_initializing || _updatingProvider || SelectedProvider != ProviderKind.Auto ||
-            !Uri.TryCreate(EndpointBox.Text, UriKind.Absolute, out _)) return;
+        if (ApiKeyBox is not null) ApiKeyBox.Text = "";
+        if (_initializing || _updatingProvider) return;
+        ApiModelsPicker.ItemsSource = null;
+        UpdateProviderDetection();
+        UpdateKeyStatus();
+        if (SelectedProvider != ProviderKind.Auto || !Uri.TryCreate(EndpointBox.Text, UriKind.Absolute, out _)) return;
         if (EffectiveProvider != ProviderKind.Anthropic) LegacyThinkingToggle.IsChecked = false;
         UpdateProviderOptions();
     }
@@ -369,6 +387,7 @@ internal partial class ConnectionsWindow : Window
 
     private void ProviderDefaultsClick(object? sender, RoutedEventArgs e)
     {
+        ApiKeyBox.Text = "";
         var family = EffectiveProvider;
         _updatingProvider = true;
         try
@@ -387,8 +406,150 @@ internal partial class ConnectionsWindow : Window
         UpdateKeyStatus();
         UiMotion.Reveal(ProviderOptionsPanel);
     }
-    private void SaveClick(object? sender, RoutedEventArgs e)
+
+    private void BackendSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (_initializing) return;
+        SettingsTabs.SelectedIndex = BackendChoice.SelectedIndex == 0 ? 1 : 2;
+    }
+    private async Task LoadProviderPresetsAsync()
+    {
+        try
+        {
+            _providerPresets = await _host.RequestAsync<ProviderPreset[]>("provider.presets");
+            if (_closed) return;
+            ApiPresetPicker.ItemsSource = _providerPresets;
+            UpdateProviderDetection();
+        }
+        catch (Exception ex) { if (!_closed) NoticeLabel.Text = ex.Message; }
+    }
+    private void ApiPresetChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || ApiPresetPicker.SelectedItem is not ProviderPreset preset) return;
+        _updatingProvider = true;
+        try
+        {
+            ApiKeyBox.Text = "";
+            ApiModelsPicker.ItemsSource = null;
+            EndpointBox.Text = preset.Endpoint;
+            ApiModelBox.Text = "";
+            KeyVariableBox.Text = preset.ApiKeyEnvironmentVariable;
+            ProviderPicker.SelectedIndex = preset.Provider switch
+            { ProviderKind.DeepSeek => 1, ProviderKind.Anthropic => 2, ProviderKind.OpenAiResponses => 4, _ => 3 };
+            ImageCapabilityToggle.IsChecked = false;
+            LegacyThinkingToggle.IsChecked = false;
+            BackendChoice.SelectedIndex = 1;
+        }
+        finally { _updatingProvider = false; }
+        UpdateProviderOptions();
+        UpdateProviderDetection();
+        UpdateKeyStatus();
+    }
+    private void UpdateProviderDetection()
+    {
+        if (ProviderDetectionLabel is null) return;
+        var detected = Uri.TryCreate(EndpointBox.Text, UriKind.Absolute, out var endpoint)
+            ? _providerPresets.FirstOrDefault(p => new Uri(p.Endpoint).Host.Equals(endpoint.Host, StringComparison.OrdinalIgnoreCase)) : null;
+        if (detected is null) LocalizedControl.Text(ProviderDetectionLabel, "ProviderDetectionManual");
+        else LocalizedControl.Text(ProviderDetectionLabel, "ProviderDetectionKnown", detected.Name);
+    }
+    private string? CurrentCredentialProfile()
+    {
+        if (_credentialProfileId is null || !Uri.TryCreate(EndpointBox.Text, UriKind.Absolute, out var uri) ||
+            uri.Scheme is not ("https" or "http")) return null;
+        try
+        {
+            return ProviderCredentialBinding.Endpoint(EndpointBox.Text ?? "") == ProviderCredentialBinding.Endpoint(_credentialEndpoint) &&
+                EffectiveProvider == _credentialFamily ? _credentialProfileId : null;
+        }
+        catch (ArgumentException) { return null; }
+    }
+    private ProviderSettings CredentialProvider() => _settings.Provider with
+    {
+        Endpoint = EndpointBox.Text?.Trim().TrimEnd('/') ?? "", Model = ApiModelBox.Text?.Trim() ?? "",
+        Provider = SelectedProvider, ApiKeyEnvironmentVariable = KeyVariableBox.Text?.Trim() ?? "",
+        CredentialProfileId = CurrentCredentialProfile()
+    };
+    private async Task RefreshApiCredentialStatusAsync()
+    {
+        var generation = ++_keyStatusGeneration;
+        if (_initializing || _closed) return;
+        RemoveApiKeyButton.IsEnabled = CurrentCredentialProfile() is not null;
+        var provider = CredentialProvider();
+        try
+        {
+            _ = ProviderCredentialBinding.Endpoint(provider.Endpoint);
+            var status = await _host.RequestAsync<ProviderCredentialStatus>("provider.credential.status", new { provider });
+            if (_closed || generation != _keyStatusGeneration) return;
+            LocalizedControl.Text(KeyStatus, status.Configured ? provider.CredentialProfileId is not null ? "ApiKeyStored" : "KeyDetected" : "ApiKeyNotConfigured");
+        }
+        catch (Exception) { if (!_closed && generation == _keyStatusGeneration) LocalizedControl.Text(KeyStatus, "ApiKeyNotConfigured"); }
+    }
+    private async Task SaveApiCredentialAsync(ProviderSettings provider)
+    {
+        var rawKey = ApiKeyBox.Text ?? "";
+        try
+        {
+            var saved = await _host.RequestAsync<ProviderCredentialStatus>("provider.credential.save", new { provider, apiKey = rawKey });
+            if (_closed) return;
+            _credentialProfileId = saved.CredentialProfileId;
+            _credentialEndpoint = ProviderCredentialBinding.Endpoint(provider.Endpoint);
+            _credentialFamily = ProviderCredentialBinding.Family(provider);
+            LocalizedControl.Text(KeyStatus, "ApiKeyStored");
+            RemoveApiKeyButton.IsEnabled = true;
+        }
+        finally { ApiKeyBox.Text = ""; }
+    }
+    private async void SaveApiKeyClick(object? sender, RoutedEventArgs e)
+    {
+        SaveApiKeyButton.IsEnabled = false;
+        try { await SaveApiCredentialAsync(CredentialProvider()); }
+        catch (Exception ex) { if (!_closed) NoticeLabel.Text = ex.Message; }
+        finally { if (!_closed) SaveApiKeyButton.IsEnabled = true; }
+    }
+    private async void RemoveApiKeyClick(object? sender, RoutedEventArgs e)
+    {
+        RemoveApiKeyButton.IsEnabled = false;
+        try
+        {
+            await _host.RequestAsync<ProviderCredentialStatus>("provider.credential.delete", new { provider = CredentialProvider() });
+            _credentialProfileId = null;
+            ApiKeyBox.Text = "";
+            UpdateKeyStatus();
+        }
+        catch (Exception ex) { if (!_closed) NoticeLabel.Text = ex.Message; }
+    }
+    private async void FetchApiModelsClick(object? sender, RoutedEventArgs e)
+    {
+        FetchApiModelsButton.IsEnabled = false;
+        var provider = CredentialProvider();
+        try
+        {
+            var catalog = await _host.RequestAsync<ProviderModelCatalog>("provider.models", new { provider, apiKey = ApiKeyBox.Text });
+            if (_closed || provider.Endpoint != CredentialProvider().Endpoint) return;
+            ApiModelsPicker.ItemsSource = catalog.Models;
+            LocalizedControl.Text(NoticeLabel, catalog.Truncated ? "ApiModelsTruncated" : "ApiModelsLoaded", catalog.Models.Count);
+        }
+        catch (Exception ex) { if (!_closed) NoticeLabel.Text = ex.Message; }
+        finally { if (!_closed) FetchApiModelsButton.IsEnabled = true; }
+    }
+    private void ApiModelChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (ApiModelsPicker.SelectedItem is not ModelInfo model) return;
+        ApiModelBox.Text = model.Id;
+        ImageCapabilityToggle.IsChecked = model.SupportsImages == true;
+    }
+    private async void SaveClick(object? sender, RoutedEventArgs e)
+    {
+        var backend = (BackendChoice.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        if (backend is not ("api" or "chatgpt")) { LocalizedControl.Text(NoticeLabel, "ChooseConnection"); return; }
+        if (backend == "chatgpt")
+        {
+            if (_account?.LoggedIn != true) { LocalizedControl.Text(NoticeLabel, "AccountSignInRequired"); SettingsTabs.SelectedIndex = 1; return; }
+            Close(_settings with { Backend = "chatgpt", OnboardingCompleted = true, CodexModel = CodexModelBox.Text?.Trim() ?? "",
+                Language = L.Language, ReducedMotion = UiMotion.ReducedMotion, Research = ResearchSettings() });
+            return;
+        }
         var endpoint = EndpointBox.Text?.Trim().TrimEnd('/') ?? "";
         var model = ApiModelBox.Text?.Trim() ?? "";
         var variable = KeyVariableBox.Text?.Trim() ?? "";
@@ -398,7 +559,7 @@ internal partial class ConnectionsWindow : Window
             return;
         }
         if (string.IsNullOrWhiteSpace(model)) { LocalizedControl.Text(NoticeLabel, "ModelRequired"); return; }
-        if (!Regex.IsMatch(variable, "^[A-Za-z_][A-Za-z0-9_]*$")) { LocalizedControl.Text(NoticeLabel, "VariableRequired"); return; }
+        if (variable.Length > 0 && !Regex.IsMatch(variable, "^[A-Za-z_][A-Za-z0-9_]*$")) { LocalizedControl.Text(NoticeLabel, "VariableRequired"); return; }
         var maximum = (int)(MaxTokensBox.Value ?? 4096);
         int? budget = EffectiveProvider == ProviderKind.Anthropic && LegacyThinkingToggle.IsChecked == true
             ? (int)(ThinkingBudgetBox.Value ?? 2048) : null;
@@ -408,16 +569,34 @@ internal partial class ConnectionsWindow : Window
         {
             Endpoint = endpoint, Model = model, ApiKeyEnvironmentVariable = variable, MaxOutputTokens = maximum,
             Provider = SelectedProvider, ReasoningEffort = (ReasoningPicker.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "none",
-            ThinkingBudgetTokens = budget, SupportsImages = ImageCapabilityToggle.IsChecked == true
+            ThinkingBudgetTokens = budget, SupportsImages = ImageCapabilityToggle.IsChecked == true,
+            CredentialProfileId = CurrentCredentialProfile()
         };
+        SaveButton.IsEnabled = false;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(ApiKeyBox.Text))
+            {
+                await SaveApiCredentialAsync(provider);
+                provider = provider with { CredentialProfileId = CurrentCredentialProfile() };
+            }
+            if (_requireInitialCredential)
+            {
+                var status = await _host.RequestAsync<ProviderCredentialStatus>("provider.credential.status", new { provider });
+                if (!status.Configured) { LocalizedControl.Text(NoticeLabel, "ApiCredentialRequired"); return; }
+            }
         var accountModel = CodexModelBox.Text?.Trim() ?? "";
         Close(_settings with
         {
+            Backend = "api", OnboardingCompleted = true,
             Provider = provider, CodexModel = accountModel,
             CodexReasoningEffort = _accountChanged || accountModel != _settings.CodexModel ? "none" :
                 ComposerChoices.AccountEffort(CodexModels.Items.OfType<ModelInfo>().FirstOrDefault(model => model.Id == accountModel), _settings.CodexReasoningEffort),
             Language = L.Language, ReducedMotion = UiMotion.ReducedMotion, Research = ResearchSettings()
         });
+        }
+        catch (Exception ex) { NoticeLabel.Text = ex.Message; }
+        finally { if (!_closed) SaveButton.IsEnabled = true; }
     }
     private void CancelClick(object? sender, RoutedEventArgs e) => Close((DesktopSettings?)null);
 
@@ -446,6 +625,7 @@ internal partial class ConnectionsWindow : Window
         Title = ProductIdentity.WindowTitle;
         if (_account is { } account) ShowAccount(account);
         ShowAccounts(_profiles);
+        UpdateProviderDetection();
         UpdateKeyStatus();
         LocalizedControl.RemeasureTabHeaders(SettingsTabs);
     }

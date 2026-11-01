@@ -14,7 +14,7 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
             THEN (SELECT json_group_array(json_set(img.value,'$.base64Data','')) FROM json_each(j.value,'$.images') img)
             ELSE 'null' END))
         """;
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private readonly string _connectionString;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -34,18 +34,32 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
         var found = Convert.ToInt32(version.ExecuteScalar());
         if (found > SchemaVersion)
             throw new InvalidOperationException($"Database schema {found} is newer than supported schema {SchemaVersion}. No data was changed.");
-        if (found == 0)
+        if (found < SchemaVersion)
         {
             using var transaction = connection.BeginTransaction();
+            // Another store instance may have migrated while this connection waited for SQLite's
+            // write transaction. Re-read under that transaction instead of racing duplicate ALTERs.
+            using var current = connection.CreateCommand();
+            current.Transaction = transaction;
+            current.CommandText = "PRAGMA user_version;";
+            found = Convert.ToInt32(current.ExecuteScalar());
+            if (found > SchemaVersion) throw new InvalidOperationException($"Database schema {found} is newer than supported schema {SchemaVersion}. No data was changed.");
             using var migration = connection.CreateCommand();
             migration.Transaction = transaction;
-            migration.CommandText = """
-                CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS events (session_id TEXT NOT NULL, sequence INTEGER NOT NULL, payload TEXT NOT NULL,
-                    PRIMARY KEY(session_id, sequence), FOREIGN KEY(session_id) REFERENCES sessions(id));
-                PRAGMA user_version = 1;
-                """;
-            migration.ExecuteNonQuery();
+            if (found == 0)
+            {
+                migration.CommandText = """
+                    CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS events (session_id TEXT NOT NULL, sequence INTEGER NOT NULL, payload TEXT NOT NULL,
+                        PRIMARY KEY(session_id, sequence), FOREIGN KEY(session_id) REFERENCES sessions(id));
+                    """;
+                migration.ExecuteNonQuery();
+            }
+            if (found < 2)
+            {
+                migration.CommandText = "ALTER TABLE sessions ADD COLUMN message_event_sequence INTEGER NULL; PRAGMA user_version=2;";
+                migration.ExecuteNonQuery();
+            }
             transaction.Commit();
         }
         using var mode = connection.CreateCommand();
@@ -114,8 +128,12 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
-            INSERT INTO sessions(id,payload,updated_at) VALUES($id,$payload,$updated)
-            ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at;
+            INSERT INTO sessions(id,payload,updated_at,message_event_sequence)
+                VALUES($id,$payload,$updated,(SELECT COALESCE(MAX(sequence),0) FROM events WHERE session_id=$id))
+            ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at,
+                message_event_sequence=CASE
+                    WHEN json_extract(sessions.payload,'$.messages') IS NOT json_extract(excluded.payload,'$.messages')
+                    THEN excluded.message_event_sequence ELSE sessions.message_event_sequence END;
             """;
         command.Parameters.AddWithValue("$id", session.Info.Id);
         command.Parameters.AddWithValue("$payload", JsonSerializer.Serialize(session, Wire.Json));
@@ -297,6 +315,54 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
         finally { _gate.Release(); }
     }
 
+    /// <summary>Bounded forward replay against one captured source boundary. Does not execute journal content.</summary>
+    public async Task<SessionEventReplayPage> EventsSincePageAsync(string sessionId, long afterSequence, long? throughSequence = null,
+        int limit = 100, CancellationToken cancellationToken = default)
+    {
+        SessionHistoryPages.ValidateLimit(limit);
+        if (afterSequence < 0) throw new ArgumentOutOfRangeException(nameof(afterSequence));
+        if (throughSequence is { } through && (through < 0 || through < afterSequence)) throw new ArgumentOutOfRangeException(nameof(throughSequence));
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var connection = Open();
+            using var transaction = connection.BeginTransaction();
+            using var maximum = connection.CreateCommand();
+            maximum.Transaction = transaction;
+            maximum.CommandText = "SELECT COALESCE(MAX(sequence),0) FROM events WHERE session_id=$id;";
+            maximum.Parameters.AddWithValue("$id", sessionId);
+            var currentMaximum = Convert.ToInt64(await maximum.ExecuteScalarAsync(cancellationToken));
+            var upper = throughSequence ?? currentMaximum;
+            if (afterSequence > currentMaximum || upper > currentMaximum) throw new ArgumentOutOfRangeException(nameof(throughSequence), "The replay cursor exceeds the stored journal boundary.");
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = """
+                SELECT sequence,length(payload),payload FROM events
+                WHERE session_id=$id AND sequence>$after AND sequence<=$upper ORDER BY sequence LIMIT $limit;
+                """;
+            command.Parameters.AddWithValue("$id", sessionId);
+            command.Parameters.AddWithValue("$after", afterSequence);
+            command.Parameters.AddWithValue("$upper", upper);
+            command.Parameters.AddWithValue("$limit", limit + 1);
+            List<AgentEvent> result = [];
+            long characters = 2;
+            var hasMore = false;
+            using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    var length = reader.GetInt64(1) + 1;
+                    if (result.Count == limit || characters + length > SessionHistoryPages.MaximumPageCharacters) { hasMore = true; break; }
+                    result.Add(JsonSerializer.Deserialize<AgentEvent>(reader.GetString(2), Wire.Json) ?? throw new InvalidDataException("Invalid stored event."));
+                    characters += length;
+                }
+            transaction.Commit();
+            if (result.Count == 0 && hasMore)
+                return new([], afterSequence, upper, true, false, "The next source event exceeds the recovery page character budget; its cursor was not advanced.");
+            return new(result, result.Count > 0 ? result[^1].Sequence : afterSequence, upper, hasMore);
+        }
+        finally { _gate.Release(); }
+    }
+
     public async Task<SessionView?> ReadViewAsync(string id, int messageLimit = 100, CancellationToken cancellationToken = default)
     {
         SessionHistoryPages.ValidateLimit(messageLimit);
@@ -307,12 +373,13 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
             using var transaction = connection.BeginTransaction();
             using var metadata = connection.CreateCommand();
             metadata.Transaction = transaction;
-            metadata.CommandText = "SELECT json_extract(payload,'$.info'),json_extract(payload,'$.compaction'),json_extract(payload,'$.runCheckpoint'),json_array_length(payload,'$.messages') FROM sessions WHERE id=$id;";
+            metadata.CommandText = "SELECT json_extract(payload,'$.info'),json_extract(payload,'$.compaction'),json_extract(payload,'$.runCheckpoint'),json_array_length(payload,'$.messages'),message_event_sequence FROM sessions WHERE id=$id;";
             metadata.Parameters.AddWithValue("$id", id);
             SessionInfo info;
             CompactionCheckpoint? compaction;
             RunCheckpoint? checkpoint;
             int count;
+            long? messageEventSequence;
             using (var reader = await metadata.ExecuteReaderAsync(cancellationToken))
             {
                 if (!await reader.ReadAsync(cancellationToken)) return null;
@@ -320,12 +387,13 @@ public sealed class SqliteSessionStore : ISessionStore, IDisposable
                 compaction = reader.IsDBNull(1) ? null : JsonSerializer.Deserialize<CompactionCheckpoint>(reader.GetString(1), Wire.Json);
                 checkpoint = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<RunCheckpoint>(reader.GetString(2), Wire.Json);
                 count = reader.GetInt32(3);
+                messageEventSequence = reader.IsDBNull(4) ? null : reader.GetInt64(4);
             }
             var page = await ReadMessagesAsync(connection, transaction, id, count, null, messageLimit, cancellationToken);
             var pending = await ReadPendingInputsAsync(connection, transaction, id, 128, cancellationToken);
             transaction.Commit();
             return new(info, page.Messages, compaction, count, page.FirstMessageIndex, page.HasEarlierMessages,
-                checkpoint, page.Available, page.UnavailableReason, pending, page.OmittedPayloads);
+                checkpoint, page.Available, page.UnavailableReason, pending, page.OmittedPayloads, MessageEventSequence: messageEventSequence);
         }
         finally { _gate.Release(); }
     }

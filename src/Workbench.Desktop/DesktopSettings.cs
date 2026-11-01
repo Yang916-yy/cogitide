@@ -9,8 +9,9 @@ internal sealed record DesktopSettings
 {
     public string? LastWorkspace { get; init; }
     public string? LastSessionId { get; init; }
-    public string Backend { get; init; } = "api";
-    public ProviderSettings Provider { get; init; } = new();
+    public string Backend { get; init; } = "unconfigured";
+    public bool OnboardingCompleted { get; init; }
+    public ProviderSettings Provider { get; init; } = new(Endpoint: "", Model: "", ApiKeyEnvironmentVariable: "");
     // Retain these serialized names so existing model preferences survive the move to direct OAuth inference.
     public string CodexModel { get; init; } = "";
     public string CodexReasoningEffort { get; init; } = "none";
@@ -27,8 +28,10 @@ internal sealed record DesktopSettings
 
     public DesktopSettings RememberProvider(ProviderSettings provider) => this with
     {
+        Backend = Backend == "unconfigured" && !string.IsNullOrWhiteSpace(provider.Endpoint) && !string.IsNullOrWhiteSpace(provider.Model) ? "api" : Backend,
         Provider = provider,
         RecentProviders = new[] { provider }.Concat(RecentProviders ?? [])
+            .Where(item => !string.IsNullOrWhiteSpace(item.Endpoint) && !string.IsNullOrWhiteSpace(item.Model))
             .DistinctBy(item => (item.Endpoint.TrimEnd('/'), item.Model, ComposerChoices.ResolveProvider(item))).Take(8).ToArray()
     };
 
@@ -54,7 +57,8 @@ internal sealed record DesktopSettings
         }).DistinctBy(profile => profile.Id).Take(32).ToArray();
         return this with
         {
-            Backend = ComposerChoices.NormalizeBackend(Backend), Research = Research ?? new(), Run = Run ?? new(),
+            Backend = Backend == "unconfigured" && !string.IsNullOrWhiteSpace(Provider.Endpoint) && !string.IsNullOrWhiteSpace(Provider.Model)
+                ? "api" : ComposerChoices.NormalizeBackend(Backend), Research = Research ?? new(), Run = Run ?? new(),
             ConnectionProfiles = profiles,
             ActiveConnectionId = profiles.Any(profile => profile.Id == ActiveConnectionId) ? ActiveConnectionId : "local"
         };
@@ -64,9 +68,24 @@ internal sealed record DesktopSettings
 
     public static DesktopSettings Load()
     {
-        try { return File.Exists(SettingsPath) ? (JsonSerializer.Deserialize<DesktopSettings>(File.ReadAllText(SettingsPath), Wire.Json) ?? new()).NormalizeBackend() : new(); }
+        try { return File.Exists(SettingsPath) ? FromJson(File.ReadAllText(SettingsPath)) : new(); }
         catch (IOException) { return new(); }
         catch (JsonException) { return new(); }
+    }
+
+    internal static DesktopSettings FromJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var settings = JsonSerializer.Deserialize<DesktopSettings>(json, Wire.Json) ?? new();
+        if (!document.RootElement.TryGetProperty("onboardingCompleted", out _))
+        {
+            var provider = document.RootElement.TryGetProperty("provider", out _) ? settings.Provider : new ProviderSettings();
+            // Older Auto OpenAI settings used Chat Completions. Preserve their explicit persisted behavior.
+            if (provider.Provider == ProviderKind.Auto && Uri.TryCreate(provider.Endpoint, UriKind.Absolute, out var endpoint) && endpoint.Host == "api.openai.com")
+                provider = provider with { Provider = ProviderKind.OpenAiCompatible };
+            settings = settings with { Provider = provider, Backend = settings.Backend == "unconfigured" ? "api" : settings.Backend, OnboardingCompleted = true };
+        }
+        return settings.NormalizeBackend();
     }
 
     public void Save()

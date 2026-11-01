@@ -44,6 +44,7 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
           <Button x:Name="FilesButton" Classes="toolbar" Click="FilesClick" ToolTip.Tip="{local:Loc FilesTooltip}" AutomationProperties.Name="{local:Loc Files}"><StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="files" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Files}" VerticalAlignment="Center" /></StackPanel></Button>
           <Button x:Name="ChangesButton" Classes="toolbar" Click="ChangesClick" ToolTip.Tip="{local:Loc ChangesTooltip}" AutomationProperties.Name="{local:Loc Changes}"><StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="changes" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Changes}" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button x:Name="ReviewButton" Classes="toolbar" Click="ReviewChangesClick" Content="{local:Loc ReviewTitle}" AutomationProperties.Name="{local:Loc ReviewTitle}" />
           <Button Classes="toolbar" Click="OpenTerminalClick" AutomationProperties.Name="{local:Loc TerminalAction}"><StackPanel Orientation="Horizontal" Spacing="6"><local:UiGlyph Symbol="terminal" Width="14" Height="14" VerticalAlignment="Center" /><TextBlock Text="{local:Loc TerminalAction}" VerticalAlignment="Center" /></StackPanel></Button>
         </StackPanel>
       </Grid>

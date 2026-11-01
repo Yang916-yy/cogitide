@@ -4,7 +4,7 @@ namespace Workbench.Desktop;
 
 internal static class ComposerChoices
 {
-    internal static string NormalizeBackend(string backend) => backend is "codex" or "chatgpt" ? "chatgpt" : "api";
+    internal static string NormalizeBackend(string backend) => backend is "codex" or "chatgpt" ? "chatgpt" : backend == "api" ? "api" : "unconfigured";
 
     internal static bool SameModel(ProviderSettings left, ProviderSettings right) =>
         left.Model == right.Model && left.Endpoint.TrimEnd('/') == right.Endpoint.TrimEnd('/') && ResolveProvider(left) == ResolveProvider(right);
@@ -17,13 +17,9 @@ internal static class ComposerChoices
         session.Backend == "codex" || session.Backend != NormalizeBackend(settings.Backend) ||
         (session.Backend == "chatgpt" && session.AccountBinding is not null && accountBinding is not null && session.AccountBinding != accountBinding);
 
-    internal static ProviderKind ResolveProvider(ProviderSettings provider) => provider.Provider != ProviderKind.Auto ? provider.Provider :
-        Uri.TryCreate(provider.Endpoint, UriKind.Absolute, out var endpoint) ? endpoint.Host.ToLowerInvariant() switch
-        {
-            "api.deepseek.com" => ProviderKind.DeepSeek,
-            "api.anthropic.com" => ProviderKind.Anthropic,
-            _ => ProviderKind.OpenAiCompatible
-        } : ProviderKind.OpenAiCompatible;
+    internal static ProviderKind ResolveProvider(ProviderSettings provider) =>
+        Uri.TryCreate(provider.Endpoint, UriKind.Absolute, out var endpoint) && endpoint.Scheme is "https" or "http"
+            ? ProviderCredentialBinding.Family(provider) : ProviderKind.OpenAiCompatible;
 
     internal static IReadOnlyList<string> ApiEfforts(ProviderSettings provider) => ResolveProvider(provider) switch
     {

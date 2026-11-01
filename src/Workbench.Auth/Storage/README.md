@@ -15,3 +15,7 @@ This English page summarizes the preserved source. [The full Chinese record](REA
 ## Preserved source references
 
 - [Original reference 1](ProtectedAuthStore.cs)
+
+## Endpoint-bound API credentials
+
+`ApiCredentialStore` reuses the same MSAL native storage API in a separate namespace and with its own exclusive file lock. It stores API keys only in DPAPI/Keychain/Secret Service, bound to the normalized endpoint and provider protocol; an unavailable vault has no plaintext fallback. Desktop settings retain a nonsecret profile ID. The store can coexist with `ProtectedAuthStore` without sharing its lifetime lock. [Provider setup and verification boundaries](../../Workbench.Core/Models/PROVIDER-CONFIGURATION.md) describe the explicit GUI entry and metadata-only catalog requests.

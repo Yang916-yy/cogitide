@@ -56,8 +56,8 @@
   <data name="Endpoint" xml:space="preserve"><value>API 地址</value></data>
   <data name="ApiCompatibility" xml:space="preserve"><value>支持 OpenAI Chat Completions 兼容接口。</value></data>
   <data name="ModelId" xml:space="preserve"><value>模型 ID</value></data>
-  <data name="KeyVariable" xml:space="preserve"><value>密钥环境变量名称</value></data>
-  <data name="KeyPrivacy" xml:space="preserve"><value>这里只保存环境变量的名称。密钥不会写入项目、聊天记录或界面设置。新增系统环境变量后，需要重新启动应用。</value></data>
+  <data name="KeyVariable" xml:space="preserve"><value>环境变量名称（可选替代方式）</value></data>
+  <data name="KeyPrivacy" xml:space="preserve"><value>已保存的 API 密钥使用所选 Host 的系统凭据库。设置仅包含凭据引用或环境变量名称。修改环境变量后需重启对应 Host。</value></data>
   <data name="MaxOutputTokens" xml:space="preserve"><value>单次最大输出 token</value></data>
   <data name="DeepSeekDefaults" xml:space="preserve"><value>使用 DeepSeek 默认配置</value></data>
   <data name="Cancel" xml:space="preserve"><value>取消</value></data>
@@ -134,7 +134,7 @@
   <data name="CompleteAuthorization" xml:space="preserve"><value>请在浏览器完成官方授权。完成后这里会更新账号状态。</value></data>
   <data name="AuthorizationCode" xml:space="preserve"><value>在官方授权页面输入代码：{0}</value></data>
   <data name="InvalidAuthorizationUrl" xml:space="preserve"><value>账号服务没有返回有效的 HTTPS 授权地址。</value></data>
-  <data name="KeyDetected" xml:space="preserve"><value>已检测到此环境变量 · 密钥内容已隐藏</value></data>
+  <data name="KeyDetected" xml:space="preserve"><value>所选 Host 已检测到此环境变量；密钥内容已隐藏</value></data>
   <data name="KeyMissing" xml:space="preserve"><value>当前进程未检测到此环境变量。配置后重启应用即可使用。</value></data>
   <data name="InvalidEndpoint" xml:space="preserve"><value>API 地址必须使用 HTTPS，或本机 HTTP 地址，且不能包含账号密码、查询参数或片段标识。</value></data>
   <data name="ModelRequired" xml:space="preserve"><value>请填写 API 模型 ID。</value></data>
@@ -254,7 +254,7 @@
   <data name="ReadOnlyPrefetchFeature" xml:space="preserve"><value>预读相关文件（只读）</value></data>
   <data name="RemoteLocal" xml:space="preserve"><value>本机</value></data>
   <data name="RemoteConnectionsTitle" xml:space="preserve"><value>主机连接</value></data>
-  <data name="RemoteConnectionsIntro" xml:space="preserve"><value>选择运行 Cogitide 智能体、工具和文件的环境。请先安装匹配版本的 Host。</value></data>
+  <data name="RemoteConnectionsIntro" xml:space="preserve"><value>选择运行 Cogitide 智能体、工具和文件的环境。可连接已安装的前台 Host 或后台服务；“部署”会显式安装匹配的预构建文件。</value></data>
   <data name="RemoteSavedProfile" xml:space="preserve"><value>已保存的连接</value></data>
   <data name="RemoteNewSsh" xml:space="preserve"><value>新建 SSH 连接</value></data>
   <data name="RemoteNewWsl" xml:space="preserve"><value>新建 WSL 连接</value></data>
@@ -267,8 +267,8 @@
   <data name="RemoteDataDirectory" xml:space="preserve"><value>远端数据目录（可选绝对路径）</value></data>
   <data name="RemoteConnect" xml:space="preserve"><value>保存并连接</value></data>
   <data name="RemoteCredentialsNotice" xml:space="preserve"><value>凭据和模型请求由选定的 Host 处理。Cogitide 不复制本机密钥或账号。断开连接会停止本次启动的 Host，不支持离线继续。</value></data>
-  <data name="RemoteSshNotice" xml:space="preserve"><value>使用系统 OpenSSH 配置、密钥、代理与 known_hosts。请在 Cogitide 外核验新增或变更的主机密钥。不启用密码提示、代理转发或端口转发。远端账号需使用 POSIX shell。</value></data>
-  <data name="RemoteWslNotice" xml:space="preserve"><value>通过 wsl.exe --exec 直接启动 Host，路径和凭据属于该发行版。</value></data>
+  <data name="RemoteSshNotice" xml:space="preserve"><value>使用系统 OpenSSH 严格核验 known_hosts，不启用密码提示或转发。请在 Cogitide 外核验指纹。前台 Host 的工作会在断开后停止；后台服务继续拥有其工作。远端账号需使用 POSIX shell。</value></data>
+  <data name="RemoteWslNotice" xml:space="preserve"><value>通过 wsl.exe --exec 连接所选发行版。前台 Host 的工作会在断开后停止；后台服务继续执行已接受的工作。路径和凭据属于该发行版。</value></data>
   <data name="RemoteWslDiscovered" xml:space="preserve"><value>可从列表选择发行版，或输入准确名称。</value></data>
   <data name="RemoteNoWsl" xml:space="preserve"><value>未找到 WSL 发行版。</value></data>
   <data name="RemoteWslDiscoveryFailed" xml:space="preserve"><value>无法列出 WSL 发行版，请检查 WSL 是否已安装并可用。</value></data>
@@ -302,4 +302,127 @@
   <data name="NextPage" xml:space="preserve"><value>下一页</value></data>
   <data name="Save" xml:space="preserve"><value>保存</value></data>
   <data name="LiveHistoryWindow" xml:space="preserve"><value>仅显示最近 {0} 条时间线记录，完整历史已保存。</value></data>
+  <data name="ReviewTitle" xml:space="preserve"><value>审阅更改</value></data>
+  <data name="ReviewRefresh" xml:space="preserve"><value>刷新</value></data>
+  <data name="ReviewChangedFiles" xml:space="preserve"><value>更改的文件</value></data>
+  <data name="ReviewChangedCount" xml:space="preserve"><value>更改的文件（{0}）</value></data>
+  <data name="ReviewArea" xml:space="preserve"><value>更改区域</value></data>
+  <data name="ReviewWorkingChanges" xml:space="preserve"><value>工作区更改</value></data>
+  <data name="ReviewStagedChanges" xml:space="preserve"><value>已暂存更改</value></data>
+  <data name="ReviewStageFile" xml:space="preserve"><value>暂存文件</value></data>
+  <data name="ReviewStageHunk" xml:space="preserve"><value>暂存此区块</value></data>
+  <data name="ReviewUnstageFile" xml:space="preserve"><value>取消暂存文件</value></data>
+  <data name="ReviewUnstageHunk" xml:space="preserve"><value>取消暂存此区块</value></data>
+  <data name="ReviewHunk" xml:space="preserve"><value>更改区块</value></data>
+  <data name="ReviewWholeFile" xml:space="preserve"><value>整个文件</value></data>
+  <data name="ReviewDiscardWorking" xml:space="preserve"><value>丢弃工作区更改…</value></data>
+  <data name="ReviewSelectedDiff" xml:space="preserve"><value>选中的 Git 差异</value></data>
+  <data name="ReviewFeedback" xml:space="preserve"><value>给智能体的反馈</value></data>
+  <data name="ReviewLine" xml:space="preserve"><value>行号</value></data>
+  <data name="ReviewFeedbackLine" xml:space="preserve"><value>反馈行号</value></data>
+  <data name="ReviewFeedbackPlaceholder" xml:space="preserve"><value>描述希望修改的内容…</value></data>
+  <data name="ReviewAddPrompt" xml:space="preserve"><value>添加到输入草稿</value></data>
+  <data name="ReviewFeedbackHint" xml:space="preserve"><value>反馈将添加到输入草稿；确认后再发送。</value></data>
+  <data name="ReviewCommit" xml:space="preserve"><value>提交已暂存更改</value></data>
+  <data name="ReviewCommitHint" xml:space="preserve"><value>只提交已暂存的内容，未暂存更改保留在工作区。</value></data>
+  <data name="ReviewCommitMessage" xml:space="preserve"><value>提交说明</value></data>
+  <data name="ReviewPublish" xml:space="preserve"><value>发布此分支</value></data>
+  <data name="ReviewPublishHint" xml:space="preserve"><value>推送使用已配置的上游；请先推送分支，再创建拉取请求。</value></data>
+  <data name="ReviewPushEllipsis" xml:space="preserve"><value>推送分支…</value></data>
+  <data name="ReviewPrTitle" xml:space="preserve"><value>拉取请求标题</value></data>
+  <data name="ReviewPrBody" xml:space="preserve"><value>拉取请求说明</value></data>
+  <data name="ReviewPrBase" xml:space="preserve"><value>目标分支（默认使用仓库设置）</value></data>
+  <data name="ReviewCreatePrEllipsis" xml:space="preserve"><value>创建拉取请求…</value></data>
+  <data name="ReviewAuthHint" xml:space="preserve"><value>使用当前 Host 上的 Git 和已有 GitHub CLI 登录。</value></data>
+  <data name="ReviewOpenPr" xml:space="preserve"><value>打开拉取请求</value></data>
+  <data name="ReviewConnectHost" xml:space="preserve"><value>请先连接 Host，再审阅更改。</value></data>
+  <data name="ReviewWorkspaceChanged" xml:space="preserve"><value>当前 Host 或工作区已改变，请从当前项目重新打开审阅。</value></data>
+  <data name="ReviewScopeWarning" xml:space="preserve"><value>当前仅审阅此目录。请选择仓库根目录，再提交或发布整个暂存区。</value></data>
+  <data name="ReviewCleanWarning" xml:space="preserve"><value>工作区没有更改。仍可推送已提交的更改或创建拉取请求。</value></data>
+  <data name="ReviewBeforeCommit" xml:space="preserve"><value>提交前请审阅工作区更改和已暂存更改。</value></data>
+  <data name="ReviewNoSelection" xml:space="preserve"><value>尚未选择更改的文件</value></data>
+  <data name="ReviewNoAreaChanges" xml:space="preserve"><value>此区域没有更改。</value></data>
+  <data name="ReviewBinaryHint" xml:space="preserve"><value>这是二进制更改，可对整个文件操作。</value></data>
+  <data name="ReviewHunkHint" xml:space="preserve"><value>选择区块后仅操作该区块，其他已暂存和工作区更改会保留。</value></data>
+  <data name="ReviewWholeFileHint" xml:space="preserve"><value>此更改需对整个文件操作；重命名会显示为分别删除和新增的路径。</value></data>
+  <data name="ReviewAllWorking" xml:space="preserve"><value>所有工作区更改</value></data>
+  <data name="ReviewDiscardTitle" xml:space="preserve"><value>丢弃工作区更改？</value></data>
+  <data name="ReviewDiscardMessage" xml:space="preserve"><value>确定丢弃 {1} 中的{0}？
+
+已暂存更改会保留。此窗口无法恢复被丢弃的工作区更改。</value></data>
+  <data name="ReviewDiscardAction" xml:space="preserve"><value>丢弃更改</value></data>
+  <data name="ReviewFeedbackAdded" xml:space="preserve"><value>反馈已添加到输入草稿，请在聊天中检查后再发送。</value></data>
+  <data name="ReviewCommitted" xml:space="preserve"><value>已提交 {0}，未暂存更改保留在工作区。</value></data>
+  <data name="ReviewPushTitle" xml:space="preserve"><value>推送分支？</value></data>
+  <data name="ReviewPushMessage" xml:space="preserve"><value>将 {0} 上已提交的更改推送到已配置的上游？</value></data>
+  <data name="ReviewPushAction" xml:space="preserve"><value>推送分支</value></data>
+  <data name="ReviewPrConfirmTitle" xml:space="preserve"><value>创建拉取请求？</value></data>
+  <data name="ReviewPrConfirmMessage" xml:space="preserve"><value>为 {0} 创建拉取请求？
+
+{1}
+
+{2}</value></data>
+  <data name="ReviewCreatePrAction" xml:space="preserve"><value>创建拉取请求</value></data>
+  <data name="ReviewPushed" xml:space="preserve"><value>已推送到配置的上游。</value></data>
+  <data name="ReviewPrCheckRemote" xml:space="preserve"><value>创建拉取请求的命令已完成，请在远端仓库确认链接。</value></data>
+  <data name="ReviewPrCreated" xml:space="preserve"><value>已创建拉取请求。</value></data>
+  <data name="ConnectionChoice" xml:space="preserve"><value>连接模型服务</value></data>
+  <data name="ChooseConnection" xml:space="preserve"><value>选择 ChatGPT 账号或 API 密钥以继续。</value></data>
+  <data name="UseApiKey" xml:space="preserve"><value>使用 API 密钥</value></data>
+  <data name="ProviderPreset" xml:space="preserve"><value>服务预设</value></data>
+  <data name="ProviderPresetPlaceholder" xml:space="preserve"><value>选择服务，或在下方输入自定义地址</value></data>
+  <data name="ApiModelPlaceholder" xml:space="preserve"><value>选择列表中的模型或输入准确的模型 ID</value></data>
+  <data name="ApiModelCatalogPlaceholder" xml:space="preserve"><value>可用模型</value></data>
+  <data name="FetchApiModels" xml:space="preserve"><value>获取模型</value></data>
+  <data name="ApiModelCatalogHint" xml:space="preserve"><value>获取操作仅向所选地址请求模型元数据，不执行推理。模型能力信息可能缺失；若服务不支持列表，可手动输入模型 ID。</value></data>
+  <data name="ApiKeyLabel" xml:space="preserve"><value>API 密钥</value></data>
+  <data name="ApiKeyPlaceholder" xml:space="preserve"><value>粘贴用于此地址的密钥</value></data>
+  <data name="SaveApiKey" xml:space="preserve"><value>安全保存密钥</value></data>
+  <data name="RemoveApiKey" xml:space="preserve"><value>移除已保存的密钥</value></data>
+  <data name="ApiKeyStoreHint" xml:space="preserve"><value>所选 Host 将密钥保存在系统凭据库中，并绑定到此地址和协议。密钥不会写入桌面设置或转发给命令工作进程。远端 Host 需要单独保存凭据。</value></data>
+  <data name="ApiKeyStored" xml:space="preserve"><value>所选 Host 已为此地址安全保存密钥。</value></data>
+  <data name="ApiKeyNotConfigured" xml:space="preserve"><value>所选 Host 上未找到已保存的密钥或已配置的环境变量密钥。</value></data>
+  <data name="ApiCredentialRequired" xml:space="preserve"><value>请为此地址保存密钥，或在所选 Host 上配置对应环境变量。</value></data>
+  <data name="AccountSignInRequired" xml:space="preserve"><value>请先登录 ChatGPT 账号，再选择此连接。</value></data>
+  <data name="ProviderDetectionKnown" xml:space="preserve"><value>地址匹配 {0}。请确认所选协议；不能仅凭 API 密钥可靠识别服务。</value></data>
+  <data name="ProviderDetectionManual" xml:space="preserve"><value>自定义地址：请明确选择其协议。服务识别依据地址，而非 API 密钥。</value></data>
+  <data name="ApiModelsLoaded" xml:space="preserve"><value>已加载 {0} 个模型 ID。模型列表不代表已验证推理权限或全部模型能力。</value></data>
+  <data name="ApiModelsTruncated" xml:space="preserve"><value>已加载 {0} 个模型；列表已截断。您可以手动输入其他模型 ID。</value></data>
+  <data name="ConfigureModelService" xml:space="preserve"><value>连接模型服务</value></data>
+  <data name="RemoteServiceAttach" xml:space="preserve"><value>连接后台 Host 服务（断开后任务继续）</value></data>
+  <data name="RemoteServiceIdentity" xml:space="preserve"><value>已核验的服务标识（非密钥）</value></data>
+  <data name="RemoteServiceIdentityHint" xml:space="preserve"><value>由“部署”或“启动服务”填写</value></data>
+  <data name="RemoteServiceDeploy" xml:space="preserve"><value>部署预构建 Host…</value></data>
+  <data name="RemoteServiceStart" xml:space="preserve"><value>启动服务</value></data>
+  <data name="RemoteServiceStop" xml:space="preserve"><value>停止服务及其任务</value></data>
+  <data name="RemoteServiceStarted" xml:space="preserve"><value>后台服务已启动。保存并连接后即可使用；关闭桌面端后，已接受的任务仍会继续。</value></data>
+  <data name="RemoteServiceStopped" xml:space="preserve"><value>后台服务已停止其拥有的任务和进程并退出。</value></data>
+  <data name="RemoteServiceBusy" xml:space="preserve"><value>正在执行显式请求的远端服务操作…</value></data>
+  <data name="RemoteServiceDeployTitle" xml:space="preserve"><value>部署预构建的远端 Host</value></data>
+  <data name="RemoteServiceChoosePackage" xml:space="preserve"><value>选择发布目录…</value></data>
+  <data name="RemoteServiceChoosePackageTitle" xml:space="preserve"><value>选择匹配的完整预构建 Host 发布目录</value></data>
+  <data name="RemoteServiceEndpoint" xml:space="preserve"><value>连接端点：{0}</value></data>
+  <data name="RemoteServiceDeployNotice" xml:space="preserve"><value>请选择与此桌面端同次构建的完整独立发布目录。部署会检查全部 SHA-256 和端点 RID，然后创建新的私有安装目录与数据目录；已有路径会被拒绝。不会传输模型密钥或账号存储。SSH 指纹必须已经核验。</value></data>
+  <data name="RemoteServicePackageFolder" xml:space="preserve"><value>本地发布目录（包含 publish-info.json 和 SHA256SUMS）</value></data>
+  <data name="RemoteServiceNewInstall" xml:space="preserve"><value>新的远端安装绝对路径（父目录必须存在）</value></data>
+  <data name="RemoteServiceNewData" xml:space="preserve"><value>新的远端数据绝对路径（父目录必须存在）</value></data>
+  <data name="RemoteServiceLifetimeNotice" xml:space="preserve"><value>桌面端断开后，后台服务会保留已接受的任务和待审批请求。显式停止服务会结束其拥有的工作。操作系统执行隔离需要单独配置。</value></data>
+  <data name="RemoteServiceDeployStart" xml:space="preserve"><value>部署并启动后台 Host</value></data>
+  <data name="RemoteServicePartialRetained" xml:space="preserve"><value>{0} 已创建的远端目录会保留，供检查未完成的部署。</value></data>
+  <data name="RemoteServiceVerifyPackage" xml:space="preserve"><value>正在核验预构建包及桌面端构建匹配情况…</value></data>
+  <data name="RemoteServiceCheckArchitecture" xml:space="preserve"><value>正在检查所选端点架构…</value></data>
+  <data name="RemoteServiceCreateDirectories" xml:space="preserve"><value>正在创建新的私有安装目录和数据目录…</value></data>
+  <data name="RemoteServiceTransferAssets" xml:space="preserve"><value>正在打包并传输已核验的 Host 文件…</value></data>
+  <data name="RemoteServiceVerifyTransfer" xml:space="preserve"><value>正在核验传输后的哈希并启用已安装的 Host…</value></data>
+  <data name="RemoteServiceStartDetached" xml:space="preserve"><value>正在启动后台 Host 服务…</value></data>
+  <data name="RemoteServiceRecoveryLimited" xml:space="preserve"><value>实时活动超过了有界恢复窗口。原始事件仍保存在日志分页中；当前界面可能省略部分活动。</value></data>
+  <data name="RemoteServiceApprovalRestored" xml:space="preserve"><value>服务仍在等待你的审批。请检查请求，并显式批准或拒绝。</value></data>
+  <data name="RemoteServiceDisconnected" xml:space="preserve"><value>已与后台服务断开。已接受的工作和待审批任务可能仍在进行；请重新连接以检查记录的结果。</value></data>
+  <data name="RemoteServiceForegroundDisconnected" xml:space="preserve"><value>前台 Host 连接已丢失。Host 观察到传输关闭后会停止其拥有的工作；最终结果在检查前仍未知。</value></data>
+  <data name="RemoteServiceLegacyReplayUnavailable" xml:space="preserve"><value>此旧版快照没有消息与事件的边界标记。已恢复保存的消息和待审批请求；不会重放无法确认边界的历史文本增量。原始事件仍可从日志分页中查看。</value></data>
+  <data name="OsIsolationRequired" xml:space="preserve"><value>要求工具使用操作系统隔离</value></data>
+  <data name="OsIsolationHint" xml:space="preserve"><value>模型凭据保留在可信 Host。隔离工具默认禁止联网，并限制文件系统访问。不支持原生策略时会停止执行，不会退回普通进程。</value></data>
+  <data name="OsIsolationAvailable" xml:space="preserve"><value>原生后端：{0}。每次启动仍会校验隔离策略。</value></data>
+  <data name="OsIsolationUnavailable" xml:space="preserve"><value>原生隔离不可用：{0}</value></data>
+  <data name="ReviewOutcomeUnknown" xml:space="preserve"><value>未能确认审阅操作的结果，当前结果未知。重试前请刷新 Git 或检查远端仓库。</value></data>
 </root>

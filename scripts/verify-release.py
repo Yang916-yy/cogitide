@@ -13,6 +13,7 @@ import threading
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+STREAMJSONRPC_NOTICE_SHA256 = "fe05842fd5c4c46d9da8559e6a7bb61e5e6d09ff44d4d4c1caead34f4e576798"
 
 
 def read_json(path):
@@ -41,7 +42,47 @@ def native_architecture(path):
     raise AssertionError("Unsupported native application header: " + path.name)
 
 
-def verify_package(directory, require_source_locks=False, require_unified_kernel=False, require_tool_upgrade=False, require_research=False):
+def verify_development_workflow(package, info):
+    """Check pinned content only; this never launches a native sandbox or service."""
+    host = read_json(package / "Workbench.Host.deps.json")
+    for dependency in ("StreamJsonRpc/2.26.150", "Microsoft.Mxc.Sdk/1.0.1"):
+        assert dependency in host["libraries"], "Development dependency pin missing: " + dependency
+    for name in ("StreamJsonRpc.dll", "Microsoft.Mxc.Sdk.dll"):
+        assert (package / name).is_file(), "Development dependency missing: " + name
+    for group in ("Lsp", "Isolation"):
+        source_directory = ROOT / "src" / "Workbench.Tools" / group / "Licenses"
+        sources = [path for path in source_directory.iterdir() if path.is_file()]
+        assert sources, "Development source attribution missing: " + group
+        for source in sources:
+            target = package / group / "Licenses" / source.name
+            assert target.is_file() and digest(source) == digest(target), "Development license mismatch: " + str(target)
+    notice = package / "Lsp" / "Licenses" / "StreamJsonRpc-NOTICE.txt"
+    assert notice.is_file() and digest(notice) == STREAMJSONRPC_NOTICE_SHA256, "Original StreamJsonRpc package NOTICE missing or changed"
+    options = read_json(package / "Workbench.Host.runtimeconfig.json")["runtimeOptions"]
+    frameworks = options["includedFrameworks"] if info["selfContained"] else options.get("frameworks", []) + ([options["framework"]] if "framework" in options else [])
+    assert sum(framework["name"] == "Microsoft.AspNetCore.App" for framework in frameworks) == 1, "Durable Host ASP.NET Core framework missing"
+    assert info.get("hostRuntimeFrameworks") == frameworks, "Host framework metadata differs from runtime configuration"
+    if info["selfContained"]:
+        for name in ("Microsoft.AspNetCore.Server.Kestrel.Core.dll", "Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.dll", "Microsoft.AspNetCore.Hosting.dll"):
+            assert (package / name).is_file(), "Bundled durable Host dependency missing: " + name
+    runtime = info["runtime"]
+    assets = (["mxc_ffi.dll", "plm.exe", "wslcsdk.dll", "wxc-wslc-daemon.exe"] if runtime.startswith("win-") else
+              ["libmxc_ffi.so"] if runtime.startswith("linux-") else ["libmxc_ffi.dylib"] if runtime == "osx-arm64" else [])
+    isolation = info.get("osIsolation", {})
+    assert isolation.get("sdkVersion") == "1.0.1", "MXC package metadata missing"
+    assert isolation.get("supportedByPinnedPackage") is bool(assets), "MXC platform availability metadata differs"
+    assert isolation.get("nativeAssets") == assets, "MXC native asset metadata differs"
+    for name in assets:
+        path = package / name
+        assert path.is_file(), "MXC native asset missing: " + name
+        assert native_architecture(path) == runtime, "MXC native architecture mismatch: " + name
+    if not assets:
+        assert runtime == "osx-x64", "Unexpected unsupported MXC target"
+        assert not (package / "libmxc_ffi.dylib").exists(), "Intel macOS publish contains a foreign MXC asset"
+    return {"packageContentVerified": True, "osIsolationNativeAssetAvailable": bool(assets), "osIsolationEnforcementVerified": False}
+
+
+def verify_package(directory, require_source_locks=False, require_unified_kernel=False, require_tool_upgrade=False, require_research=False, require_development_workflow=False):
     package = directory.resolve(strict=True)
     assert not (package / ".publish-incomplete").exists(), "Publish did not complete"
     info = read_json(package / "publish-info.json")
@@ -123,11 +164,13 @@ def verify_package(directory, require_source_locks=False, require_unified_kernel
         assert info["displayName"] == "Cogitide", "Public product identity missing"
         for name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"):
             assert (package / name).is_file() and digest(package / name) == digest(ROOT / name), "Root license/notice mismatch: " + name
+    development = verify_development_workflow(package, info) if require_development_workflow else {"packageContentVerified": False}
     return {"directory": str(package), "runtime": runtime, "runtimeVersion": versions[0], "headlessOnly": headless_only,
             "selfContained": info["selfContained"], "verifiedFiles": len(entries), "matchingSourceLocks": locks - len(source_differences),
             "sourceLockDifferences": source_differences,
             "nativeHeadersVerified": True, "unifiedKernelVerified": require_unified_kernel, "toolUpgradeVerified": require_tool_upgrade,
-            "researchReleaseNoticesVerified": require_research, "hostSmoke": {"status": "not-run"}, "guiVerified": False}
+            "researchReleaseNoticesVerified": require_research, "developmentWorkflow": development,
+            "hostSmoke": {"status": "not-run"}, "guiVerified": False}
 
 
 def current_runtime():
@@ -222,13 +265,14 @@ def main():
     parser.add_argument("--require-unified-kernel", action="store_true", help="Require OAuth/Responses dependencies, attribution and absence of the old delegated runtime.")
     parser.add_argument("--require-tool-upgrade", action="store_true", help="Require glob component and navigation/patch/command source attributions.")
     parser.add_argument("--require-research", action="store_true", help="Require Cogitide identity and root Apache/third-party notices.")
+    parser.add_argument("--require-development-workflow", action="store_true", help="Require LSP/MXC pins, upstream notices, matching native assets and durable Host ASP.NET Core dependencies; no native enforcement claim.")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     source_paths = list((ROOT / "src").glob("*/packages.lock.json")) + list((ROOT / "tests").glob("*/packages.lock.json"))
     source_hashes = {str(path): digest(path) for path in source_paths}
     reports = []
     for directory in args.directories:
-        report = verify_package(directory, args.require_source_locks, args.require_unified_kernel, args.require_tool_upgrade, args.require_research)
+        report = verify_package(directory, args.require_source_locks, args.require_unified_kernel, args.require_tool_upgrade, args.require_research, args.require_development_workflow)
         if args.smoke_host and report["runtime"] == current_runtime():
             smoke_host(report)
         reports.append(report)

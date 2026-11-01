@@ -8,6 +8,11 @@
     <StackPanel Spacing="8" Margin="0,0,0,20">
       <TextBlock Text="{local:Loc SettingsTitle}" FontSize="24" FontWeight="SemiBold" />
       <TextBlock Text="{local:Loc SettingsDescription}" Foreground="#969FB3" />
+      <TextBlock Text="{local:Loc ConnectionChoice}" Margin="0,8,0,0" FontWeight="SemiBold" />
+      <ComboBox x:Name="BackendChoice" HorizontalAlignment="Stretch" PlaceholderText="{local:Loc ChooseConnection}" SelectionChanged="BackendSelectionChanged">
+        <ComboBoxItem Tag="chatgpt" Content="{local:Loc ContinueWithChatGpt}" />
+        <ComboBoxItem Tag="api" Content="{local:Loc UseApiKey}" />
+      </ComboBox>
     </StackPanel>
     <TabControl x:Name="SettingsTabs" Grid.Row="1">
       <TabItem>
@@ -77,6 +82,10 @@
         <TabItem.Header><TextBlock Text="{local:Loc ApiBackend}" /></TabItem.Header>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="10" Margin="3,20,3,12">
+            <TextBlock Text="{local:Loc ProviderPreset}" FontWeight="SemiBold" />
+            <ComboBox x:Name="ApiPresetPicker" HorizontalAlignment="Stretch" PlaceholderText="{local:Loc ProviderPresetPlaceholder}" SelectionChanged="ApiPresetChanged">
+              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
             <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2">
               <TextBlock Text="{local:Loc Provider}" FontWeight="SemiBold" VerticalAlignment="Center" />
               <Button Grid.Column="1" Content="{local:Loc ProviderDefaults}" Classes="quiet" Click="ProviderDefaultsClick" Padding="8,4" />
@@ -92,10 +101,25 @@
               <ComboBoxItem Tag="OpenAiResponses" Content="OpenAI Responses API" />
             </ComboBox>
             <TextBlock Text="{local:Loc Endpoint}" FontWeight="SemiBold" />
-            <TextBox x:Name="EndpointBox" PlaceholderText="https://api.deepseek.com" TextChanged="EndpointChanged" />
+            <TextBox x:Name="EndpointBox" PlaceholderText="https://api.example.com/v1" TextChanged="EndpointChanged" />
+            <TextBlock x:Name="ProviderDetectionLabel" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" />
             <TextBlock Text="{local:Loc ProviderEndpointHint}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" />
             <TextBlock Text="{local:Loc ModelId}" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <TextBox x:Name="ApiModelBox" PlaceholderText="deepseek-flash" />
+            <TextBox x:Name="ApiModelBox" PlaceholderText="{local:Loc ApiModelPlaceholder}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <ComboBox x:Name="ApiModelsPicker" HorizontalAlignment="Stretch" PlaceholderText="{local:Loc ApiModelCatalogPlaceholder}" SelectionChanged="ApiModelChanged">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button x:Name="FetchApiModelsButton" Grid.Column="1" Classes="quiet" Content="{local:Loc FetchApiModels}" Click="FetchApiModelsClick" />
+            </Grid>
+            <TextBlock Text="{local:Loc ApiModelCatalogHint}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" />
+            <TextBlock Text="{local:Loc ApiKeyLabel}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBox x:Name="ApiKeyBox" PasswordChar="●" PlaceholderText="{local:Loc ApiKeyPlaceholder}" />
+            <WrapPanel>
+              <Button x:Name="SaveApiKeyButton" Content="{local:Loc SaveApiKey}" Classes="quiet" Click="SaveApiKeyClick" Margin="0,0,8,0" />
+              <Button x:Name="RemoveApiKeyButton" Content="{local:Loc RemoveApiKey}" Classes="quiet" Click="RemoveApiKeyClick" />
+            </WrapPanel>
+            <TextBlock Text="{local:Loc ApiKeyStoreHint}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" />
             <TextBlock Text="{local:Loc KeyVariable}" FontWeight="SemiBold" Margin="0,8,0,0" />
             <TextBox x:Name="KeyVariableBox" PlaceholderText="DEEPSEEK_API_KEY" TextChanged="KeyVariableChanged" />
             <TextBlock x:Name="KeyStatus" Foreground="#8EDBCD" FontSize="11" TextWrapping="Wrap" />

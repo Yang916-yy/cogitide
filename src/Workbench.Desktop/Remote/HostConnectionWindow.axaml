@@ -32,6 +32,14 @@
           <TextBox x:Name="DotnetPathBox" PlaceholderText="dotnet" />
           <TextBlock Text="{local:Loc RemoteDataDirectory}" />
           <TextBox x:Name="DataDirectoryBox" PlaceholderText="/home/user/.local/share/Workbench" />
+          <CheckBox x:Name="DurableServiceBox" Content="{local:Loc RemoteServiceAttach}" />
+          <TextBlock Text="{local:Loc RemoteServiceIdentity}" />
+          <TextBox x:Name="ServiceIdBox" PlaceholderText="{local:Loc RemoteServiceIdentityHint}" />
+          <WrapPanel Orientation="Horizontal">
+            <Button x:Name="DeployButton" Content="{local:Loc RemoteServiceDeploy}" Click="DeployClick" Margin="0,0,8,8" />
+            <Button x:Name="StartServiceButton" Content="{local:Loc RemoteServiceStart}" Click="StartServiceClick" Margin="0,0,8,8" />
+            <Button x:Name="StopServiceButton" Content="{local:Loc RemoteServiceStop}" Click="StopServiceClick" Margin="0,0,0,8" />
+          </WrapPanel>
           <TextBlock Text="{local:Loc RemoteCredentialsNotice}" TextWrapping="Wrap" Classes="muted" />
           <TextBlock x:Name="TransportNotice" TextWrapping="Wrap" Classes="muted" />
         </StackPanel>

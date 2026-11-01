@@ -7,7 +7,14 @@ using Workbench.Auth;
 using Workbench.Core;
 using Workbench.Protocol;
 using Workbench.Tools;
+using Workbench.Host.RemoteService;
+using Workbench.Host.Isolation;
 
+if (args.FirstOrDefault() == "--tool-worker")
+{
+    Environment.ExitCode = await ToolWorker.RunAsync(args);
+    return;
+}
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = new UTF8Encoding(false);
 if (args.FirstOrDefault() is "--optimize-skill" or "--optimize-compression")
@@ -35,6 +42,11 @@ var dataDirectory = dataIndex >= 0 && dataIndex + 1 < args.Length
     ? Path.GetFullPath(args[dataIndex + 1])
     : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Workbench");
 Directory.CreateDirectory(dataDirectory);
+if (args.FirstOrDefault() is "--service" or "--service-start" or "--service-bridge" or "--service-stop")
+{
+    Environment.ExitCode = await RemoteServiceCommandLine.RunAsync(args, dataDirectory);
+    return;
+}
 try
 {
     using var owner = new FileStream(Path.Combine(dataDirectory, "host.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
@@ -47,7 +59,7 @@ catch (Exception ex)
     Environment.ExitCode = 1;
 }
 
-internal sealed class WorkbenchHost : IAsyncDisposable
+internal sealed partial class WorkbenchHost : IAsyncDisposable
 {
     private readonly SqliteSessionStore _store;
     private readonly AgentEngine _engine;
@@ -61,19 +73,31 @@ internal sealed class WorkbenchHost : IAsyncDisposable
     private readonly SemaphoreSlim _requestGate = new(16, 16);
     private readonly ConcurrentDictionary<string, ActiveRun> _runs = new();
     private readonly ConcurrentDictionary<string, string> _workspaceRuns = new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+    private readonly object _workspaceAdmissionGate = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _approvals = new();
+    private readonly ConcurrentDictionary<string, ApprovalRequest> _pendingApprovals = new();
     private readonly ConcurrentDictionary<long, Task> _requests = new();
+    private readonly Func<RpcNotification, Task>? _notificationSink;
+    private readonly object _lifetimeGate = new();
+    private Task? _initialization;
+    private Task? _shutdownTask;
     private long _requestNumber;
+    private readonly string _directory;
+    private readonly OsIsolationManager _isolation;
 
-    internal WorkbenchHost(string directory, IChatGptAccountService? accounts = null, HttpClient? modelHttpClient = null)
+    internal WorkbenchHost(string directory, IChatGptAccountService? accounts = null, HttpClient? modelHttpClient = null,
+        Func<RpcNotification, Task>? notificationSink = null)
     {
+        _notificationSink = notificationSink;
+        _directory = directory;
+        _providerDataDirectory = directory;
         _store = new SqliteSessionStore(Path.Combine(directory, "sessions.db"));
         _commands = new(Path.Combine(directory, "commands"), CommandWorkerStart);
+        _isolation = new(IsolatedWorkerStart, directory, LoadIntegrationToolsAsync);
         _tools = [.. WorkspaceTools.Create(_workspace, _commands), new BrowserCheckTool(Path.Combine(directory, "browser-artifacts"))];
-        _engine = new AgentEngine(_store, _tools, WorkspaceService.Resolve, _commands,
+        _engine = new AgentEngine(_store, _tools, WorkspaceService.Resolve, new RunResources(_commands, _isolation),
             (workspace, revision, ct) => _workspace.CreateRepositoryMemoryToolAsync(workspace, revision, ct),
-            async (workspace, excluded, ct) => File.Exists(Path.Combine(directory, "mcp.json"))
-                ? await McpToolSet.ConnectAsync(Path.Combine(directory, "mcp.json"), workspace, excluded, ct) : null);
+            executionBroker: _isolation);
         _accounts = accounts ?? new ChatGptAccountService(directory);
         _modelHttpClient = modelHttpClient;
         _accounts.AccountChanged += AccountChanged;
@@ -83,13 +107,13 @@ internal sealed class WorkbenchHost : IAsyncDisposable
     {
         var executable = Environment.ProcessPath!;
         ProcessStartInfo start;
-        if (Path.GetFileNameWithoutExtension(executable) == "Workbench.Host") start = new(executable);
+        if (Path.GetFileName(executable) is "Workbench.Host" or "Workbench.Host.exe") start = new(executable);
         else
         {
             // This also supports the real Host assembly referenced by headless tests.
             var runtime = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
             var dotnet = Path.GetFullPath(Path.Combine(runtime, "..", "..", "..", OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet"));
-            if (Path.GetFileNameWithoutExtension(executable) == "dotnet") dotnet = executable;
+            if (Path.GetFileName(executable) is "dotnet" or "dotnet.exe") dotnet = executable;
             start = new(File.Exists(dotnet) ? dotnet : "dotnet");
             start.ArgumentList.Add(typeof(WorkbenchHost).Assembly.Location);
         }
@@ -120,7 +144,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
 
     public async Task RunAsync()
     {
-        await _store.RecoverInterruptedAsync();
+        await InitializeAsync();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; _shutdown.Cancel(); };
         try
         {
@@ -149,12 +173,28 @@ internal sealed class WorkbenchHost : IAsyncDisposable
         catch (OperationCanceledException) when (_shutdown.IsCancellationRequested) { }
         finally
         {
-            _shutdown.Cancel();
-            foreach (var run in _runs.Values) run.Cancellation.Cancel();
-            foreach (var approval in _approvals.Values) approval.TrySetCanceled();
-            try { await Task.WhenAll(_runs.Values.Select(x => x.Task ?? Task.CompletedTask).Concat(_requests.Values)).WaitAsync(TimeSpan.FromSeconds(10)); }
-            catch (Exception e) when (e is OperationCanceledException or TimeoutException) { }
+            await ShutdownAsync();
         }
+    }
+
+    internal Task InitializeAsync()
+    {
+        lock (_lifetimeGate) return _initialization ??= _store.RecoverInterruptedAsync();
+    }
+
+    internal Task ShutdownAsync()
+    {
+        lock (_lifetimeGate) return _shutdownTask ??= StopOwnedWorkAsync();
+    }
+
+    private async Task StopOwnedWorkAsync()
+    {
+        _shutdown.Cancel();
+        foreach (var run in _runs.Values)
+            try { run.Cancellation.Cancel(); } catch (ObjectDisposedException) { }
+        foreach (var approval in _approvals.Values) approval.TrySetCanceled();
+        try { await Task.WhenAll(_runs.Values.Select(x => x.Task ?? Task.CompletedTask).Concat(_requests.Values)).WaitAsync(TimeSpan.FromSeconds(10)); }
+        catch (Exception e) when (e is OperationCanceledException or TimeoutException) { }
     }
 
     private static bool IsControlRequest(string line)
@@ -194,7 +234,10 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                     ProjectSkillTool.Descriptor, ProjectExperienceTools.RememberDescriptor, ProjectExperienceTools.RecallDescriptor]),
                     executionEngine = "cogito", chatGptAuthentication = "oauth", apiKeyAvailable = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY")), defaultProvider = new ProviderSettings(),
                     platform = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux",
-                    capabilities = new[] { "session.view", "session.messages.page", "session.events.page", "run.continue", "workspace.files.page", "workspace.read.page" } };
+                    capabilities = new[] { "session.view", "session.messages.page", "session.events.page", "session.events.since", "session.pending_inputs",
+                        "run.continue", "approval.pending", "workspace.validate", "workspace.files.page", "workspace.read.page", "isolation.status",
+                        "workspace.review", "workspace.review.change", "workspace.review.commit", "workspace.review.publish",
+                        "provider.presets", "provider.credential.status", "provider.credential.save", "provider.credential.delete", "provider.models" } };
             case "session.list": return await _store.ListAsync(ct);
             case "session.create":
             {
@@ -217,6 +260,9 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 p.TryGetProperty("beforeSequence", out var beforeSequence) && beforeSequence.ValueKind != JsonValueKind.Null ? beforeSequence.GetInt64() : null,
                 Integer(p, "limit", 100), ct);
             case "session.pending_inputs": return await _store.PendingInputsAsync(Required(p, "sessionId"), Integer(p, "limit", 128), ct);
+            case "session.events.since": return await _store.EventsSincePageAsync(Required(p, "sessionId"),
+                p.GetProperty("afterSequence").GetInt64(), p.TryGetProperty("throughSequence", out var throughSequence) && throughSequence.ValueKind != JsonValueKind.Null ? throughSequence.GetInt64() : null,
+                Integer(p, "limit", 100), ct);
             case "session.evidence":
             {
                 var session = await LoadAsync(Required(p, "sessionId"), ct);
@@ -268,16 +314,23 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                     }
                 }
                 var run = new ActiveRun(Guid.NewGuid().ToString("N"), CancellationTokenSource.CreateLinkedTokenSource(ct), session.Info.Backend);
-                if (!_runs.TryAdd(id, run)) { run.Cancellation.Dispose(); throw new InvalidOperationException("This session is already running. Stop it before starting another turn."); }
-                if (!_workspaceRuns.TryAdd(session.Info.WorkspacePath, "run:" + run.Id))
+                lock (_workspaceAdmissionGate)
                 {
-                    _runs.TryRemove(id, out _); run.Cancellation.Dispose();
-                    throw new InvalidOperationException("Another session is working in this workspace. Stop it or use an independent worktree.");
+                    if (_workspaceRuns.Values.Any(owner => owner.StartsWith("review:", StringComparison.Ordinal)))
+                    {
+                        run.Cancellation.Dispose();
+                        throw new InvalidOperationException("Wait for the Git review change to finish before starting work.");
+                    }
+                    if (!_runs.TryAdd(id, run)) { run.Cancellation.Dispose(); throw new InvalidOperationException("This session is already running. Stop it before starting another turn."); }
+                    if (!_workspaceRuns.TryAdd(session.Info.WorkspacePath, "run:" + run.Id))
+                    {
+                        _runs.TryRemove(new KeyValuePair<string, ActiveRun>(id, run)); run.Cancellation.Dispose();
+                        throw new InvalidOperationException("Another session is working in this workspace. Stop it or use an independent worktree.");
+                    }
                 }
                 try
                 {
-                    if (session.Info.Backend == "api" && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(provider.ApiKeyEnvironmentVariable)))
-                        throw new InvalidOperationException($"Set {provider.ApiKeyEnvironmentVariable} in your local environment, then restart Workbench.");
+                    var resolvedApiKey = session.Info.Backend == "api" ? await ResolveProviderApiKeyAsync(provider, run.Cancellation.Token) : null;
                     if (session.Info.Backend == "chatgpt")
                     {
                         var credential = await _accounts.GetCredentialAsync(run.Cancellation.Token);
@@ -298,7 +351,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                         await _store.SaveAsync(session, run.Cancellation.Token);
                     }
                     options = options with { RunId = run.Id };
-                    run.Task = ExecuteRunAsync(session, prompt, provider, options, run, images, continuing);
+                    run.Task = ExecuteRunAsync(session, prompt, provider, options, run, images, continuing, resolvedApiKey);
                     await run.Accepted.Task.WaitAsync(ct);
                     return new { runId = run.Id, accepted = true };
                 }
@@ -325,6 +378,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 var id = Required(p, "sessionId");
                 if (_runs.TryGetValue(id, out var run)) run.Cancellation.Cancel();
                 await _commands.EndSessionAsync(id);
+                await _isolation.EndSessionAsync(id);
                 return new { requested = true };
             }
             case "run.steer":
@@ -343,6 +397,10 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 if (!_approvals.TryGetValue(id, out var pending)) throw new InvalidOperationException("Approval is no longer pending.");
                 return new { accepted = pending.TrySetResult(p.GetProperty("approved").GetBoolean()) };
             }
+            case "approval.pending":
+                return _pendingApprovals.Values.Where(approval =>
+                    (Optional(p, "sessionId") is not { } sessionId || approval.SessionId == sessionId) &&
+                    _approvals.TryGetValue(approval.Id, out var completion) && !completion.Task.IsCompleted).ToArray();
             case "workspace.validate":
             {
                 var path = WorkspaceService.Root(Required(p, "workspacePath"));
@@ -355,13 +413,31 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 Integer(p, "offset", 0), Integer(p, "limit", 200), Integer(p, "characterOffset", 0), Optional(p, "expectedSha256"), ct);
             case "workspace.read": return await _workspace.ReadFileAsync(Required(p, "workspacePath"), Required(p, "path"), ct);
             case "workspace.diff": return await _workspace.GitDiffAsync(Required(p, "workspacePath"), ct);
+            case "isolation.status": return _isolation.Probe();
+            case "workspace.review": return await _workspace.ReviewAsync(Required(p, "workspacePath"), ct);
+            case "workspace.review.change": return await WithReviewMutationAsync(Required(p, "workspacePath"), workspace =>
+                _workspace.ChangeReviewAsync(workspace, Required(p, "expectedSnapshot"), Required(p, "path"), Required(p, "area"), Required(p, "action"),
+                    Optional(p, "hunkId"), p.TryGetProperty("confirmed", out var confirmed) && confirmed.ValueKind == JsonValueKind.True, ct));
+            case "workspace.review.commit": return await WithReviewMutationAsync(Required(p, "workspacePath"), workspace =>
+                _workspace.CommitReviewAsync(workspace, Required(p, "expectedSnapshot"), Required(p, "message"), ct));
+            case "workspace.review.publish": return await WithReviewMutationAsync(Required(p, "workspacePath"), workspace =>
+                _workspace.PublishReviewAsync(workspace, Required(p, "expectedSnapshot"), Required(p, "action"), Optional(p, "title"), Optional(p, "body"), Optional(p, "baseBranch"), ct));
+            case "provider.presets":
+            case "provider.credential.status":
+            case "provider.credential.save":
+            case "provider.credential.delete":
+            case "provider.models": return await DispatchProviderConfigurationAsync(method, p, ct);
             case "workspace.command":
             {
                 var workspace = WorkspaceService.Root(Required(p, "workspacePath"));
-                if (!_workspaceRuns.TryAdd(workspace, "command:" + Guid.NewGuid().ToString("N")))
-                    throw new InvalidOperationException("Stop the active workspace run before starting a separate command.");
+                var owner = "command:" + Guid.NewGuid().ToString("N");
+                lock (_workspaceAdmissionGate)
+                {
+                    if (_workspaceRuns.Values.Any(lease => lease.StartsWith("review:", StringComparison.Ordinal)) || !_workspaceRuns.TryAdd(workspace, owner))
+                        throw new InvalidOperationException("Stop the active workspace run or wait for the Git review change before starting a separate command.");
+                }
                 try { return await _workspace.RunCommandAsync(workspace, Required(p, "command"), p.TryGetProperty("timeoutSeconds", out var timeout) ? timeout.GetInt32() : 120, ct: ct); }
-                finally { _workspaceRuns.TryRemove(workspace, out _); }
+                finally { _workspaceRuns.TryRemove(new KeyValuePair<string, string>(workspace, owner)); }
             }
             case "account.status": return await _accounts.GetAccountAsync(ct);
             case "account.list": return await _accounts.ListAccountsAsync(ct);
@@ -381,7 +457,8 @@ internal sealed class WorkbenchHost : IAsyncDisposable
         }
     }
 
-    private async Task ExecuteRunAsync(AgentSession session, string prompt, ProviderSettings provider, RunOptions options, ActiveRun run, IReadOnlyList<ImageAttachment>? images, bool continuing = false)
+    private async Task ExecuteRunAsync(AgentSession session, string prompt, ProviderSettings provider, RunOptions options, ActiveRun run, IReadOnlyList<ImageAttachment>? images, bool continuing = false,
+        string? resolvedApiKey = null)
     {
         try
         {
@@ -396,7 +473,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
                 }, session.Info.AccountBinding!, _modelHttpClient);
             else
             {
-                var key = Environment.GetEnvironmentVariable(provider.ApiKeyEnvironmentVariable)!;
+                var key = resolvedApiKey ?? await ResolveProviderApiKeyAsync(provider, run.Cancellation.Token);
                 model = AgentModelFactory.Create(provider, key, _modelHttpClient);
             }
             options = options with { SecretEnvironmentVariables = [provider.ApiKeyEnvironmentVariable] };
@@ -436,6 +513,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
     {
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_approvals.TryAdd(approval.Id, completion)) throw new InvalidOperationException("Duplicate approval id.");
+        _pendingApprovals[approval.Id] = approval;
         using var registration = ct.Register(() => completion.TrySetCanceled(ct));
         try
         {
@@ -443,7 +521,7 @@ internal sealed class WorkbenchHost : IAsyncDisposable
             await WriteAsync(new RpcNotification("approval.requested", Wire.Element(approval)));
             return await completion.Task;
         }
-        finally { _approvals.TryRemove(approval.Id, out _); }
+        finally { _pendingApprovals.TryRemove(approval.Id, out _); _approvals.TryRemove(approval.Id, out _); }
     }
 
     private ValueTask EmitAsync(AgentEvent evt, CancellationToken ct)
@@ -454,6 +532,11 @@ internal sealed class WorkbenchHost : IAsyncDisposable
     }
     private async Task WriteAsync<T>(T value)
     {
+        if (value is RpcNotification notification && _notificationSink is not null)
+        {
+            await _notificationSink(notification);
+            return;
+        }
         await _outputGate.WaitAsync();
         try { await Console.Out.WriteLineAsync(JsonSerializer.Serialize(value, Wire.Json)); await Console.Out.FlushAsync(); }
         finally { _outputGate.Release(); }
@@ -481,10 +564,12 @@ internal sealed class WorkbenchHost : IAsyncDisposable
     private static string? Optional(JsonElement p, string name) => p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     public async ValueTask DisposeAsync()
     {
-        _shutdown.Cancel();
+        await ShutdownAsync();
         await _commands.DisposeAsync();
+        await _isolation.DisposeAsync();
         _accounts.AccountChanged -= AccountChanged;
         await _accounts.DisposeAsync();
+        DisposeProviderConfiguration();
         try { await Task.WhenAll(_runs.Values.Select(run => run.Task ?? Task.CompletedTask)).WaitAsync(TimeSpan.FromSeconds(10)); }
         catch (Exception ex) when (ex is OperationCanceledException or TimeoutException) { }
         if (_store is IDisposable disposable) disposable.Dispose();

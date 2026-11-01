@@ -108,6 +108,7 @@ public partial class MainWindow : Window
             else if (!string.IsNullOrWhiteSpace(_workspace)) await RefreshWorkspaceAsync();
             if (_session is null) LocalizedControl.Text(StatusLabel, string.IsNullOrWhiteSpace(_workspace) ? "ReadyNoProject" : "ReadyProject");
             else ShowLoadedStatus(_session.Info.Status);
+            await EnsureProviderConfiguredAsync();
         }
         catch (Exception ex) { ShowError(ex); if (Program.SmokeTest) Environment.ExitCode = 1; }
         if (Program.ScreenshotPath is { } screenshot)
@@ -137,6 +138,7 @@ public partial class MainWindow : Window
         if (selected is null) return;
         _workspace = Path.GetFullPath(selected);
         _session = null;
+        _taskRequireOsIsolation = null;
         _loadingSelection = true;
         SessionList.SelectedItem = null;
         _loadingSelection = false;
@@ -150,6 +152,7 @@ public partial class MainWindow : Window
         LocalizedControl.Text(RunStateLabel, "Ready");
         LocalizedControl.Text(StatusLabel, "ProjectOpened");
         UpdateWorkspaceLabels();
+        RefreshTaskControls();
         SaveSettings();
         await RefreshWorkspaceAsync();
         PromptBox.Focus();
@@ -159,8 +162,10 @@ public partial class MainWindow : Window
 
     private async Task CreateSessionAsync(string? title = null)
     {
+        if (!await EnsureProviderConfiguredAsync()) return;
         RequireWorkspace();
         _session = await _host.RequestAsync<AgentSession>("session.create", new { workspacePath = _workspace, title = title ?? L.Text("NewSession"), backend = SelectedBackend });
+        _taskRequireOsIsolation = null;
         _newSessionBeforeSend = false;
         _entries.Clear();
         _liveWindowTrimmed = false;
@@ -171,6 +176,7 @@ public partial class MainWindow : Window
         SessionTitle.Text = _session.Info.Title;
         LocalizedControl.Text(RunStateLabel, "Ready");
         LocalizedControl.Text(StatusLabel, "SessionReady");
+        RefreshTaskControls();
         await RefreshSessionsAsync(_session.Info.Id);
         SaveSettings();
     }
@@ -186,6 +192,7 @@ public partial class MainWindow : Window
     internal void RestoreSession(AgentSession loaded, IReadOnlyList<AgentEvent> events, bool includeRecovery = true)
     {
         _session = loaded;
+        _taskRequireOsIsolation = null;
         _liveWindowTrimmed = false;
         _newSessionBeforeSend = false;
         _workspace = loaded.Info.WorkspacePath;
@@ -225,6 +232,7 @@ public partial class MainWindow : Window
         UpdateModelLabel();
         RefreshTaskControls();
         SaveSettings();
+        RestoreRemotePresentation(loaded, events);
     }
 
     private async Task RefreshSessionsAsync(string? selectId = null)
@@ -251,6 +259,7 @@ public partial class MainWindow : Window
     }
     private async Task SendAsync()
     {
+        if (!await EnsureProviderConfiguredAsync()) return;
         var draft = PromptBox.Text;
         var prompt = draft?.Trim();
         if (string.IsNullOrWhiteSpace(prompt)) return;
@@ -385,6 +394,7 @@ public partial class MainWindow : Window
     {
         try
         {
+            if (!AcceptPresentationNotification(method, parameters)) return;
             if (method == "approval.requested")
             {
                 var approval = parameters.Deserialize<ApprovalRequest>(Wire.Json);
@@ -425,7 +435,7 @@ public partial class MainWindow : Window
                     break;
                 case "tool.started":
                     _assistantEntry = null;
-                    if (evt.Call is { } started) _toolEntries[started.Id] = AddEntry("TOOL · " + started.Name, Pretty(started.ArgumentsJson), "#9CA9C8");
+                    if (evt.Call is { } started && !_toolEntries.ContainsKey(started.Id)) _toolEntries[started.Id] = AddEntry("TOOL · " + started.Name, Pretty(started.ArgumentsJson), "#9CA9C8");
                     if (evt.Call?.Name is { } name) LocalizedControl.Text(RunStateLabel, "Passthrough", (Func<string>)(() => TimelineEntry.ToolTitle(name)));
                     else LocalizedControl.Text(RunStateLabel, "ToolRunning");
                     break;
@@ -508,7 +518,7 @@ public partial class MainWindow : Window
                     LocalizedControl.Text(RunStateLabel, outcome);
                     LocalizedControl.Text(StatusLabel, outcome);
                     if (evt.Type != "run.completed") AddEntry(evt.Type == "run.failed" ? "ERROR" : evt.Type == "run.paused" ? "PAUSED" : "STOPPED", evt.Text ?? RunStateLabel.Text!, "#E8B391");
-                    _ = GuardAsync(async () => { await RefreshSessionsAsync(_session?.Info.Id); await RefreshWorkspaceAsync(); });
+                    if (!_applyingRecoveryEvent) _ = GuardAsync(async () => { await RefreshSessionsAsync(_session?.Info.Id); await RefreshWorkspaceAsync(); });
                     break;
                 default:
                     if (!string.IsNullOrWhiteSpace(evt.Text)) AddEntry(evt.Type.ToUpperInvariant(), Limit(evt.Text, 12000));
@@ -690,7 +700,7 @@ public partial class MainWindow : Window
     {
         ModelLabel.Text = SelectedBackend == "chatgpt" ? (string.IsNullOrWhiteSpace(_settings.CodexModel) ? "ChatGPT" : _settings.CodexModel) : _settings.Provider.Model;
         ExecutionModeLabel.Text = L.Text(ComposerChoices.ModeKey(_settings.ExecutionMode));
-        ToolTip.SetTip(ExecutionModeButton, L.Text("ApiExecutionHint"));
+        RefreshExecutionModeTip();
         AutomationProperties.SetName(ExecutionModeButton, L.Text("ExecutionMode"));
         var effort = SelectedBackend == "chatgpt" ? _settings.CodexReasoningEffort : _settings.Provider.ReasoningEffort;
         ReasoningLabel.Text = SelectedBackend != "chatgpt" && _settings.Provider.ThinkingBudgetTokens is not null

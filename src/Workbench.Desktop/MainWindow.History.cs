@@ -11,7 +11,9 @@ public partial class MainWindow
     private int _historyTotal;
     private bool _viewingEarlierHistory;
     private bool _liveWindowTrimmed;
+    private bool? _taskRequireOsIsolation;
     internal const int MaximumTimelineEntries = 1000;
+    private bool CurrentTaskRequiresOsIsolation => _taskRequireOsIsolation ?? _session?.RunCheckpoint?.Options.RequireOsIsolation ?? _settings.Run.RequireOsIsolation;
 
     private void BoundTimeline()
     {
@@ -35,35 +37,55 @@ public partial class MainWindow
     {
         var generation = ++_loadGeneration;
         var host = _host;
-        var viewTask = host.RequestAsync<SessionView>("session.view", new { sessionId = id, limit = 100 });
-        var eventsTask = host.RequestAsync<SessionEventPage>("session.events.page", new { sessionId = id, limit = 100 });
-        await Task.WhenAll(viewTask, eventsTask);
-        var view = await viewTask;
-        var page = beforeIndex is null
-            ? new SessionMessagePage(view.Messages, view.FirstMessageIndex, view.TotalMessages, view.HasEarlierMessages,
-                view.Available, view.UnavailableReason, view.OmittedPayloads)
-            : await host.RequestAsync<SessionMessagePage>("session.messages.page", new { sessionId = id, beforeIndex, limit = 100 });
-        if (generation != _loadGeneration || host != _host) return;
-        if (!page.Available) throw new InvalidDataException(page.UnavailableReason ?? L.Text("HistoryUnavailable"));
-        var events = await eventsTask;
-        RestoreSession(new(view.Info, page.Messages, view.Compaction, view.RunCheckpoint), events.Available ? events.Items : [], includeRecovery: false);
-        _historyFirstIndex = page.FirstMessageIndex;
-        _historyTotal = page.TotalMessages;
-        _viewingEarlierHistory = beforeIndex is not null;
-        EarlierHistoryButton.IsVisible = page.HasEarlierMessages;
-        LatestHistoryButton.IsVisible = _viewingEarlierHistory;
-        HistoryRangeLabel.Text = L.Format("HistoryRange", page.FirstMessageIndex + 1, page.FirstMessageIndex + page.Messages.Count, _historyTotal);
-        HistoryRangeLabel.IsVisible = _historyTotal > 0;
-        if (page.OmittedPayloads) AddEntry("HISTORY", L.Text("HistoryPayloadOmitted"));
-        if (view.PendingInputs is { } pending)
+        BeginRemoteRecovery(host, id, generation);
+        try
         {
-            if (!pending.Available || pending.HasMore)
-                AddEntry("RECOVERY", L.Format("PendingInputCount", pending.TotalPending), "#E4B499");
-            foreach (var input in pending.Items)
-                AddEntry("RecoveredInput", "", "#E4B499").LocalizeText(() => L.Format("RecoveredInputText", input.Text));
+            var viewTask = host.RequestAsync<SessionView>("session.view", new { sessionId = id, limit = 100 });
+            var eventsTask = host.RequestAsync<SessionEventPage>("session.events.page", new { sessionId = id, limit = 100 });
+            await Task.WhenAll(viewTask, eventsTask);
+            var view = await viewTask;
+            var page = beforeIndex is null
+                ? new SessionMessagePage(view.Messages, view.FirstMessageIndex, view.TotalMessages, view.HasEarlierMessages,
+                    view.Available, view.UnavailableReason, view.OmittedPayloads)
+                : await host.RequestAsync<SessionMessagePage>("session.messages.page", new { sessionId = id, beforeIndex, limit = 100 });
+            if (generation != _loadGeneration || host != _host) return;
+            if (!page.Available) throw new InvalidDataException(page.UnavailableReason ?? L.Text("HistoryUnavailable"));
+            var events = await eventsTask;
+            RestoreSession(new(view.Info, page.Messages, view.Compaction, view.RunCheckpoint), events.Available ? events.Items : [], includeRecovery: false);
+            PrepareMessageRecovery(view);
+            _historyFirstIndex = page.FirstMessageIndex;
+            _historyTotal = page.TotalMessages;
+            _viewingEarlierHistory = beforeIndex is not null;
+            EarlierHistoryButton.IsVisible = page.HasEarlierMessages;
+            LatestHistoryButton.IsVisible = _viewingEarlierHistory;
+            HistoryRangeLabel.Text = L.Format("HistoryRange", page.FirstMessageIndex + 1, page.FirstMessageIndex + page.Messages.Count, _historyTotal);
+            HistoryRangeLabel.IsVisible = _historyTotal > 0;
+            if (page.OmittedPayloads) AddEntry("HISTORY", L.Text("HistoryPayloadOmitted"));
+            if (view.PendingInputs is { } pending)
+            {
+                if (!pending.Available || pending.HasMore)
+                    AddEntry("RECOVERY", L.Format("PendingInputCount", pending.TotalPending), "#E4B499");
+                foreach (var input in pending.Items)
+                {
+                    if (pending.LegacyRecovery)
+                        AddEntry("RecoveredInput", "", "#E4B499").LocalizeText(() => L.Format("RecoveredInputText", input.Text));
+                    else
+                    {
+                        var entry = AddEntry("YOU · SteerQueued", input.Text, "#E4B499");
+                        if (!_steeringEntries.TryGetValue(input.RunId, out var queue)) _steeringEntries[input.RunId] = queue = [];
+                        queue.Add((input.Text, entry));
+                    }
+                }
+            }
+            if (beforeIndex is null) await ReplayRemoteJournalAsync(host, view, generation);
+            if (generation != _loadGeneration || host != _host) return;
+            CompleteRemoteRecovery(host, id, generation);
+            await RestorePendingRemoteApprovalAsync(host, id, generation);
+            if (generation != _loadGeneration || host != _host) return;
+            RefreshTaskControls();
+            await RefreshWorkspaceAsync();
         }
-        RefreshTaskControls();
-        await RefreshWorkspaceAsync();
+        finally { CompleteRemoteRecovery(host, id, generation); }
     }
 
     private async void EarlierHistoryClick(object? sender, RoutedEventArgs e) => await GuardAsync(async () =>
@@ -86,7 +108,8 @@ public partial class MainWindow
         {
             RunId = null, SecretEnvironmentVariables = null,
             ExecutionMode = _settings.ExecutionMode, Research = _settings.Research,
-            AutoApproveWrites = false
+            AutoApproveWrites = false,
+            RequireOsIsolation = CurrentTaskRequiresOsIsolation
         };
         RunLimits.Validate(options);
         return options;
@@ -94,19 +117,27 @@ public partial class MainWindow
 
     private void RefreshTaskControls()
     {
+        if (_session is null) _taskRequireOsIsolation = null;
         if (RunBudgetLabel is null) return;
         RunBudgetLabel.Text = L.Format("RunBudgetSummary", _settings.Run.MaxIterations,
             (_settings.Run.TimeoutSeconds / 3600d).ToString("0.##", System.Globalization.CultureInfo.CurrentCulture));
         ContinueRunButton.IsVisible = _session?.Info.Status == "paused" ||
             (_session?.RunCheckpoint is not null && _session.Info.Status is "interrupted" or "failed" or "cancelled");
         if (HostLocationLabel is not null) HostLocationLabel.Text = _settings.ActiveConnection.DisplayLabel;
+        RefreshExecutionModeTip();
     }
+
+    private void RefreshExecutionModeTip() => ToolTip.SetTip(ExecutionModeButton, CurrentTaskRequiresOsIsolation
+        ? L.Text("OsIsolationRequired") + "\n" + L.Text("OsIsolationHint")
+        : L.Text("ApiExecutionHint") + "\n" + L.Text("RunBudgetTitle") + ": " + L.Text("OsIsolationRequired"));
 
     private async void RunBudgetClick(object? sender, RoutedEventArgs e) => await GuardAsync(async () =>
     {
-        var options = await new RunBudgetWindow(_settings.Run).ShowDialog<RunOptions?>(this);
+        var isolation = _ready ? await _host.RequestAsync<OsIsolationStatus>("isolation.status") : null;
+        var options = await new RunBudgetWindow(CurrentRunOptions(), isolation).ShowDialog<RunOptions?>(this);
         if (options is null) return;
         RunLimits.Validate(options);
+        _taskRequireOsIsolation = options.RequireOsIsolation;
         _settings = _settings with { Run = options with { RunId = null, SecretEnvironmentVariables = null } };
         SaveSettings();
         RefreshTaskControls();

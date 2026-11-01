@@ -1,0 +1,79 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:editor="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:local="using:Workbench.Desktop"
+        x:Class="Workbench.Desktop.ReviewWindow"
+        Title="{local:Loc ReviewTitle}" Width="1180" Height="820" MinWidth="900" MinHeight="640"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+      <StackPanel Spacing="4">
+        <TextBlock Text="{local:Loc ReviewTitle}" FontSize="22" FontWeight="SemiBold" />
+        <TextBlock x:Name="RepositoryLabel" Classes="muted" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <Button Grid.Column="1" x:Name="RefreshReviewButton" Content="{local:Loc ReviewRefresh}" Click="RefreshClick" VerticalAlignment="Center" />
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="250,14,*,18,280">
+      <Border Background="{DynamicResource SidebarBrush}" CornerRadius="8" Padding="8">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock x:Name="ChangeCount" Text="{local:Loc ReviewChangedFiles}" Margin="8,8,8,12" FontWeight="Medium" />
+          <ListBox Grid.Row="1" x:Name="ReviewFiles" Classes="files" Background="Transparent" BorderThickness="0"
+                   SelectionChanged="FileSelectionChanged" AutomationProperties.Name="{local:Loc ReviewChangedFiles}">
+            <ListBox.ItemTemplate><DataTemplate>
+              <TextBlock Text="{Binding DisplayName}" FontSize="12" TextWrapping="Wrap" Margin="2,5" />
+            </DataTemplate></ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+      <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="10">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <ComboBox x:Name="ReviewArea" Width="150" SelectionChanged="AreaSelectionChanged" AutomationProperties.Name="{local:Loc ReviewArea}">
+            <ComboBoxItem Content="{local:Loc ReviewWorkingChanges}" Tag="worktree" />
+            <ComboBoxItem Content="{local:Loc ReviewStagedChanges}" Tag="index" />
+          </ComboBox>
+          <TextBlock Grid.Column="1" x:Name="SelectedPath" Margin="12,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          <Button Grid.Column="2" x:Name="ReviewAction" Content="{local:Loc ReviewStageFile}" Click="ChangeClick" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+          <ComboBox x:Name="ReviewHunks" HorizontalAlignment="Stretch" SelectionChanged="HunkSelectionChanged" AutomationProperties.Name="{local:Loc ReviewHunk}" />
+          <Button Grid.Column="1" x:Name="RevertChange" Content="{local:Loc ReviewDiscardWorking}" Click="RevertClick" Margin="10,0,0,0" />
+        </Grid>
+        <Border Grid.Row="2" BorderBrush="#454B56" BorderThickness="1" CornerRadius="5" ClipToBounds="True">
+          <editor:TextEditor x:Name="ReviewPatch" IsReadOnly="True" ShowLineNumbers="False"
+             FontFamily="Cascadia Code, Consolas, Menlo, monospace" FontSize="12" Background="{DynamicResource SidebarBrush}"
+             Foreground="{DynamicResource TextBrush}" Padding="8" WordWrap="False" AutomationProperties.Name="{local:Loc ReviewSelectedDiff}" />
+        </Border>
+        <TextBlock Grid.Row="3" x:Name="DiffHint" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+        <StackPanel Grid.Row="4" Spacing="7">
+          <TextBlock Text="{local:Loc ReviewFeedback}" FontWeight="Medium" />
+          <Grid ColumnDefinitions="Auto,100,*,Auto">
+            <TextBlock Text="{local:Loc ReviewLine}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <NumericUpDown Grid.Column="1" x:Name="FeedbackLine" Minimum="1" Maximum="10000000" Value="1" FormatString="0" AutomationProperties.Name="{local:Loc ReviewFeedbackLine}" />
+            <TextBox Grid.Column="2" x:Name="FeedbackText" Margin="8,0" PlaceholderText="{local:Loc ReviewFeedbackPlaceholder}" AutomationProperties.Name="{local:Loc ReviewFeedback}" />
+            <Button Grid.Column="3" x:Name="AddFeedbackButton" Content="{local:Loc ReviewAddPrompt}" Click="FeedbackClick" />
+          </Grid>
+          <TextBlock Text="{local:Loc ReviewFeedbackHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+      <ScrollViewer Grid.Column="4" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="PublishPanel" Spacing="9">
+          <TextBlock Text="{local:Loc ReviewCommit}" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Text="{local:Loc ReviewCommitHint}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
+          <TextBox x:Name="CommitMessage" PlaceholderText="{local:Loc ReviewCommitMessage}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="95" MaxHeight="170" AutomationProperties.Name="{local:Loc ReviewCommitMessage}" />
+          <Button x:Name="CommitChangesButton" Content="{local:Loc ReviewCommit}" Classes="primary" Click="CommitClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Border Height="1" Background="#454B56" Margin="0,14" />
+          <TextBlock Text="{local:Loc ReviewPublish}" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Text="{local:Loc ReviewPublishHint}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
+          <Button x:Name="PushBranchButton" Content="{local:Loc ReviewPushEllipsis}" Click="PushClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <TextBox x:Name="PrTitle" PlaceholderText="{local:Loc ReviewPrTitle}" AutomationProperties.Name="{local:Loc ReviewPrTitle}" />
+          <TextBox x:Name="PrBody" PlaceholderText="{local:Loc ReviewPrBody}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100" MaxHeight="180" AutomationProperties.Name="{local:Loc ReviewPrBody}" />
+          <TextBox x:Name="PrBase" PlaceholderText="{local:Loc ReviewPrBase}" AutomationProperties.Name="{local:Loc ReviewPrBase}" />
+          <Button x:Name="CreatePrButton" Content="{local:Loc ReviewCreatePrEllipsis}" Click="CreatePrClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <TextBlock Text="{local:Loc ReviewAuthHint}" Classes="muted" TextWrapping="Wrap" FontSize="11" />
+          <Button x:Name="PrLinkButton" Content="{local:Loc ReviewOpenPr}" IsVisible="False" Click="OpenPrClick" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <TextBlock Grid.Row="2" x:Name="ReviewStatus" Margin="0,14,0,0" Classes="muted" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+  </Grid>
+</Window>

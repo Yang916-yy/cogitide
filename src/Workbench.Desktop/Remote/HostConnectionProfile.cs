@@ -14,6 +14,8 @@ internal sealed record HostConnectionProfile
     public string HostPath { get; init; } = "/opt/cogitide/Workbench.Host";
     public string DotnetPath { get; init; } = "dotnet";
     public string? DataDirectory { get; init; }
+    public bool DurableService { get; init; }
+    public string? ServiceId { get; init; }
 
     public static HostConnectionProfile Local { get; } = new() { Id = "local", Name = "Local", Kind = HostConnectionKind.Local };
     [JsonIgnore] public bool IsRemote => Kind != HostConnectionKind.Local;
@@ -48,6 +50,11 @@ internal sealed record HostConnectionProfile
             (DotnetPath.StartsWith('-') || DotnetPath.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not ('.' or '-' or '_'))))
             throw new ArgumentException("Use an absolute POSIX dotnet path or a single executable name such as dotnet.");
         if (!string.IsNullOrEmpty(DataDirectory)) RemotePaths.RequireAbsolute(DataDirectory, "Remote data directory");
+        if (DurableService)
+        {
+            RemotePaths.RequireAbsolute(DataDirectory, "Detached service data directory");
+            if (!Guid.TryParseExact(ServiceId, "N", out _)) throw new ArgumentException("A detached service connection requires its verified service identity. Deploy/start the service first.");
+        }
     }
 
     private static void ValidateText(string? value, string label, int limit, bool required = false)

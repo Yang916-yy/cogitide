@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Workbench.Host'">
+    <!-- The native apphost/runtime still follows RuntimeIdentifier. Keep shared managed IL portable
+         instead of allowing RID inference to change its PE architecture from AnyCPU to x64/arm64. -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <!-- Runtime-specific publish paths are debug information, not a different Host implementation.
+       Reuse Roslyn's deterministic PathMap so matching RID and non-RID builds retain exact DLL hashes. -->
+  <Target Name="NormalizeHostIntermediateCompilerPaths" BeforeTargets="CoreCompile"
+          Condition="'$(MSBuildProjectName)' == 'Workbench.Host'">
+    <PropertyGroup>
+      <_HostCompilerIntermediatePath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)', '$(MSBuildProjectDirectory)'))</_HostCompilerIntermediatePath>
+      <_HostCompilerVirtualPath>/_/src/Workbench.Host/obj/$(Configuration)/$(TargetFramework)/</_HostCompilerVirtualPath>
+      <PathMap Condition="'$(PathMap)' != ''">$(_HostCompilerIntermediatePath)=$(_HostCompilerVirtualPath),$(PathMap)</PathMap>
+      <PathMap Condition="'$(PathMap)' == ''">$(_HostCompilerIntermediatePath)=$(_HostCompilerVirtualPath)</PathMap>
+    </PropertyGroup>
+  </Target>
+</Project>

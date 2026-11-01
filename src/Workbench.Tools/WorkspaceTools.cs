@@ -5,7 +5,7 @@ namespace Workbench.Tools;
 
 public static class WorkspaceTools
 {
-    public static IReadOnlyList<IAgentTool> Create(WorkspaceService service, CommandSessionManager? commands = null)
+    public static IReadOnlyList<IAgentTool> Create(WorkspaceService service, CommandSessionManager? commands = null, LspToolSet? lsp = null)
     {
         List<IAgentTool> tools =
     [
@@ -45,6 +45,7 @@ public static class WorkspaceTools
                 (arg, ctx, ct) => commands.StopAsync(ctx, Required(arg, "commandId"), Integer(arg, "offset", 0), ct))
         ]);
         tools.Add(service.CreateCSharpSemanticTool());
+        if (lsp is not null) tools.AddRange(lsp.Tools);
         return tools;
     }
 
