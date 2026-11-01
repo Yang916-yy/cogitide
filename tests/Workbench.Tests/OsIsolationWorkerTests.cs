@@ -26,7 +26,8 @@ public sealed class OsIsolationWorkerTests : IAsyncLifetime
     [Fact]
     public async Task LiveRpcExposesOnlyTheWorkerAllowlist()
     {
-        var name = "cogitide-worker-rpc-" + Guid.NewGuid().ToString("N");
+        // BCL pipes use a Unix socket below the platform temp path; macOS caps it at 104 bytes.
+        var name = "cw-" + Guid.NewGuid().ToString("N");
         await using var serverPipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         await using var clientPipe = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));

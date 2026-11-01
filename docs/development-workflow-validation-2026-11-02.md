@@ -40,6 +40,8 @@ The corresponding foreground HostClient and durable-service lifecycle tests also
 
 Service shutdown also exposed non-cancellable console wrappers and missing notification on clean EOF. The bridge CLI now uses owned asynchronous BCL pipe readers/writers with independent local waits; completed frames explicitly flush, while teardown does not flush abandoned work. A deterministic uncooperative-reader regression and actual WSL pipes cover that correction. An unexpected clean Host EOF now signals the Desktop; an unanswered Git publication remains an explicit unknown outcome with a client deadline exceeding its server operation budget.
 
+The first macOS CI run exposed its 104-byte Unix socket-path limit in the in-process worker RPC test's long named-pipe prefix. The fixture now uses a short prefix while retaining a full random GUID. Production worker transport remains standard input/output; no sandbox or runtime behavior was weakened for this fixture correction.
+
 ## Platform and product limits
 
 Windows native enforcement above is actual local acceptance. Linux/macOS native-denial acceptance has not been performed here. The pinned MXC 1.0.1 package has no Intel macOS native asset. Deliberately detached macOS descendants retain Seatbelt restrictions, but process-group termination is not proof they all exited. External toolchains outside explicit grants fail rather than widening the policy, and isolated browser/network operations remain denied.
