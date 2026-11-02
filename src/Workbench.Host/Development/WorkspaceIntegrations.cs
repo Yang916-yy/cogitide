@@ -34,7 +34,8 @@ internal sealed partial class WorkbenchHost
         }
     }
 
-    private async Task<T> WithReviewMutationAsync<T>(string path, Func<string, Task<T>> mutation)
+    private async Task<T> WithReviewMutationAsync<T>(string path, Func<string, Task<T>> mutation,
+        string operation = "changing the Git index, checkout or publication state")
     {
         var workspace = WorkspaceService.Root(path);
         // Review writes require an idle Host, including runs opened through another path spelling.
@@ -43,7 +44,7 @@ internal sealed partial class WorkbenchHost
         lock (_workspaceAdmissionGate)
         {
             if (!_runs.IsEmpty || !_workspaceRuns.IsEmpty)
-                throw new InvalidOperationException("Stop active work before changing the Git index, checkout or publication state.");
+                throw new InvalidOperationException($"Stop active work before {operation}.");
             if (!_workspaceRuns.TryAdd(workspace, owner)) throw new InvalidOperationException("The workspace is busy.");
         }
         try { return await mutation(workspace); }

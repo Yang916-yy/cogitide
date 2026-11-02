@@ -39,7 +39,7 @@
   <data name="CommandHint" xml:space="preserve"><value>e.g. git status --short</value></data>
   <data name="Run" xml:space="preserve"><value>Run</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Settings</value></data>
-  <data name="SettingsDescription" xml:space="preserve"><value>Choose your language, appearance, and model connection.</value></data>
+  <data name="SettingsDescription" xml:space="preserve"><value>Manage Cogitide preferences, models, skills, and connections.</value></data>
   <data name="ChatGptAccount" xml:space="preserve"><value>ChatGPT account</value></data>
   <data name="OfficialAuth" xml:space="preserve"><value>Sign in with ChatGPT</value></data>
   <data name="OfficialAuthDescription" xml:space="preserve"><value>Authorize model access with your ChatGPT account. Cogitide runs the task, tools, summaries and project memory. Available models and usage depend on your account.</value></data>
@@ -425,4 +425,43 @@ Staged changes remain in the index. This working change cannot be recovered from
   <data name="OsIsolationAvailable" xml:space="preserve"><value>Native backend: {0}. Each launch still validates its policy.</value></data>
   <data name="OsIsolationUnavailable" xml:space="preserve"><value>Native isolation unavailable: {0}</value></data>
   <data name="ReviewOutcomeUnknown" xml:space="preserve"><value>The review operation result was not observed. Its outcome is unknown; refresh Git or inspect the remote repository before retrying.</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="ModelsAndAccounts" xml:space="preserve"><value>Models and accounts</value></data>
+  <data name="Skills" xml:space="preserve"><value>Skills</value></data>
+  <data name="Advanced" xml:space="preserve"><value>Advanced</value></data>
+  <data name="SettingsConnections" xml:space="preserve"><value>Connections</value></data>
+  <data name="SettingsConnectionsHint" xml:space="preserve"><value>Choose where Cogitide runs your project. Credentials and project files stay on the selected host.</value></data>
+  <data name="SettingsCurrentHost" xml:space="preserve"><value>Current host: {0}</value></data>
+  <data name="SettingsRunBudgetHint" xml:space="preserve"><value>Set limits and execution isolation for the current task.</value></data>
+  <data name="SkillsDescription" xml:space="preserve"><value>Add reusable instructions and supporting files to this project. Review skills before installing; their tools use the same permissions as other project work.</value></data>
+  <data name="SkillsProjectRequired" xml:space="preserve"><value>Open a project to manage its skills.</value></data>
+  <data name="SkillsWorkspace" xml:space="preserve"><value>Project: {0}</value></data>
+  <data name="SkillsInstalled" xml:space="preserve"><value>Installed in this project</value></data>
+  <data name="SkillsInstalledCount" xml:space="preserve"><value>{0} skills available</value></data>
+  <data name="SkillsNoneInstalled" xml:space="preserve"><value>No skills found. Import a folder or search the catalog below.</value></data>
+  <data name="SkillsImport" xml:space="preserve"><value>Import a skill folder</value></data>
+  <data name="SkillsImportHint" xml:space="preserve"><value>Choose a folder containing SKILL.md. Cogitide copies it into this project; existing skills are never replaced.</value></data>
+  <data name="SkillsRemoteImportHint" xml:space="preserve"><value>Enter an absolute skill folder path on the selected host. The folder must contain SKILL.md.</value></data>
+  <data name="SkillFolderPath" xml:space="preserve"><value>Skill folder path</value></data>
+  <data name="BrowseSkillFolder" xml:space="preserve"><value>Browse…</value></data>
+  <data name="ImportSkill" xml:space="preserve"><value>Import skill</value></data>
+  <data name="SkillsCatalog" xml:space="preserve"><value>Skill catalog</value></data>
+  <data name="SkillsCatalogHint" xml:space="preserve"><value>Search a fixed version of the public anthropics/skills catalog on GitHub. Search and installation access the network only when you ask.</value></data>
+  <data name="SearchSkillsPlaceholder" xml:space="preserve"><value>Search by name or description</value></data>
+  <data name="SearchSkills" xml:space="preserve"><value>Search skills</value></data>
+  <data name="InstallSelectedSkill" xml:space="preserve"><value>Install selected skill</value></data>
+  <data name="SkillsSearching" xml:space="preserve"><value>Searching the catalog…</value></data>
+  <data name="SkillsNoMatches" xml:space="preserve"><value>No matching skills. Try a different search.</value></data>
+  <data name="SkillsSearchResults" xml:space="preserve"><value>{0} skills found. Select one to install.</value></data>
+  <data name="SkillsImportPathRequired" xml:space="preserve"><value>Choose or enter a skill folder first.</value></data>
+  <data name="SkillsInstalling" xml:space="preserve"><value>Installing the selected skill…</value></data>
+  <data name="SkillsImporting" xml:space="preserve"><value>Importing the skill folder…</value></data>
+  <data name="SkillInstalled" xml:space="preserve"><value>Installed {0}. It is available to new turns in this project.</value></data>
+  <data name="SkillsInstallFailed" xml:space="preserve"><value>Could not install the skill: {0}</value></data>
+  <data name="SkillsLoadFailed" xml:space="preserve"><value>Could not load project skills: {0}</value></data>
+  <data name="SkillsSearchFailed" xml:space="preserve"><value>Could not search the catalog: {0}</value></data>
+  <data name="SkillsWorking" xml:space="preserve"><value>Loading project skills…</value></data>
+  <data name="SkillsSearchResultsTruncated" xml:space="preserve"><value>Showing {0} skills. Refine your search for more results.</value></data>
+  <data name="SkillInstalledRefreshFailed" xml:space="preserve"><value>Installed {0}. The installed list could not refresh: {1}</value></data>
+  <data name="SkillInstallOutcomeUnknown" xml:space="preserve"><value>The install result was not observed. Refresh project skills before trying again. {0}</value></data>
 </root>

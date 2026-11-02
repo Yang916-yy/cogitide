@@ -127,7 +127,8 @@ internal sealed class HostClient : IAsyncDisposable
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
             timeout.CancelAfter(method == "workspace.command" ? TimeSpan.FromMinutes(12) :
-                method.StartsWith("workspace.review", StringComparison.Ordinal) ? TimeSpan.FromMinutes(2) : TimeSpan.FromSeconds(45));
+                method.StartsWith("workspace.review", StringComparison.Ordinal) || method is "skills.catalog.search" or "project.skills.install" or "project.skills.import"
+                    ? TimeSpan.FromMinutes(2) : TimeSpan.FromSeconds(45));
             using var registration = timeout.Token.Register(() => completion.TrySetCanceled(timeout.Token));
             var request = new RpcRequest(id, method, Wire.Element(parameters ?? new { }));
             var json = JsonSerializer.Serialize(request, Wire.Json);

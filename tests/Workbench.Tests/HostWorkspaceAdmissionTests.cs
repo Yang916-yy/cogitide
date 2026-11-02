@@ -62,7 +62,7 @@ public sealed class HostWorkspaceAdmissionTests : IDisposable
 
     private static Task<bool> Review(WorkbenchHost host, string workspace, Func<string, Task<bool>> mutation) =>
         (Task<bool>)typeof(WorkbenchHost).GetMethod("WithReviewMutationAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .MakeGenericMethod(typeof(bool)).Invoke(host, [workspace, mutation])!;
+            .MakeGenericMethod(typeof(bool)).Invoke(host, [workspace, mutation, "changing the Git index, checkout or publication state"])!;
 
     public void Dispose()
     {

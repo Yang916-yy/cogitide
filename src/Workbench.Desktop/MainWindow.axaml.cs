@@ -652,14 +652,22 @@ public partial class MainWindow : Window
     {
         var connections = new ConnectionsWindow(_host, _settings, preference =>
         {
-            _settings = _settings with { Language = preference.Language, ReducedMotion = preference.ReducedMotion };
+            _settings = _settings with { Language = preference.Language, ReducedMotion = preference.ReducedMotion, Research = preference.Research };
             SaveSettings();
-        });
+        }, _workspace, canConfigureExecution: !_running && !_submitting);
         var settings = await connections.ShowDialog<DesktopSettings?>(this);
+        if (OpenSettingsRelatedSection(connections)) return;
         if (settings is null) return;
         _modelsLoaded = false;
         await ApplyComposerSettingsAsync(settings.RememberProvider(settings.Provider));
     });
+
+    private bool OpenSettingsRelatedSection(ConnectionsWindow settings)
+    {
+        if (settings.RequestedSection == "connections") { HostConnectionsClick(this, new RoutedEventArgs()); return true; }
+        if (settings.RequestedSection == "budget") { RunBudgetClick(this, new RoutedEventArgs()); return true; }
+        return false;
+    }
 
     private void OpenTerminalClick(object? sender, RoutedEventArgs e)
     {

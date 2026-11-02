@@ -15,3 +15,7 @@ This English page summarizes the preserved source. [The full Chinese record](REA
 ## Preserved source references
 
 - [Original reference 1](ProjectRules.cs)
+
+## Explicit package management integration
+
+`ProjectRules.ValidateSkillManifest` exposes this same bounded YamlDotNet metadata parser to the peripheral [Tools skill management adapter](../../Workbench.Tools/Skills/README.md). That adapter owns explicit project-local directory import and pinned public GitHub acquisition; discovery itself still neither downloads packages nor executes scripts. No home/global skills are imported automatically. Installation does not grant execution permissions, and newly installed skills are rediscovered at the next model request boundary.

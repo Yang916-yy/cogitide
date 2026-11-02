@@ -66,4 +66,8 @@ namespace Workbench.Protocol;
 [JsonSerializable(typeof(IsolationReadBytesRequest))]
 [JsonSerializable(typeof(IsolationReadBytesResult))]
 [JsonSerializable(typeof(IsolationEndRunRequest))]
+[JsonSerializable(typeof(SkillManifestInfo))]
+[JsonSerializable(typeof(SkillCatalogEntry))]
+[JsonSerializable(typeof(SkillCatalogSearchResult))]
+[JsonSerializable(typeof(SkillInstallResult))]
 internal partial class WireJsonContext : JsonSerializerContext;

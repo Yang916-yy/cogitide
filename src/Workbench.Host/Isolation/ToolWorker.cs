@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using StreamJsonRpc;
+using Workbench.Core;
 using Workbench.Protocol;
 using Workbench.Tools;
 
@@ -102,6 +103,7 @@ internal sealed class ToolWorkerDispatcher : IAsyncDisposable, IToolWorkerRpc
             // cannot be silently added to an existing worker's filesystem policy.
             var tools = WorkspaceTools.Create(new(), _commands, lsp)
                 .Where(t => t.Definition.Name is not ("create_worktree" or "list_worktrees" or "worktree_status" or "remove_worktree")).ToList();
+            tools.AddRange(SkillManagementTools.Create(new SkillManagementService(ProjectRules.ValidateSkillManifest)));
             tools.Add(new BrowserCheckTool(Path.Combine(_scratch, "browser-artifacts")));
             if (allowExternal && File.Exists(Path.Combine(_scratch, "mcp.json")))
             {

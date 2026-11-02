@@ -28,7 +28,7 @@
         </ListBox>
         <StackPanel Grid.Row="4" Margin="0,10,0,14" Spacing="3">
           <Button x:Name="HostConnectionsButton" Classes="nav" Click="HostConnectionsClick" AutomationProperties.Name="{local:Loc RemoteConnectionsTitle}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="terminal" VerticalAlignment="Center" /><TextBlock x:Name="HostLocationLabel" Text="{local:Loc RemoteLocal}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="145" /></StackPanel></Button>
-        <Button x:Name="ConnectionsButton" Classes="nav" Click="ConnectionsClick" Margin="0,16,0,14" AutomationProperties.Name="{local:Loc Connections}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="settings" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Connections}" VerticalAlignment="Center" /></StackPanel></Button>
+        <Button x:Name="ConnectionsButton" Classes="nav" Click="ConnectionsClick" Margin="0,16,0,14" AutomationProperties.Name="{local:Loc Settings}"><StackPanel Orientation="Horizontal" Spacing="10"><local:UiGlyph Symbol="settings" VerticalAlignment="Center" /><TextBlock Text="{local:Loc Settings}" VerticalAlignment="Center" /></StackPanel></Button>
         </StackPanel>
       </Grid>
     </Border>

@@ -131,11 +131,13 @@ class FixtureHandler(http.server.BaseHTTPRequestHandler):
             assert isinstance(prompt, str)
             mode = next(name for name in ("main", "crash", "cold") if prompt.startswith("TOOLS_UPGRADE_" + name.upper()))
             definitions = {tool["function"]["name"] for tool in body["tools"]}
+            assert {"read_file", "search_files", "read_command", "csharp_semantic", "search_skills"} <= definitions, definitions
+            write_tools = {"write_file", "replace_text", "apply_patch", "run_command", "start_command", "write_command",
+                           "create_worktree", "remove_worktree", "create_presentation", "install_skill"}
             if mode == "cold":
-                assert len(definitions) == 15, definitions
-                assert not definitions.intersection({"write_file", "replace_text", "apply_patch", "run_command", "start_command", "write_command", "create_worktree", "remove_worktree"})
+                assert not definitions.intersection(write_tools), definitions
             else:
-                assert len(definitions) == 24, definitions
+                assert write_tools <= definitions, definitions
             self.server.tool_counts[mode] = len(definitions)
             tail = messages[start + 1:]
             calls = {call["id"]: call for message in tail for call in message.get("tool_calls", [])}
@@ -396,7 +398,11 @@ while True: time.sleep(0.2)
     try:
         host = StrictHost(directory / "state", env, workspace, policy, executable)
         init = host.request("initialize", {})
-        assert len(init["tools"]) == 24
+        tool_names = [tool["name"] for tool in init["tools"]]
+        assert len(tool_names) == len(set(tool_names)), "Duplicate tool names in Host catalog"
+        required_tools = {"read_file", "search_files", "glob_files", "apply_patch", "start_command", "read_command",
+                          "write_command", "stop_command", "create_presentation", "search_skills", "install_skill"}
+        assert required_tools <= set(tool_names), "Required tools missing: " + repr(required_tools - set(tool_names))
         session = host.request("session.create", {"workspacePath": str(workspace), "backend": "api"})["info"]["id"]
         policy["sessions"][session] = "main"
         run = start(host, session, "MAIN " + marker, provider)
@@ -471,7 +477,7 @@ while True: time.sleep(0.2)
             assert digest(workspace / relative) == expected, relative + " unexpectedly changed"
         assert not server.errors, server.errors
         (directory / "crash-and-cold-events.json").write_text(json.dumps(cold_events, ensure_ascii=False, indent=2), encoding="utf-8")
-        report["checks"] += ["cold restart preserves interrupted chat and command logs without replay", "readonly exposes 12 tools and can inspect old command logs", "generated protected files unchanged"]
+        report["checks"] += ["cold restart preserves interrupted chat and command logs without replay", "readonly catalog excludes writers and can inspect old command logs", "generated protected files unchanged"]
         report.update(passed=True, modelRequests=server.requests, toolCounts=server.tool_counts,
             readPages=server.read_pages, commandPages=server.command_pages, approvals=all_approvals,
             sessionId=session, crashSessionId=crash_session, commandId=server.main_id, crashedCommandId=server.crash_id,

@@ -117,6 +117,26 @@ public sealed class OsIsolationNativeTests
             Assert.False(listener.Pending());
             Assert.False(parentFixture.HasExited);
             Assert.Equal("native-write", await File.ReadAllTextAsync(Path.Combine(workspace, "inside.txt")));
+            // Exercise the real SDK and its packaging dependency under the worker's native grants.
+            // The broker deliberately discards ArtifactPath; only the checked workspace result is used.
+            var presentation = Assert.Single(lease.Tools, tool => tool.Definition.Name == "create_presentation");
+            Assert.True(presentation.Definition.RequiresApproval);
+            var deck = await manager.ExecuteAsync(presentation, new("native-presentation", "create_presentation", JsonSerializer.Serialize(new
+            {
+                path = "exports/native.pptx", title = "Native isolation fixture",
+                slides = new[] { new { title = "Editable workspace output", body = new[] { "Created by the owned native worker." }, notes = "SDK package validation runs inside the native worker." } }
+            })), context);
+            Assert.False(deck.IsError, deck.Content);
+            using (var deckJson = JsonDocument.Parse(deck.Content))
+            {
+                Assert.Equal("exports/native.pptx", deckJson.RootElement.GetProperty("path").GetString());
+                Assert.True(deckJson.RootElement.GetProperty("packageValidated").GetBoolean());
+                Assert.Equal("not_rendered", deckJson.RootElement.GetProperty("visualVerification").GetString());
+                Assert.True(File.Exists(Path.Combine(workspace, "exports", "native.pptx")));
+                var deckBytes = await manager.ReadWorkspaceBytesAsync(context, "exports/native.pptx", 256 * 1024);
+                Assert.Equal(deckJson.RootElement.GetProperty("sha256").GetString(),
+                    Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(deckBytes)).ToLowerInvariant());
+            }
             await manager.EndRunAsync(context.SessionId!, context.RunId!);
             // A policy change creates a fresh worker with a native read-only workspace grant.
             var readOnly = context with { RunId = "readonly-run", ExecutionMode = ExecutionMode.ReadOnly };

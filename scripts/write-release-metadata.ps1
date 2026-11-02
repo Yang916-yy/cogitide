@@ -30,7 +30,7 @@ if (@($versions | Select-Object -Unique).Count -ne 1) { throw 'Published compone
 $aspNet = @($hostFrameworks | Where-Object { $_.name -eq 'Microsoft.AspNetCore.App' })
 if ($aspNet.Count -ne 1) { throw 'The durable Host requires the ASP.NET Core framework in its runtime metadata.' }
 $hostDependencies = Get-Content -LiteralPath (Join-Path $package 'Workbench.Host.deps.json') -Raw | ConvertFrom-Json -AsHashtable
-foreach ($dependency in @('StreamJsonRpc/2.26.150', 'Microsoft.Mxc.Sdk/1.0.1')) {
+foreach ($dependency in @('StreamJsonRpc/2.26.150', 'Microsoft.Mxc.Sdk/1.0.1', 'DocumentFormat.OpenXml/3.5.1', 'DocumentFormat.OpenXml.Framework/3.5.1', 'System.IO.Packaging/10.0.2')) {
     if (-not $hostDependencies.libraries.ContainsKey($dependency)) { throw "Missing pinned development dependency: $dependency" }
 }
 # Preserve the original upstream package notice, not a reconstruction of its transitive attribution.

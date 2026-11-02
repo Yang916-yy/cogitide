@@ -64,6 +64,7 @@ internal sealed partial class WorkbenchHost : IAsyncDisposable
     private readonly SqliteSessionStore _store;
     private readonly AgentEngine _engine;
     private readonly WorkspaceService _workspace = new();
+    private readonly SkillManagementService _skills;
     private readonly CommandSessionManager _commands;
     private readonly IReadOnlyList<IAgentTool> _tools;
     private readonly IChatGptAccountService _accounts;
@@ -94,7 +95,8 @@ internal sealed partial class WorkbenchHost : IAsyncDisposable
         _store = new SqliteSessionStore(Path.Combine(directory, "sessions.db"));
         _commands = new(Path.Combine(directory, "commands"), CommandWorkerStart);
         _isolation = new(IsolatedWorkerStart, directory, LoadIntegrationToolsAsync);
-        _tools = [.. WorkspaceTools.Create(_workspace, _commands), new BrowserCheckTool(Path.Combine(directory, "browser-artifacts"))];
+        _skills = new SkillManagementService(ProjectRules.ValidateSkillManifest);
+        _tools = [.. WorkspaceTools.Create(_workspace, _commands), .. SkillManagementTools.Create(_skills), new BrowserCheckTool(Path.Combine(directory, "browser-artifacts"))];
         _engine = new AgentEngine(_store, _tools, WorkspaceService.Resolve, new RunResources(_commands, _isolation),
             (workspace, revision, ct) => _workspace.CreateRepositoryMemoryToolAsync(workspace, revision, ct),
             executionBroker: _isolation);
@@ -237,7 +239,8 @@ internal sealed partial class WorkbenchHost : IAsyncDisposable
                     capabilities = new[] { "session.view", "session.messages.page", "session.events.page", "session.events.since", "session.pending_inputs",
                         "run.continue", "approval.pending", "workspace.validate", "workspace.files.page", "workspace.read.page", "isolation.status",
                         "workspace.review", "workspace.review.change", "workspace.review.commit", "workspace.review.publish",
-                        "provider.presets", "provider.credential.status", "provider.credential.save", "provider.credential.delete", "provider.models" } };
+                        "provider.presets", "provider.credential.status", "provider.credential.save", "provider.credential.delete", "provider.models",
+                        "skills.catalog.search", "project.skills.import", "project.skills.install" } };
             case "session.list": return await _store.ListAsync(ct);
             case "session.create":
             {
@@ -274,6 +277,9 @@ internal sealed partial class WorkbenchHost : IAsyncDisposable
                 return await new ProjectRules(Required(p, "workspacePath"), WorkspaceService.Resolve).LoadAsync(Optional(p, "path") ?? "", cancellationToken: ct);
             case "project.skills":
                 return await new ProjectRules(Required(p, "workspacePath"), WorkspaceService.Resolve).DiscoverSkillsAsync(ct);
+            case "skills.catalog.search":
+            case "project.skills.import":
+            case "project.skills.install": return await DispatchSkillManagementAsync(method, p, ct);
             case "project.memory":
             {
                 var session = await LoadAsync(Required(p, "sessionId"), ct);

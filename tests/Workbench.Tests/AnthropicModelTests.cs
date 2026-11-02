@@ -125,12 +125,14 @@ public sealed class AnthropicModelTests
         var handler = new FixtureHandler(() => new(HttpStatusCode.OK) { Content = new StreamContent(body) });
         using var http = new HttpClient(handler);
         using var cancel = new CancellationTokenSource();
-        var model = new AnthropicModel(Settings, "fixture-key", http, timeout ? TimeSpan.FromMilliseconds(250) : TimeSpan.FromSeconds(10));
+        // The SDK's first request can cold-JIT alongside native worker/browser fixtures.
+        // Keep a real request deadline, with enough startup allowance to observe the stalled body first.
+        var model = new AnthropicModel(Settings, "fixture-key", http, timeout ? TimeSpan.FromSeconds(5) : TimeSpan.FromSeconds(20));
         var task = Collect(model.StreamAsync([new("user", "test")], [], cancel.Token));
-        await body.Reading.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await body.Reading.Task.WaitAsync(TimeSpan.FromSeconds(15));
         if (timeout)
         {
-            var error = await Assert.ThrowsAsync<ModelRequestException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
+            var error = await Assert.ThrowsAsync<ModelRequestException>(() => task.WaitAsync(TimeSpan.FromSeconds(15)));
             Assert.Contains("timed out", error.Message);
         }
         else
@@ -229,7 +231,7 @@ public sealed class AnthropicModelTests
     {
         public TaskCompletionSource Reading { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        { Reading.TrySetResult(); await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); return 0; }
+        { cancellationToken.ThrowIfCancellationRequested(); Reading.TrySetResult(); await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); return 0; }
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         public override bool CanRead => true;
         public override bool CanSeek => false;

@@ -6,4 +6,6 @@ These partial Host adapters expose native Git review and provider configuration 
 
 `ProviderConfigurationRpc` delegates to the existing pooled `SocketsHttpHandler` transport, official model adapters and native MSAL credential storage. Settings contain endpoint/protocol-bound profile references rather than keys. [Provider configuration](../../Workbench.Core/Models/PROVIDER-CONFIGURATION.md) describes explicit metadata discovery, address hints, vault failure behavior and verification limits.
 
+`SkillManagementRpc` delegates explicit endpoint-local imports and immutable public GitHub acquisition to [Tools/Skills](../../Workbench.Tools/Skills/README.md). UI mutations reuse the same idle Host admission gate; read-only catalog search never installs a package. The shared kernel exposes installation through its ordinary approval/path checks, while native workers retain their existing denied-network policy. No package script or dependency installer executes during acquisition.
+
 This module is application glue, not a source-code port. Do not replace the mature Git, HTTP, credential-storage, JSON or process components with parallel custom infrastructure. New infrastructure needs a concrete missing capability, comparison and meaningful validation under the repository rules.

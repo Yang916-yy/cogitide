@@ -27,10 +27,11 @@ public partial class MainWindow
         {
             var connections = new ConnectionsWindow(_host, _settings, preference =>
             {
-                _settings = _settings with { Language = preference.Language, ReducedMotion = preference.ReducedMotion };
+                _settings = _settings with { Language = preference.Language, ReducedMotion = preference.ReducedMotion, Research = preference.Research };
                 SaveSettings();
-            });
+            }, _workspace, canConfigureExecution: !_running && !_submitting);
             var selected = await connections.ShowDialog<DesktopSettings?>(this);
+            if (OpenSettingsRelatedSection(connections)) return false;
             if (selected is null) return false;
             _modelsLoaded = false;
             await ApplyComposerSettingsAsync(selected.RememberProvider(selected.Provider));

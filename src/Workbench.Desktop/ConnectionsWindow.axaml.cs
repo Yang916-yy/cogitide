@@ -36,11 +36,13 @@ internal partial class ConnectionsWindow : Window
     private IReadOnlyList<ProviderPreset> _providerPresets = [];
     private readonly bool _requireInitialCredential;
 
-    public ConnectionsWindow(HostClient host, DesktopSettings settings, Action<DesktopSettings> preferencesChanged)
+    public ConnectionsWindow(HostClient host, DesktopSettings settings, Action<DesktopSettings> preferencesChanged,
+        string? workspacePath = null, bool canConfigureExecution = true)
     {
         _host = host;
         _settings = settings;
         _preferencesChanged = preferencesChanged;
+        _workspacePath = string.IsNullOrWhiteSpace(workspacePath) ? null : workspacePath;
         InitializeComponent();
         // TextChanged is dispatcher-posted. Clear an old endpoint's pending secret synchronously
         // when the property changes, before any save/fetch action can read the new address.
@@ -70,6 +72,17 @@ internal partial class ConnectionsWindow : Window
         ThinkingBudgetBox.Value = settings.Provider.ThinkingBudgetTokens ?? 2048;
         UpdateProviderOptions(settings.Provider.ReasoningEffort);
         CodexModelBox.Text = settings.CodexModel;
+        SettingsNavigation.SelectedIndex = _requireInitialCredential ? 1 : 0;
+        SettingsTabs.SelectedIndex = BackendChoice.SelectedIndex == 0 ? 0 : 1;
+        SkillsProjectPanel.IsEnabled = _workspacePath is not null;
+        SkillsProjectRequiredLabel.IsVisible = _workspacePath is null;
+        BrowseSkillFolderButton.IsEnabled = !_host.IsRemote;
+        OpenHostConnectionsButton.IsEnabled = canConfigureExecution;
+        OpenRunBudgetButton.IsEnabled = canConfigureExecution && _workspacePath is not null;
+        LocalizedControl.Text(SettingsHostLabel, "SettingsCurrentHost", _host.DisplayLabel);
+        if (_workspacePath is not null) LocalizedControl.Text(SkillsWorkspaceLabel, "SkillsWorkspace", _workspacePath);
+        LocalizedControl.Text(SkillImportHintLabel, _host.IsRemote ? "SkillsRemoteImportHint" : "SkillsImportHint");
+        LocalizedControl.Text(SkillsInstalledSummary, "SkillsNoneInstalled");
         _initializing = false;
         UpdateKeyStatus();
         _host.Notification += OnNotification;
@@ -78,6 +91,8 @@ internal partial class ConnectionsWindow : Window
         Closed += (_, _) =>
         {
             _closed = true;
+            _skillsLifetime.Cancel();
+            _skillsLifetime.Dispose();
             ApiKeyBox.Text = "";
             _host.Notification -= OnNotification;
             L.Changed -= RefreshLocalization;
@@ -410,7 +425,8 @@ internal partial class ConnectionsWindow : Window
     private void BackendSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_initializing) return;
-        SettingsTabs.SelectedIndex = BackendChoice.SelectedIndex == 0 ? 1 : 2;
+        SettingsNavigation.SelectedIndex = 1;
+        SettingsTabs.SelectedIndex = BackendChoice.SelectedIndex == 0 ? 0 : 1;
     }
     private async Task LoadProviderPresetsAsync()
     {
@@ -542,10 +558,10 @@ internal partial class ConnectionsWindow : Window
     private async void SaveClick(object? sender, RoutedEventArgs e)
     {
         var backend = (BackendChoice.SelectedItem as ComboBoxItem)?.Tag?.ToString();
-        if (backend is not ("api" or "chatgpt")) { LocalizedControl.Text(NoticeLabel, "ChooseConnection"); return; }
+        if (backend is not ("api" or "chatgpt")) { LocalizedControl.Text(NoticeLabel, "ChooseConnection"); SettingsNavigation.SelectedIndex = 1; return; }
         if (backend == "chatgpt")
         {
-            if (_account?.LoggedIn != true) { LocalizedControl.Text(NoticeLabel, "AccountSignInRequired"); SettingsTabs.SelectedIndex = 1; return; }
+            if (_account?.LoggedIn != true) { LocalizedControl.Text(NoticeLabel, "AccountSignInRequired"); SettingsNavigation.SelectedIndex = 1; SettingsTabs.SelectedIndex = 0; return; }
             Close(_settings with { Backend = "chatgpt", OnboardingCompleted = true, CodexModel = CodexModelBox.Text?.Trim() ?? "",
                 Language = L.Language, ReducedMotion = UiMotion.ReducedMotion, Research = ResearchSettings() });
             return;
@@ -627,6 +643,7 @@ internal partial class ConnectionsWindow : Window
         ShowAccounts(_profiles);
         UpdateProviderDetection();
         UpdateKeyStatus();
+        LocalizedControl.RemeasureTabHeaders(SettingsNavigation);
         LocalizedControl.RemeasureTabHeaders(SettingsTabs);
     }
     private void RefreshMotion(object? sender, EventArgs e)

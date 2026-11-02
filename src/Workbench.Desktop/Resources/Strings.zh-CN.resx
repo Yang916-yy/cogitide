@@ -39,7 +39,7 @@
   <data name="CommandHint" xml:space="preserve"><value>如 git status --short</value></data>
   <data name="Run" xml:space="preserve"><value>运行</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>设置</value></data>
-  <data name="SettingsDescription" xml:space="preserve"><value>选择语言、界面偏好与模型连接。</value></data>
+  <data name="SettingsDescription" xml:space="preserve"><value>管理 Cogitide 偏好、模型、技能与连接。</value></data>
   <data name="ChatGptAccount" xml:space="preserve"><value>ChatGPT 账号</value></data>
   <data name="OfficialAuth" xml:space="preserve"><value>使用 ChatGPT 官方登录</value></data>
   <data name="OfficialAuthDescription" xml:space="preserve"><value>通过 ChatGPT 账号授权模型调用。任务、工具、摘要和项目经验统一由 Cogitide 执行；可用模型与用量取决于你的账号。</value></data>
@@ -425,4 +425,43 @@
   <data name="OsIsolationAvailable" xml:space="preserve"><value>原生后端：{0}。每次启动仍会校验隔离策略。</value></data>
   <data name="OsIsolationUnavailable" xml:space="preserve"><value>原生隔离不可用：{0}</value></data>
   <data name="ReviewOutcomeUnknown" xml:space="preserve"><value>未能确认审阅操作的结果，当前结果未知。重试前请刷新 Git 或检查远端仓库。</value></data>
+  <data name="Settings" xml:space="preserve"><value>设置</value></data>
+  <data name="ModelsAndAccounts" xml:space="preserve"><value>模型和账号</value></data>
+  <data name="Skills" xml:space="preserve"><value>技能</value></data>
+  <data name="Advanced" xml:space="preserve"><value>高级</value></data>
+  <data name="SettingsConnections" xml:space="preserve"><value>连接</value></data>
+  <data name="SettingsConnectionsHint" xml:space="preserve"><value>选择 Cogitide 运行项目的位置。凭据和项目文件保留在所选主机上。</value></data>
+  <data name="SettingsCurrentHost" xml:space="preserve"><value>当前主机：{0}</value></data>
+  <data name="SettingsRunBudgetHint" xml:space="preserve"><value>为当前任务设置运行限制和执行隔离。</value></data>
+  <data name="SkillsDescription" xml:space="preserve"><value>为当前项目添加可复用的指令和支持文件。安装前请检查技能内容；其工具遵循与其他项目操作相同的权限。</value></data>
+  <data name="SkillsProjectRequired" xml:space="preserve"><value>打开一个项目后即可管理其技能。</value></data>
+  <data name="SkillsWorkspace" xml:space="preserve"><value>项目：{0}</value></data>
+  <data name="SkillsInstalled" xml:space="preserve"><value>当前项目的技能</value></data>
+  <data name="SkillsInstalledCount" xml:space="preserve"><value>可用技能：{0} 个</value></data>
+  <data name="SkillsNoneInstalled" xml:space="preserve"><value>未找到技能。可导入文件夹，或在下方搜索目录。</value></data>
+  <data name="SkillsImport" xml:space="preserve"><value>导入技能文件夹</value></data>
+  <data name="SkillsImportHint" xml:space="preserve"><value>选择包含 SKILL.md 的文件夹。Cogitide 会将其复制到当前项目，不会替换已有技能。</value></data>
+  <data name="SkillsRemoteImportHint" xml:space="preserve"><value>输入所选主机上的技能文件夹绝对路径，文件夹内须包含 SKILL.md。</value></data>
+  <data name="SkillFolderPath" xml:space="preserve"><value>技能文件夹路径</value></data>
+  <data name="BrowseSkillFolder" xml:space="preserve"><value>浏览…</value></data>
+  <data name="ImportSkill" xml:space="preserve"><value>导入技能</value></data>
+  <data name="SkillsCatalog" xml:space="preserve"><value>技能目录</value></data>
+  <data name="SkillsCatalogHint" xml:space="preserve"><value>搜索 GitHub 上 anthropics/skills 公开技能目录的固定版本。仅在你搜索或安装时访问网络。</value></data>
+  <data name="SearchSkillsPlaceholder" xml:space="preserve"><value>按名称或说明搜索</value></data>
+  <data name="SearchSkills" xml:space="preserve"><value>搜索技能</value></data>
+  <data name="InstallSelectedSkill" xml:space="preserve"><value>安装所选技能</value></data>
+  <data name="SkillsSearching" xml:space="preserve"><value>正在搜索技能目录…</value></data>
+  <data name="SkillsNoMatches" xml:space="preserve"><value>未找到匹配的技能，请尝试其他搜索词。</value></data>
+  <data name="SkillsSearchResults" xml:space="preserve"><value>找到 {0} 个技能。选择一个技能即可安装。</value></data>
+  <data name="SkillsImportPathRequired" xml:space="preserve"><value>请先选择或输入技能文件夹路径。</value></data>
+  <data name="SkillsInstalling" xml:space="preserve"><value>正在安装所选技能…</value></data>
+  <data name="SkillsImporting" xml:space="preserve"><value>正在导入技能文件夹…</value></data>
+  <data name="SkillInstalled" xml:space="preserve"><value>已安装 {0}，可在当前项目的后续对话中使用。</value></data>
+  <data name="SkillsInstallFailed" xml:space="preserve"><value>无法安装技能：{0}</value></data>
+  <data name="SkillsLoadFailed" xml:space="preserve"><value>无法加载项目技能：{0}</value></data>
+  <data name="SkillsSearchFailed" xml:space="preserve"><value>无法搜索技能目录：{0}</value></data>
+  <data name="SkillsWorking" xml:space="preserve"><value>正在加载项目技能…</value></data>
+  <data name="SkillsSearchResultsTruncated" xml:space="preserve"><value>显示 {0} 个技能。请细化搜索词以查找其他结果。</value></data>
+  <data name="SkillInstalledRefreshFailed" xml:space="preserve"><value>已安装 {0}。无法刷新已安装列表：{1}</value></data>
+  <data name="SkillInstallOutcomeUnknown" xml:space="preserve"><value>未观察到安装结果。再次尝试前请先刷新项目技能。{0}</value></data>
 </root>

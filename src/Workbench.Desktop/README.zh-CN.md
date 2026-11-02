@@ -17,6 +17,10 @@
 
 ## 组件复用和界面来源
 
+设置窗口复用 Avalonia 的纵向 `TabControl`，分为通用、模型和账号、技能、连接及高级。账号/API、实时语言、减少动画与研究特性开关沿用现有机制；连接和任务预算在设置关闭后打开已有对话框。技能界面通过 Host 查询当前项目技能、导入包含 `SKILL.md` 的文件夹，并仅在用户操作时搜索和安装固定版本的公开目录。远端导入路径属于所选 Host，因此远端模式不提供本机文件夹选择器。技能脚本仍遵守正常工具权限。
+
+`SettingsNavigationTests` 检查编译后的界面、语言切换、模型输入保留、项目作用域和现有窗口路由。将 `COGITIDE_SETTINGS_SCREENSHOT_DIR` 设为被 Git 忽略的绝对目录，可生成仅含测试数据、使用正式样式的 Headless 截图；这不替代真实平台 GUI 验收。本段与英文新增说明同步，其他历史记录并非完整同步译文。
+
 简洁的项目/会话及对话组织参考 Codex 的使用方式，这是交互设计参考，**没有复制其专有桌面前端源码或素材**。基础控件、布局、动画、主题复用 Avalonia；代码查看复用 **AvaloniaEdit**；Markdown 使用 **Markdig** 解析后由 Avalonia 控件呈现；终端复用 **Iciclecreek.Avalonia.Terminal、Porta.Pty、XTerm.NET/ConPTY**。精确版本、上游 commit 和许可证见 [DEPENDENCIES](DEPENDENCIES.md) 与 [依赖锁](packages.lock.json)。
 
 HTML 和自动远程图片加载不因 Markdown 内容启用；链接由用户点击打开。系统语言和减少动画偏好与模型/文件原文区分。Avalonia 是跨平台 UI 框架，不等于三平台所有控件都采用系统原生实现；构建包、Headless 测试和真实平台 GUI 体验分别验收。

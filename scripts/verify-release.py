@@ -45,11 +45,11 @@ def native_architecture(path):
 def verify_development_workflow(package, info):
     """Check pinned content only; this never launches a native sandbox or service."""
     host = read_json(package / "Workbench.Host.deps.json")
-    for dependency in ("StreamJsonRpc/2.26.150", "Microsoft.Mxc.Sdk/1.0.1"):
+    for dependency in ("StreamJsonRpc/2.26.150", "Microsoft.Mxc.Sdk/1.0.1", "DocumentFormat.OpenXml/3.5.1", "DocumentFormat.OpenXml.Framework/3.5.1", "System.IO.Packaging/10.0.2"):
         assert dependency in host["libraries"], "Development dependency pin missing: " + dependency
-    for name in ("StreamJsonRpc.dll", "Microsoft.Mxc.Sdk.dll"):
+    for name in ("StreamJsonRpc.dll", "Microsoft.Mxc.Sdk.dll", "DocumentFormat.OpenXml.dll", "DocumentFormat.OpenXml.Framework.dll", "System.IO.Packaging.dll"):
         assert (package / name).is_file(), "Development dependency missing: " + name
-    for group in ("Lsp", "Isolation"):
+    for group in ("Lsp", "Isolation", "Presentations", "Skills"):
         source_directory = ROOT / "src" / "Workbench.Tools" / group / "Licenses"
         sources = [path for path in source_directory.iterdir() if path.is_file()]
         assert sources, "Development source attribution missing: " + group
@@ -265,7 +265,7 @@ def main():
     parser.add_argument("--require-unified-kernel", action="store_true", help="Require OAuth/Responses dependencies, attribution and absence of the old delegated runtime.")
     parser.add_argument("--require-tool-upgrade", action="store_true", help="Require glob component and navigation/patch/command source attributions.")
     parser.add_argument("--require-research", action="store_true", help="Require Cogitide identity and root Apache/third-party notices.")
-    parser.add_argument("--require-development-workflow", action="store_true", help="Require LSP/MXC pins, upstream notices, matching native assets and durable Host ASP.NET Core dependencies; no native enforcement claim.")
+    parser.add_argument("--require-development-workflow", action="store_true", help="Require LSP/MXC/Open XML pins, upstream notices, matching native assets and durable Host ASP.NET Core dependencies; no native enforcement or rendered-slide claim.")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     source_paths = list((ROOT / "src").glob("*/packages.lock.json")) + list((ROOT / "tests").glob("*/packages.lock.json"))

@@ -106,7 +106,8 @@ public sealed class ConnectionsProviderTests
         {
             DesktopLocalization.SetLanguage("en-US");
             using var dialog = OpenDialog(new(Provider: ProviderKind.DeepSeek, ReasoningEffort: "max"));
-            dialog.Window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex = 2;
+            dialog.Window.FindControl<TabControl>("SettingsNavigation")!.SelectedIndex = 1;
+            dialog.Window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex = 1;
             Dispatcher.UIThread.RunJobs();
             var combo = dialog.Window.FindControl<ComboBox>("ReasoningPicker")!;
             var selected = combo.SelectedItem;
@@ -116,7 +117,7 @@ public sealed class ConnectionsProviderTests
             Assert.Same(selected, combo.SelectedItem);
             Assert.Equal("最高", (selected as ComboBoxItem)?.Content);
             Assert.Contains(combo.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "最高");
-            Assert.Equal(2, dialog.Window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex);
+            Assert.Equal(1, dialog.Window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex);
             DesktopLocalization.SetLanguage("en-US");
         }, CancellationToken.None);
     }
@@ -147,7 +148,8 @@ public sealed class ConnectionsProviderTests
         {
             DesktopLocalization.SetLanguage("en-US");
             using var dialog = OpenDialog(new());
-            dialog.Window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex = 1;
+            dialog.Window.FindControl<TabControl>("SettingsNavigation")!.SelectedIndex = 1;
+            dialog.Window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex = 0;
             Dispatcher.UIThread.RunJobs();
             var text = dialog.Window.GetVisualDescendants().OfType<TextBlock>().Select(item => item.Text ?? "").ToArray();
             Assert.Contains(text, value => value.Contains("Cogitide runs the task, tools, summaries and project memory", StringComparison.Ordinal));

@@ -222,6 +222,19 @@ public sealed partial class ProjectRules
             string.Equals(Scalar("disable-model-invocation"), "true", StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>Reuses discovery's YAML/metadata rules when validating an explicitly imported skill package.</summary>
+    public static SkillManifestInfo ValidateSkillManifest(string relativePath, string content)
+    {
+        if (Encoding.UTF8.GetByteCount(content) > MaxSkillBytes)
+            throw new InvalidDataException("Skill manifest exceeds 64 KiB.");
+        try
+        {
+            var skill = ParseSkill(relativePath, content, "");
+            return new(skill.Name, skill.Description, skill.DisableModelInvocation);
+        }
+        catch (YamlDotNet.Core.YamlException error) { throw new ArgumentException("Skill frontmatter is invalid YAML.", error); }
+    }
+
     private static string Posix(string path) => path.Replace(Path.DirectorySeparatorChar, '/');
     private static bool SamePath(string left, string right) => string.Equals(left, right,
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
