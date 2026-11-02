@@ -10,7 +10,8 @@ using Workbench.Protocol;
 namespace Workbench.Tools;
 
 /// <summary>Explicit, project-local package copies. BCL owns HTTP/ZIP; Core supplies the existing skill parser.</summary>
-public sealed partial class SkillManagementService(Func<string, string, SkillManifestInfo> validateManifest, HttpClient? httpClient = null)
+public sealed partial class SkillManagementService(Func<string, string, SkillManifestInfo> validateManifest, HttpClient? httpClient = null,
+    TimeSpan? downloadTimeout = null)
 {
     public const int MaxPackageFiles = 256;
     public const int MaxPackageBytes = 16 * 1024 * 1024;
@@ -26,7 +27,8 @@ public sealed partial class SkillManagementService(Func<string, string, SkillMan
     {
         AllowAutoRedirect = false, UseCookies = false, Credentials = null,
         PooledConnectionLifetime = TimeSpan.FromMinutes(5), AutomaticDecompression = DecompressionMethods.None
-    }) { Timeout = TimeSpan.FromSeconds(90) };
+    }) { Timeout = Timeout.InfiniteTimeSpan };
+    private readonly TimeSpan _downloadTimeout = ValidateDownloadTimeout(downloadTimeout);
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> WorkspaceGates = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly SemaphoreSlim _catalogGate = new(1, 1);
@@ -191,14 +193,33 @@ public sealed partial class SkillManagementService(Func<string, string, SkillMan
     {
         ValidateRepository(repository, revision);
         var url = "https://codeload.github.com/" + repository + "/zip/" + revision;
+        using var deadline = new CancellationTokenSource(_downloadTimeout);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, deadline.Token);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.UserAgent.ParseAdd("Cogitide-Skills/1.0");
-        using var response = await (httpClient ?? SharedHttp).SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength > MaxArchiveBytes)
-            throw new InvalidDataException("The source archive exceeds the 32 MiB download limit.");
-        await using var input = await response.Content.ReadAsStreamAsync(ct);
-        return await ReadBoundedAsync(input, MaxArchiveBytes, ct);
+        try
+        {
+            // ResponseHeadersRead ends HttpClient's request timeout after headers. This linked deadline
+            // stays alive through every bounded body read, including a server that stops sending bytes.
+            using var response = await (httpClient ?? SharedHttp).SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token);
+            response.EnsureSuccessStatusCode();
+            if (response.Content.Headers.ContentLength > MaxArchiveBytes)
+                throw new InvalidDataException("The source archive exceeds the 32 MiB download limit.");
+            await using var input = await response.Content.ReadAsStreamAsync(linked.Token);
+            return await ReadBoundedAsync(input, MaxArchiveBytes, linked.Token);
+        }
+        catch (OperationCanceledException error) when (!ct.IsCancellationRequested)
+        {
+            throw new IOException("Skill archive download timed out before completion; no skill was installed.", error);
+        }
+    }
+
+    private static TimeSpan ValidateDownloadTimeout(TimeSpan? timeout)
+    {
+        var value = timeout ?? TimeSpan.FromSeconds(90);
+        if (value <= TimeSpan.Zero || value > TimeSpan.FromSeconds(90))
+            throw new ArgumentOutOfRangeException(nameof(timeout), "A skill download deadline must be positive and no longer than 90 seconds.");
+        return value;
     }
 
     private static Dictionary<string, byte[]> ReadPackageArchive(byte[] bytes, string skillPath)

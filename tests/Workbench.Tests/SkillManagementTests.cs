@@ -155,6 +155,47 @@ public sealed class SkillManagementTests : IDisposable
         Assert.Null(last.NextOffset);
     }
 
+    [Fact]
+    public async Task DownloadDeadlineCoversAStalledBodyAfterSuccessfulHeadersWithoutInstallingOrRetrying()
+    {
+        using var handler = new StalledDownloadHandler();
+        using var http = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+        using var caller = new CancellationTokenSource();
+        var service = new SkillManagementService(ProjectRules.ValidateSkillManifest, http, TimeSpan.FromSeconds(1));
+        var installing = service.InstallAsync(Workspace, repository: "fixture/skills", revision: SkillManagementService.DefaultRevision,
+            path: "skills/check", ct: caller.Token);
+        try
+        {
+            await handler.Body.ReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var error = await Assert.ThrowsAsync<IOException>(() => installing.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Equal("Skill archive download timed out before completion; no skill was installed.", error.Message);
+            Assert.Equal(1, handler.RequestCount);
+            Assert.True(handler.Body.Disposed);
+            Assert.False(Directory.Exists(Path.Combine(Workspace, ".agents")));
+        }
+        finally { caller.Cancel(); }
+    }
+
+    [Fact]
+    public async Task CallerCancellationDuringAStalledDownloadRemainsCancellation()
+    {
+        using var handler = new StalledDownloadHandler();
+        using var http = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+        using var caller = new CancellationTokenSource();
+        var service = new SkillManagementService(ProjectRules.ValidateSkillManifest, http);
+        var searching = service.SearchAsync(ct: caller.Token);
+        try
+        {
+            await handler.Body.ReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            caller.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => searching.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Equal(1, handler.RequestCount);
+            Assert.True(handler.Body.Disposed);
+            Assert.False(Directory.Exists(Path.Combine(Workspace, ".agents")));
+        }
+        finally { caller.Cancel(); }
+    }
+
     [Theory]
     [InlineData("https://github.com/owner/repository", "0123456789012345678901234567890123456789", "skills/check")]
     [InlineData("owner/repository", "main", "skills/check")]
@@ -353,6 +394,39 @@ public sealed class SkillManagementTests : IDisposable
             Assert.Null(request.Headers.Authorization);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(archive) });
         }
+    }
+    private sealed class StalledDownloadHandler : HttpMessageHandler
+    {
+        public StalledReadStream Body { get; } = new();
+        public int RequestCount { get; private set; }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(Body) });
+        }
+    }
+    private sealed class StalledReadStream : Stream
+    {
+        public TaskCompletionSource ReadStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool Disposed { get; private set; }
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => new(StallAsync(cancellationToken));
+        private async Task<int> StallAsync(CancellationToken ct)
+        {
+            ReadStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+            return 0;
+        }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        protected override void Dispose(bool disposing) { Disposed = true; base.Dispose(disposing); }
     }
     private sealed class StepModel(Func<int, IReadOnlyList<ChatMessage>, IReadOnlyList<ToolDefinition>, ModelUpdate> next) : IAgentModel
     {

@@ -26,13 +26,21 @@ Headless rendered frames exposed a selected model-connection label that retained
 
 The initial focused batch passed 52 tests, including a real anonymous download of the pinned public catalog, installation of its `pptx` package into an isolated generated workspace, and discovery through the existing Core parser. No package code was executed. A subsequent complete Release run passed 791 tests, failed none and conditionally skipped four before the final pagination regression additions.
 
-The final strict **Release** `scripts/build.ps1` completed with zero warnings/errors and **793 passed, 0 failed, 4 conditional skips out of 797**. Real TypeScript/Python server tests, the real public skill catalog test and native Windows isolation were explicitly enabled. The Windows writable native-worker fixture also created and hash-checked a presentation through the restricted broker, with its JSON result retaining the explicit `not_rendered` status. The four skips were three separately gated real remote tests and the macOS-only alias fixture; no new remote or macOS-device acceptance is inferred.
+The feature's strict **Release** `scripts/build.ps1` completed with zero warnings/errors and **793 passed, 0 failed, 4 conditional skips out of 797**. Real TypeScript/Python server tests, the real public skill catalog test and native Windows isolation were explicitly enabled. The Windows writable native-worker fixture also created and hash-checked a presentation through the restricted broker, with its JSON result retaining the explicit `not_rendered` status. The four skips were three separately gated real remote tests and the macOS-only alias fixture; no new remote or macOS-device acceptance is inferred.
 
 The strict Debug build passed. All seven local Host fixtures passed: `verify-host`, `verify-lifecycle`, `verify-responses`, `verify-continuity`, `verify-tools-upgrade`, `verify-research` and `verify-integrations`. They used generated workspaces and local model/protocol servers. The public skill archive check is the only new external-data acceptance, not a model benchmark.
 
 English and Simplified Chinese resources contain **447 matching, unique keys**. Five fixture-only headless frames were captured and visually inspected, including compact-width settings, model controls and the skill catalog. Those images, package files and raw logs remain under ignored `artifacts/settings-skills-ppt-*`. Module inventory and whitespace checks passed. The underlying [development-workflow record](development-workflow-validation-2026-11-02.md) retains its earlier counts and platform scope.
 
 The Windows x64 self-contained Host package passed release verification across **625 files**, including pinned Open XML/framework/packaging assemblies, source locks and unchanged retained notices. Its actual Host smoke ran with the bundled runtime, performed Unicode session/command operations, made zero model calls and exited cleanly. Package verification does not certify native GUI rendering or other platforms' native isolation.
+
+### Streamed-download follow-up
+
+Feature commit `b089b19` passed [Windows, Linux and macOS CI](https://github.com/Yang916-yy/cogitide/actions/runs/41386857705). Subsequent review found that `HttpClient.Timeout` with `ResponseHeadersRead` does not bound later archive-body reads. A single BCL linked deadline now covers headers and the entire streamed download, defaults to 90 seconds, and permits only shorter test overrides. Caller cancellation remains cancellation; an independent deadline reports a fixed known pre-installation failure without retry or copied files.
+
+Two additional deterministic fixtures return successful headers and then stall the archive body. They verify whole-download timeout, original caller cancellation, stream disposal, one request and no installed output. After this correction the final strict Release run passed **795 tests, failed none and conditionally skipped four out of 799**, with the same native Windows, real language-server and public-catalog opt-ins. The earlier counts and package acceptance above retain their original feature-build scope.
+
+The strict Debug build and all seven local Host integration fixtures also passed again after this download correction. Module inventory and whitespace checks remained current.
 
 ## Product limits
 
